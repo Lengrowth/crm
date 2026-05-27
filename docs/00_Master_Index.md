@@ -14,10 +14,11 @@ This repository is being built as a SaaS-first control platform that will later 
 8. `19_Operational_Hardening_And_Recovery_Readiness.md`
 9. `20_Pilot_Client_Onboarding_And_First_Go_Live.md`
 10. `21_GCP_SaaS_And_ERPNext_Deployment_Guide.md`
-11. `02_ERPNext_SaaS_Product_Build_Runbook.md`
-12. `03_ERPNext_Tenant_Provisioning_And_SaaS_Connection_Runbook.md`
-13. `04_Drilling_ERPNext_Implementation_Blueprint.md`
-14. `05_Custom_Frappe_App_Development_Runbook.md`
+11. `22_GitHub_Actions_SaaS_Auto_Deploy.md`
+12. `02_ERPNext_SaaS_Product_Build_Runbook.md`
+13. `03_ERPNext_Tenant_Provisioning_And_SaaS_Connection_Runbook.md`
+14. `04_Drilling_ERPNext_Implementation_Blueprint.md`
+15. `05_Custom_Frappe_App_Development_Runbook.md`
 
 ## Current Architecture
 

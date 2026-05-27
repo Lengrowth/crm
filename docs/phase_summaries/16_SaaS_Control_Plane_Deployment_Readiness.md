@@ -64,15 +64,19 @@ Refine Phase 16 into a concrete, operator-friendly deployment preparation packag
 - Added a dedicated section for what is **still not done after Phase 16**.
 - Added a dedicated section for what remains in Phase 17 and Phase 18.
 
-### Documentation sync
+### Documentation and automation sync
 - Updated `docs/21_GCP_SaaS_And_ERPNext_Deployment_Guide.md` to:
   - use the correct document number in the title
   - reflect the fixed SaaS hostnames `crm.lenquant.com` and `crm-api.lenquant.com`
   - point operators to Phase 16 and Phase 17 as the primary execution runbooks
+- Added `docs/22_GitHub_Actions_SaaS_Auto_Deploy.md` for post-setup SaaS deployment automation using a self-hosted GitHub Actions runner on the SaaS VM.
+- Added repository automation assets:
+  - `.github/workflows/deploy-saas-control.yml`
+  - `scripts/deploy/deploy_saas_control.sh`
 - Updated `docs/00_Master_Index.md` earlier in this phase series to:
   - include the missing phase summary entries for Phases 08–15
   - add the Phase 16 summary entry
-  - refresh the phase sequence text through Phase 18
+  - refresh the phase sequence text through Phase 18 and the new deployment automation doc
 
 ## Validation run
 - No code validation was run.

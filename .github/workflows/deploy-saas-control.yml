@@ -1,0 +1,35 @@
+name: Deploy SaaS Control Plane
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: saas-control-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to saas-control-01
+    runs-on:
+      - self-hosted
+      - linux
+      - saas-control
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Make deploy script executable
+        run: chmod +x scripts/deploy/deploy_saas_control.sh
+
+      - name: Deploy current main commit to the SaaS VM
+        env:
+          DEPLOY_BRANCH: main
+          DEPLOY_SHA: ${{ github.sha }}
+        run: ./scripts/deploy/deploy_saas_control.sh "$DEPLOY_BRANCH" "$DEPLOY_SHA"
