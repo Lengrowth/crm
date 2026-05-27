@@ -1,7 +1,7 @@
 """billing tables
 
 Revision ID: 20260527_0005_billing_tables
-Revises: 20260527_0004_erpnext_integration
+Revises: 20260527_0004
 Create Date: 2026-05-27 00:00:00.000000
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "20260527_0005_billing_tables"
-down_revision = "20260527_0004_erpnext_integration"
+down_revision = "20260527_0004"
 branch_labels = None
 depends_on = None
 
