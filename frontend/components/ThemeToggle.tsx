@@ -22,7 +22,9 @@ function getInitialTheme(): ThemeMode {
     return saved;
   }
 
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
 }
 
 export function ThemeToggle() {
@@ -54,7 +56,7 @@ export function ThemeToggle() {
       }}
       aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
     >
-      {theme === "dark" ? "Light mode" : "Dark mode"}
+      {theme === "dark" ? "Light" : "Dark"}
     </button>
   );
 }

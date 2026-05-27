@@ -99,7 +99,7 @@ function LoginPageContent() {
           className="mt-4 max-w-xl text-4xl font-semibold tracking-tight"
           style={{ color: "var(--text)" }}
         >
-          Sign in to the SaaS control plane.
+          Sign in to the LenQuant control plane.
         </h1>
         <p
           className="mt-4 max-w-2xl text-sm leading-7"
@@ -113,16 +113,16 @@ function LoginPageContent() {
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
           {[
             [
-              "Protected shell",
-              "Access the dashboard routes for organizations, tenants, modules, and implementation views.",
+              "Protected workspace",
+              "Access dashboard routes for organizations, tenants, modules, and implementation views.",
             ],
             [
-              "Separate boundary",
-              "ERPNext remains an external runtime target; live cutover is not part of this login flow.",
+              "Clean runtime boundary",
+              "ERPNext remains an external runtime target; live cutover is not part of this sign-in flow.",
             ],
             [
-              "Pilot-ready",
-              "Use the same control-plane account model for demos, pilot setups, and pre-launch validation.",
+              "Pilot-ready accounts",
+              "Use the same control-plane account model for demos, pilots, and pre-launch validation.",
             ],
           ].map(([title, copy]) => (
             <div

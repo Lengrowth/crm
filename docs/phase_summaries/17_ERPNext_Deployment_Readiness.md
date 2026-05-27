@@ -4,50 +4,63 @@
 2026-05-27
 
 ## Goal
-Refine Phase 17 into a concrete, operator-friendly deployment checklist for ERPNext/Frappe on GCP as the external tenant runtime, without blending it into SaaS deployment work or live integration cutover.
+Refine Phase 17 into a concrete, beginner-friendly deployment checklist for ERPNext/Frappe on GCP as the external tenant runtime, with the same operator guidance style as Phase 16.
 
 ## What changed
 
 ### Phase 17 runbook rewrite
-- Reworked `docs/17_ERPNext_Deployment_On_GCP.md` from a general planning document into a step-by-step operator checklist.
-- Clarified that the document is a **planning/readiness runbook**, not evidence that ERPNext has already been deployed.
+- Reworked `docs/17_ERPNext_Deployment_On_GCP.md` into a detailed step-by-step GCP runbook.
+- Expanded it from a high-level checklist into a beginner-friendly operator guide with:
+  - exact GCP Console menu paths
+  - static IP reservation steps
+  - explicit firewall creation steps for ports `80` and `443`
+  - browser SSH guidance
+  - copy-paste Docker / Compose / Frappe commands
+  - staged DNS and HTTPS validation
 - Kept the architecture boundary explicit:
   - ERPNext runs as an external managed system
   - SaaS deployment remains Phase 16 work
   - live SaaS ↔ ERPNext cutover remains Phase 18 work
 
+### Concrete ERP hostname walkthrough
+- Made the ERP hostnames concrete for the first deployment walkthrough:
+  - `demo-erp.lenquant.com`
+  - `champion.lenquant.com`
+- Reinforced that these are intentionally separate from:
+  - `crm.lenquant.com`
+  - `crm-api.lenquant.com`
+
 ### Execution order clarification
-- Reorganized the document into a clear run sequence:
-  1. prerequisites and naming rules
-  2. GCP project and ERP VM setup
-  3. DNS preparation
-  4. host layout
-  5. base host bootstrap
-  6. ERPNext runtime installation path
-  7. demo site creation
-  8. tenant site creation path
-  9. custom app installation path
-  10. DNS and TLS validation
-  11. backup validation
-  12. restore drill
-  13. operational smoke tests
-  14. restart procedure
-  15. rollback procedure
+- Reorganized the document into a very explicit run sequence:
+  1. GCP project, billing, and API setup
+  2. static IP reservation
+  3. Cloud Storage backup bucket creation
+  4. ERP VM creation
+  5. explicit firewall rule creation
+  6. DNS setup and verification
+  7. Docker and Compose installation
+  8. Frappe Docker clone and env setup
+  9. ERP runtime startup
+  10. demo site creation and validation
+  11. first tenant site creation and validation
+  12. custom app installation shape
+  13. backup validation
+  14. restore drill guidance
+  15. restart and rollback basics
 
-### Topology clarification
-- Made the recommended production-style topology explicit:
-  - one VM for the SaaS control plane
-  - one separate VM for ERPNext/Frappe
-- Reinforced why ERPNext should not share the SaaS VM for the intended deployment path.
+### Operator-friendly details added
+- Added explicit guidance to avoid the issues already seen in Phase 16:
+  - do not rely only on VM HTTP/HTTPS checkboxes
+  - create firewall rules explicitly
+  - verify DNS before expecting TLS to work
+  - test the demo site first, then expand `SITES_RULE` for the first tenant site
+- Added a concrete `.env` template shape for the ERP runtime with:
+  - pinned ERPNext version
+  - Let’s Encrypt email
+  - initial `SITES_RULE`
 
-### Phase-boundary reinforcement
-- Added a dedicated section for what is **still not done after Phase 17**.
-- Added a dedicated section for what remains in **Phase 18**.
-- Reinforced that Phase 17 stabilizes the ERP runtime but does not activate live SaaS integration.
-
-### Master index sync
-- Updated `docs/00_Master_Index.md` to add the new Phase 17 summary entry.
-- Updated the phase sequence text to reflect Phase 17 as a separate ERP runtime deployment runbook on a separate GCP VM.
+### Documentation sync
+- Updated `docs/21_GCP_SaaS_And_ERPNext_Deployment_Guide.md` to reflect the concrete ERP hostname examples used in the new Phase 17 runbook.
 
 ## Validation run
 - No code validation was run.
@@ -58,7 +71,7 @@ Refine Phase 17 into a concrete, operator-friendly deployment checklist for ERPN
 ### Before live cutover
 - actual ERPNext deployment execution on GCP
 - demo-site creation on the real ERP host
-- tenant-site creation validation on the real ERP host
+- first tenant-site creation validation on the real ERP host
 - backup execution and restore drill on the real ERP runtime
 
 ### Phase 18

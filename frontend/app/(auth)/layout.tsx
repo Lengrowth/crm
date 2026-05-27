@@ -11,7 +11,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           className="text-sm font-semibold uppercase tracking-[0.24em]"
           style={{ color: "var(--text)" }}
         >
-          SaaS Control Plane
+          LenQuant
         </Link>
         <ThemeToggle />
       </div>

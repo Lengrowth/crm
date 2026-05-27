@@ -4,23 +4,23 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "SaaS Control Plane",
-    template: "%s | SaaS Control Plane",
+    default: "LenQuant Control Plane",
+    template: "%s | LenQuant Control Plane",
   },
   description:
-    "Launch-ready SaaS control plane for onboarding organizations, managing tenants, and preparing ERPNext-backed operations without collapsing the product and runtime boundaries.",
-  applicationName: "SaaS Control Plane",
+    "Launch-ready SaaS control for onboarding organizations, managing tenants, packaging modules, and coordinating ERPNext-backed operational rollouts without collapsing the product and runtime boundaries.",
+  applicationName: "LenQuant Control Plane",
   openGraph: {
-    title: "SaaS Control Plane",
+    title: "LenQuant Control Plane",
     description:
-      "Manage organizations, tenants, implementation readiness, and rollout coordination before live ERPNext cutover.",
+      "Premium SaaS control for onboarding, implementation visibility, tenant readiness, and ERPNext-aware rollout coordination.",
     type: "website",
   },
   twitter: {
     card: "summary",
-    title: "SaaS Control Plane",
+    title: "LenQuant Control Plane",
     description:
-      "Manage organizations, tenants, implementation readiness, and rollout coordination before live ERPNext cutover.",
+      "Premium SaaS control for onboarding, implementation visibility, tenant readiness, and ERPNext-aware rollout coordination.",
   },
 };
 

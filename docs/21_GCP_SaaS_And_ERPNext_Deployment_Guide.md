@@ -112,15 +112,14 @@ These SaaS hostnames are now fixed in the deployment docs:
 - `crm.lenquant.com`
 - `crm-api.lenquant.com`
 
-The ERPNext hostnames are still a separate Phase 17 decision and must **not** reuse the SaaS hostnames.
+The ERPNext hostnames must **not** reuse the SaaS hostnames.
 
-Example ERPNext naming patterns you may choose later:
+The detailed Phase 17 runbook now uses these concrete example ERP hostnames for the first deployment walkthrough:
 
 - `demo-erp.lenquant.com`
-- `client1-erp.lenquant.com`
-- `tenant-slug.erp.lenquant.com`
+- `champion.lenquant.com`
 
-Those are examples only. Final ERP hostnames should be chosen in Phase 17 before ERP deployment begins.
+You can rename them later if you choose another tenant naming convention, but keep the SaaS and ERP hostnames clearly separated.
 
 ---
 

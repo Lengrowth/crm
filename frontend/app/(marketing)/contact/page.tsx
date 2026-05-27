@@ -2,7 +2,11 @@
 
 import type { FormEvent } from "react";
 import { useState } from "react";
-import Link from "next/link";
+import {
+  MarketingButtonLink,
+  MarketingCard,
+  MarketingPageCta,
+} from "@/components/MarketingPrimitives";
 import { sendContact, trackMarketingEvent } from "@/lib/api";
 
 export default function ContactPage() {
@@ -36,172 +40,185 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_0.9fr]">
-      <section
-        className="rounded-[2rem] border p-8 lg:p-10"
-        style={{
-          borderColor: "var(--border)",
-          backgroundColor: "var(--surface)",
-          boxShadow: "0 24px 60px var(--shadow)",
-        }}
-      >
-        <p
-          className="text-xs font-semibold uppercase tracking-[0.24em]"
-          style={{ color: "var(--muted)" }}
+    <div className="space-y-8 sm:space-y-10 lg:space-y-12">
+      <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+        <MarketingCard
+          className="rounded-[2.25rem] px-7 py-8 sm:px-10 sm:py-10"
+          tone="accent"
         >
-          Contact
-        </p>
-        <h1
-          className="mt-4 text-4xl font-semibold tracking-tight"
-          style={{ color: "var(--text)" }}
-        >
-          Talk to us about your rollout, pilot, or control-plane requirements.
-        </h1>
-        <p className="mt-4 text-sm leading-7" style={{ color: "var(--muted)" }}>
-          Share your team size, operating model, deployment timeline, or ERP
-          migration concerns and we will respond with the right next step.
-        </p>
-
-        <form
-          className="mt-8 grid gap-4 md:grid-cols-2"
-          onSubmit={handleSubmit}
-        >
-          <label className="block space-y-2">
-            <span
-              className="text-xs font-semibold uppercase tracking-[0.18em]"
-              style={{ color: "var(--muted)" }}
-            >
-              Name
-            </span>
-            <input
-              name="name"
-              required
-              className="w-full rounded-xl border px-4 py-3 text-sm outline-none"
-              style={{
-                borderColor: "var(--border)",
-                backgroundColor: "var(--surface-strong)",
-                color: "var(--text)",
-              }}
-            />
-          </label>
-
-          <label className="block space-y-2">
-            <span
-              className="text-xs font-semibold uppercase tracking-[0.18em]"
-              style={{ color: "var(--muted)" }}
-            >
-              Work email
-            </span>
-            <input
-              name="email"
-              required
-              type="email"
-              className="w-full rounded-xl border px-4 py-3 text-sm outline-none"
-              style={{
-                borderColor: "var(--border)",
-                backgroundColor: "var(--surface-strong)",
-                color: "var(--text)",
-              }}
-            />
-          </label>
-
-          <label className="block space-y-2 md:col-span-2">
-            <span
-              className="text-xs font-semibold uppercase tracking-[0.18em]"
-              style={{ color: "var(--muted)" }}
-            >
-              What do you need help with?
-            </span>
-            <textarea
-              name="message"
-              rows={5}
-              className="w-full rounded-xl border px-4 py-3 text-sm outline-none"
-              style={{
-                borderColor: "var(--border)",
-                backgroundColor: "var(--surface-strong)",
-                color: "var(--text)",
-              }}
-              placeholder="Tell us about your operating model, pilot scope, or rollout blockers."
-            />
-          </label>
-
-          <div className="md:col-span-2">
-            <button
-              type="submit"
-              className="rounded-full px-5 py-3 text-sm font-semibold transition hover:translate-y-[-1px] disabled:opacity-60"
-              style={{
-                backgroundColor: "var(--accent)",
-                color: "var(--accent-foreground)",
-                boxShadow: "0 16px 32px var(--shadow)",
-              }}
-              disabled={loading}
-            >
-              {loading ? "Sending..." : "Send message"}
-            </button>
-
-            {error ? (
-              <p className="mt-3 text-sm text-red-500">{error}</p>
-            ) : null}
-            {success ? (
-              <p className="mt-3 text-sm" style={{ color: "var(--muted)" }}>
-                {success}
-              </p>
-            ) : null}
-          </div>
-        </form>
-      </section>
-
-      <aside className="space-y-6">
-        <div
-          className="rounded-[2rem] border p-6"
-          style={{
-            borderColor: "var(--border)",
-            backgroundColor: "var(--surface-strong)",
-          }}
-        >
-          <h2
-            className="text-xl font-semibold"
-            style={{ color: "var(--text)" }}
-          >
-            Best fit for this conversation
-          </h2>
-          <ol
-            className="mt-4 space-y-3 text-sm leading-6"
+          <p
+            className="text-xs font-semibold uppercase tracking-[0.28em]"
             style={{ color: "var(--muted)" }}
           >
-            <li>Teams planning a pilot launch or controlled rollout.</li>
-            <li>Operators who need visibility before ERPNext goes live.</li>
-            <li>
-              Implementation-led deployments that need a clean SaaS boundary.
-            </li>
-          </ol>
-        </div>
-        <div
-          className="rounded-[2rem] border p-6"
-          style={{
-            borderColor: "var(--border)",
-            backgroundColor: "var(--surface-strong)",
-          }}
-        >
-          <h2
-            className="text-xl font-semibold"
+            Talk to us
+          </p>
+          <h1
+            className="mt-4 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl"
             style={{ color: "var(--text)" }}
           >
-            Prefer a walkthrough?
-          </h2>
-          <Link
-            href="/demo"
-            className="mt-4 inline-flex rounded-full border px-5 py-3 text-sm font-semibold transition hover:translate-y-[-1px]"
-            style={{
-              borderColor: "var(--border)",
-              backgroundColor: "var(--surface)",
-              color: "var(--text)",
-            }}
+            Start the conversation before rollout complexity becomes a risk.
+          </h1>
+          <p
+            className="mt-5 text-base leading-8"
+            style={{ color: "var(--muted)" }}
           >
-            Request demo
-          </Link>
-        </div>
-      </aside>
+            Contact us if you are evaluating a pilot, planning implementation
+            work, or trying to structure the boundary between your
+            customer-facing SaaS layer and the ERP runtime behind it.
+          </p>
+
+          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+            {[
+              [
+                "Pilot scope",
+                "Share your timeline, team shape, and what the first launch needs to prove.",
+              ],
+              [
+                "Rollout blockers",
+                "Tell us where onboarding, tenants, or implementation visibility are breaking down.",
+              ],
+              [
+                "Commercial fit",
+                "Use this route if you need help with packaging, pricing, or a guided deployment conversation.",
+              ],
+            ].map(([title, description]) => (
+              <div
+                key={title}
+                className="rounded-[1.25rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-4"
+              >
+                <p
+                  className="text-sm font-semibold"
+                  style={{ color: "var(--text)" }}
+                >
+                  {title}
+                </p>
+                <p
+                  className="mt-2 text-sm leading-6"
+                  style={{ color: "var(--muted)" }}
+                >
+                  {description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </MarketingCard>
+
+        <MarketingCard
+          className="rounded-[2.25rem] px-7 py-8 sm:px-10 sm:py-10"
+          tone="default"
+        >
+          <p
+            className="text-xs font-semibold uppercase tracking-[0.28em]"
+            style={{ color: "var(--muted)" }}
+          >
+            Contact form
+          </p>
+          <form
+            className="mt-6 grid gap-4 md:grid-cols-2"
+            onSubmit={handleSubmit}
+          >
+            <label className="block space-y-2">
+              <span
+                className="text-xs font-semibold uppercase tracking-[0.18em]"
+                style={{ color: "var(--muted)" }}
+              >
+                Name
+              </span>
+              <input name="name" required className="marketing-input" />
+            </label>
+            <label className="block space-y-2">
+              <span
+                className="text-xs font-semibold uppercase tracking-[0.18em]"
+                style={{ color: "var(--muted)" }}
+              >
+                Work email
+              </span>
+              <input
+                name="email"
+                required
+                type="email"
+                className="marketing-input"
+              />
+            </label>
+            <label className="block space-y-2 md:col-span-2">
+              <span
+                className="text-xs font-semibold uppercase tracking-[0.18em]"
+                style={{ color: "var(--muted)" }}
+              >
+                What do you need help with?
+              </span>
+              <textarea
+                name="message"
+                rows={6}
+                className="marketing-textarea"
+                placeholder="Tell us about your timeline, operating model, rollout blockers, or what you want the platform to make easier."
+              />
+            </label>
+            <div className="md:col-span-2">
+              <button
+                type="submit"
+                className="marketing-button marketing-button-primary disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={loading}
+              >
+                {loading ? "Sending..." : "Send message"}
+              </button>
+
+              {error ? (
+                <p className="mt-3 text-sm text-red-500">{error}</p>
+              ) : null}
+              {success ? (
+                <p className="mt-3 text-sm" style={{ color: "var(--muted)" }}>
+                  {success}
+                </p>
+              ) : null}
+            </div>
+          </form>
+        </MarketingCard>
+      </section>
+
+      <section className="grid gap-5 md:grid-cols-2">
+        <MarketingCard className="rounded-[1.85rem] p-6" tone="default">
+          <h2
+            className="text-2xl font-semibold"
+            style={{ color: "var(--text)" }}
+          >
+            Prefer a walkthrough first?
+          </h2>
+          <p
+            className="mt-3 text-sm leading-7"
+            style={{ color: "var(--muted)" }}
+          >
+            Book a demo if you would rather see the product live before
+            discussing scope.
+          </p>
+          <div className="mt-5">
+            <MarketingButtonLink href="/demo">Book a demo</MarketingButtonLink>
+          </div>
+        </MarketingCard>
+
+        <MarketingCard className="rounded-[1.85rem] p-6" tone="muted">
+          <h2
+            className="text-2xl font-semibold"
+            style={{ color: "var(--text)" }}
+          >
+            Existing client or operator?
+          </h2>
+          <p
+            className="mt-3 text-sm leading-7"
+            style={{ color: "var(--muted)" }}
+          >
+            Sign in if you are returning to the dashboard for tenant,
+            organization, or implementation work.
+          </p>
+          <div className="mt-5">
+            <MarketingButtonLink href="/login" variant="secondary">
+              Sign in
+            </MarketingButtonLink>
+          </div>
+        </MarketingCard>
+      </section>
+
+      <MarketingPageCta />
     </div>
   );
 }
