@@ -1,0 +1,35 @@
+# Node
+node_modules/
+.next/
+dist/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.venv*/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.db
+*.sqlite3
+*.egg-info/
+
+# Python build artifacts
+build/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.envrc
+
+# Local logs
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/

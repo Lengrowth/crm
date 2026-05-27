@@ -1,0 +1,49 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - link "SaaS Control Platform" [ref=e5] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e6]:
+        - navigation [ref=e7]:
+          - link "Home" [ref=e8] [cursor=pointer]:
+            - /url: /
+          - link "Pricing" [ref=e9] [cursor=pointer]:
+            - /url: /pricing
+          - link "Industries" [ref=e10] [cursor=pointer]:
+            - /url: /industries
+          - link "Modules" [ref=e11] [cursor=pointer]:
+            - /url: /modules
+          - link "Demo" [ref=e12] [cursor=pointer]:
+            - /url: /demo
+          - link "Contact" [ref=e13] [cursor=pointer]:
+            - /url: /contact
+          - link "Login" [ref=e14] [cursor=pointer]:
+            - /url: /login
+        - button "Switch to dark mode" [ref=e15] [cursor=pointer]: Dark mode
+  - main [ref=e16]:
+    - generic [ref=e17]:
+      - generic [ref=e18]:
+        - paragraph [ref=e19]: Modules
+        - heading "Modules define what each organization can use, before ERPNext configuration ever starts." [level=1] [ref=e20]
+        - paragraph [ref=e21]: Phase 05 will connect these modules to entitlement management. For now, the public site just introduces the product language and the future scope.
+      - generic [ref=e22]:
+        - article [ref=e23]:
+          - heading "CRM" [level=2] [ref=e24]
+          - paragraph [ref=e25]: Core customer and pipeline management for the SaaS control layer.
+        - article [ref=e26]:
+          - heading "Field Ops" [level=2] [ref=e27]
+          - paragraph [ref=e28]: Operational workflows for teams working on site or in the field.
+        - article [ref=e29]:
+          - heading "Drilling" [level=2] [ref=e30]
+          - paragraph [ref=e31]: Industry-specific defaults for the first vertical.
+        - article [ref=e32]:
+          - heading "Fleet" [level=2] [ref=e33]
+          - paragraph [ref=e34]: Vehicles, equipment, and maintenance-aware operations.
+        - article [ref=e35]:
+          - heading "Inventory" [level=2] [ref=e36]
+          - paragraph [ref=e37]: Materials and stock visibility for site operations.
+        - article [ref=e38]:
+          - heading "Reporting" [level=2] [ref=e39]
+          - paragraph [ref=e40]: A simple reporting layer for admin and operations teams.
+      - link "Sign in to see the app shell" [ref=e41] [cursor=pointer]:
+        - /url: /login

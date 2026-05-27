@@ -1,0 +1,36 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - link "SaaS Control Platform" [ref=e4] [cursor=pointer]:
+      - /url: /
+    - button "Switch to dark mode" [ref=e5] [cursor=pointer]: Dark mode
+  - main [ref=e6]:
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - paragraph [ref=e9]: Phase 03
+        - heading "Local SaaS auth for the control plane, with ERPNext still safely mocked." [level=1] [ref=e10]
+        - paragraph [ref=e11]: Register or sign in to open the protected app shell. Sessions stay local, memberships are stored in the SaaS database, and no live ERPNext tenant is required yet.
+        - generic [ref=e12]:
+          - generic [ref=e13]:
+            - paragraph [ref=e14]: Opaque sessions
+            - paragraph [ref=e15]: Backend-issued bearer token stored in a local cookie for route protection.
+          - generic [ref=e16]:
+            - paragraph [ref=e17]: Role-aware
+            - paragraph [ref=e18]: Memberships and platform-admin checks are available for future protected routes.
+          - generic [ref=e19]:
+            - paragraph [ref=e20]: Local-first
+            - paragraph [ref=e21]: Nothing here depends on Stripe, Kubernetes, or live ERPNext infrastructure.
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - button "Sign in" [ref=e24] [cursor=pointer]
+          - button "Create account" [ref=e25] [cursor=pointer]
+        - generic [ref=e26]:
+          - generic [ref=e27]:
+            - text: Email
+            - textbox "Email" [ref=e28]:
+              - /placeholder: name@company.test
+          - generic [ref=e29]:
+            - text: Password
+            - textbox "Password" [ref=e30]:
+              - /placeholder: Local-only password
+          - button "Sign in to dashboard" [ref=e31] [cursor=pointer]
+        - paragraph [ref=e32]: "Route protection is intentionally lightweight for the local build: the frontend checks a cookie, and the backend validates the token against its session table."

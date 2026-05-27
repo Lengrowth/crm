@@ -1,0 +1,41 @@
+:root {
+  color-scheme: light;
+  --bg: #f6f7fb;
+  --bg-soft: #eef1f7;
+  --surface: rgba(255, 255, 255, 0.82);
+  --surface-strong: #ffffff;
+  --surface-muted: #e9edf6;
+  --text: #101828;
+  --muted: #5f6b85;
+  --accent: #2447d6;
+  --accent-strong: #1630a6;
+  --border: rgba(16, 24, 40, 0.1);
+  --shadow: rgba(16, 24, 40, 0.08);
+  --hero-start: #eef2ff;
+  --hero-end: #f8fafc;
+  --app-gradient: radial-gradient(circle at top, #ffffff 0%, var(--bg) 56%);
+}
+
+:root.dark,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0b1020;
+  --bg-soft: #111936;
+  --surface: rgba(23, 33, 61, 0.8);
+  --surface-strong: #17213d;
+  --surface-muted: #1f2b4d;
+  --text: #edf2ff;
+  --muted: #b3bfdc;
+  --accent: #87a7ff;
+  --accent-strong: #c8d7ff;
+  --border: rgba(255, 255, 255, 0.08);
+  --shadow: rgba(0, 0, 0, 0.18);
+  --hero-start: #182347;
+  --hero-end: #0b1020;
+  --app-gradient: radial-gradient(circle at top, #182347 0%, var(--bg) 56%);
+}
+
+.theme-shell {
+  background: var(--app-gradient);
+  color: var(--text);
+}
