@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { confirmEmailVerification } from "@/lib/auth-api";
 
-export default function VerifyEmailPage() {
+function VerifyEmailForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get("token") ?? "";
@@ -47,7 +47,7 @@ export default function VerifyEmailPage() {
           Verify your email address
         </h1>
         <p className="mt-3 text-sm leading-7" style={{ color: "var(--muted)" }}>
-          We’re confirming your email so your account can be trusted for future recovery and lifecycle actions.
+          We're confirming your email so your account can be trusted for future recovery and lifecycle actions.
         </p>
       </div>
 
@@ -72,5 +72,13 @@ export default function VerifyEmailPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<div className="mx-auto grid w-full max-w-3xl gap-6 rounded-[2rem] border p-8 lg:p-10" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-strong)" }}>Loading...</div>}>
+      <VerifyEmailForm />
+    </Suspense>
   );
 }

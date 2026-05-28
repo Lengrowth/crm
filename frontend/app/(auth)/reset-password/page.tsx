@@ -1,12 +1,12 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { confirmPasswordReset } from "@/lib/auth-api";
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
   const tokenMissing = !token;
@@ -130,5 +130,13 @@ export default function ResetPasswordPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div className="mx-auto grid w-full max-w-3xl gap-6 rounded-[2rem] border p-8 lg:p-10" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-strong)" }}>Loading...</div>}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
