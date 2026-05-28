@@ -2,20 +2,17 @@ import type { ReactNode } from "react";
 import { MarketingHeader } from "@/components/MarketingHeader";
 import { MarketingFooter } from "@/components/MarketingFooter";
 import { AnalyticsTracker } from "@/components/AnalyticsTracker";
+import { MarketingBackdrop } from "@/components/MarketingPrimitives";
 
 export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (
     <div className="theme-shell relative min-h-screen text-[color:var(--text)]">
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] blur-3xl"
-        style={{
-          background:
-            "radial-gradient(circle at 20% 10%, var(--glow) 0%, transparent 42%), radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--accent) 18%, transparent) 0%, transparent 28%)",
-        }}
-      />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[32rem] blur-3xl">
+        <MarketingBackdrop />
+      </div>
       <MarketingHeader />
       <AnalyticsTracker />
-      <main className="relative z-10 mx-auto max-w-7xl px-6 pb-20 pt-10 md:px-8 md:pt-14">
+      <main className="relative z-10 mx-auto max-w-7xl px-6 pb-20 pt-12 md:px-8 md:pt-16 lg:pb-24">
         {children}
       </main>
       <MarketingFooter />

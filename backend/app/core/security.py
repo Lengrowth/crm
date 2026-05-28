@@ -13,6 +13,7 @@ from fastapi.security.utils import get_authorization_scheme_param
 PASSWORD_HASH_ITERATIONS = 390_000
 PASSWORD_SALT_BYTES = 16
 SESSION_TOKEN_BYTES = 32
+AUTH_TOKEN_BYTES = 32
 
 
 @dataclass(frozen=True)
@@ -63,6 +64,10 @@ def verify_password(password: str, stored_hash: Optional[str]) -> bool:
 
 def generate_session_token() -> str:
     return secrets.token_urlsafe(SESSION_TOKEN_BYTES)
+
+
+def generate_auth_token() -> str:
+    return secrets.token_urlsafe(AUTH_TOKEN_BYTES)
 
 
 def hash_session_token(token: str) -> str:

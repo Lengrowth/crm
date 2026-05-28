@@ -7,6 +7,7 @@ from app.models.billing import (
 from app.models.domain import (
     AuditLog,
     AuthSession,
+    AuthToken,
     DomainMapping,
     ImplementationProject,
     ImplementationTask,
@@ -27,6 +28,7 @@ from app.models.domain import (
 __all__ = [
     "AuditLog",
     "AuthSession",
+    "AuthToken",
     "Base",
     "DomainMapping",
     "ImplementationProject",

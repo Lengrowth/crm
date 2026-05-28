@@ -1,8 +1,11 @@
 export const marketingNav = [
   { href: "/", label: "Product" },
-  { href: "/industries", label: "Industries" },
   { href: "/modules", label: "Modules" },
+  { href: "/industries", label: "Industries" },
   { href: "/pricing", label: "Pricing" },
+  { href: "/demo", label: "Demo" },
+  { href: "/contact", label: "Contact" },
+  { href: "/login", label: "Login" },
 ];
 
 export const marketingUtilityNav = [

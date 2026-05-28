@@ -42,6 +42,9 @@ class CommunicationService:
         text = f"Name: {name}\nEmail: {email}\n\nRequest:\n{message}\n"
         return self._send_email(subject=subject, text=text, to=[self.contact_recipient])
 
+    def send_transactional_email(self, to: list[str], subject: str, text: str) -> Any:
+        return self._send_email(subject=subject, text=text, to=to)
+
     def _send_email(self, subject: str, text: str, to: list[str]) -> Any:
         payload = {
             "from": self.from_email,

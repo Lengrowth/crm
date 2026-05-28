@@ -46,3 +46,4 @@ Copy `./.env.example` to `.env` before running the backend.
 - ERPNext/Frappe is still not required for local development; local/test can continue using mock mode.
 - Phase 18 enables the explicit live ERPNext client path when `ERPNEXT_MODE=live` and live credentials/base URL are configured intentionally.
 - Phase 19 adds the production-hardening runtime layer: security headers, lightweight rate limiting, tenant suspend/reactivate actions, and audit-log inspection for platform admins.
+- Phase 20 expands local auth into a production-minded flow with password reset requests, one-time reset tokens, email verification, resend support, hashed auth-token storage, and session revocation on password reset.

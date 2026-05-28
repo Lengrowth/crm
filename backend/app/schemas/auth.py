@@ -25,6 +25,7 @@ class AuthUserRead(AuthBaseModel):
     full_name: str
     status: str
     is_platform_admin: bool
+    email_verified_at: Optional[datetime] = None
     last_login_at: Optional[datetime] = None
     memberships: list[AuthMembershipRead] = Field(default_factory=list)
 
@@ -56,6 +57,35 @@ class AuthRegisterRequest(AuthBaseModel):
         return normalized
 
 
+class AuthEmailAddressRequest(AuthBaseModel):
+    email: str = Field(min_length=3, max_length=255)
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if "@" not in normalized or normalized.startswith("@") or normalized.endswith("@"):
+            raise ValueError("Enter a valid email address.")
+        return normalized
+
+
+class AuthPasswordResetRequest(AuthEmailAddressRequest):
+    pass
+
+
+class AuthPasswordResetConfirm(AuthBaseModel):
+    token: str = Field(min_length=16, max_length=512)
+    new_password: str = Field(min_length=8, max_length=255)
+
+
+class AuthEmailVerificationRequest(AuthEmailAddressRequest):
+    pass
+
+
+class AuthEmailVerificationConfirm(AuthBaseModel):
+    token: str = Field(min_length=16, max_length=512)
+
+
 class AuthLoginRequest(AuthBaseModel):
     email: str = Field(min_length=3, max_length=255)
     password: str = Field(min_length=1, max_length=255)
@@ -82,4 +112,8 @@ class AuthMeResponse(AuthBaseModel):
 
 
 class AuthLogoutResponse(AuthBaseModel):
+    detail: str
+
+
+class AuthMessageResponse(AuthBaseModel):
     detail: str

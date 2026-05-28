@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import {
   MarketingButtonLink,
   MarketingCard,
+  MarketingIcon,
+  MarketingIconBadge,
   MarketingPageCta,
   MarketingSectionIntro,
 } from "@/components/MarketingPrimitives";
@@ -47,17 +49,63 @@ const modules = [
 
 export default function ModulesPage() {
   return (
-    <div className="space-y-8 sm:space-y-10 lg:space-y-12">
-      <MarketingCard
-        className="rounded-[2.25rem] px-7 py-8 sm:px-10 sm:py-10"
-        tone="accent"
-      >
-        <MarketingSectionIntro
-          eyebrow="Modules"
-          title="A module system that supports repeatable delivery and stronger product packaging."
-          description="Modules are not just a list of features. In LenQuant, they shape the commercial offer, the implementation plan, and the readiness model before anything reaches the ERP runtime."
-        />
-      </MarketingCard>
+    <div className="space-y-10 lg:space-y-14">
+      <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+        <MarketingCard
+          className="rounded-[2.25rem] px-7 py-8 sm:px-10 sm:py-10"
+          tone="accent"
+        >
+          <MarketingSectionIntro
+            eyebrow="Modules"
+            title="A module system that supports repeatable delivery and stronger product packaging."
+            description="Modules are not just a list of features. In LenQuant, they shape the commercial offer, the implementation plan, and the readiness model before anything reaches the runtime boundary."
+          />
+          <div className="mt-6 flex flex-wrap gap-3">
+            <MarketingIconBadge icon="grid" label="Connected system" />
+            <MarketingIconBadge icon="spark" label="Repeatable packaging" />
+          </div>
+        </MarketingCard>
+
+        <MarketingCard className="rounded-[2rem] p-7 sm:p-8" tone="default" interactive>
+          <div className="flex items-start gap-4">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text)]">
+              <MarketingIcon icon="grid" className="h-5 w-5" />
+            </span>
+            <div>
+              <p
+                className="text-xs font-semibold uppercase tracking-[0.24em]"
+                style={{ color: "var(--muted)" }}
+              >
+                Module model
+              </p>
+              <h2
+                className="mt-3 text-3xl font-semibold tracking-[-0.04em]"
+                style={{ color: "var(--text)" }}
+              >
+                Package the offer first, then line up the rollout.
+              </h2>
+            </div>
+          </div>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            {[
+              ["Commercial clarity", "Customers can see what is in the package without reading a long spec."],
+              ["Delivery clarity", "Teams can plan implementation work before runtime setup begins."],
+            ].map(([title, copy]) => (
+              <div
+                key={title}
+                className="rounded-[1.35rem] border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-4"
+              >
+                <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+                  {title}
+                </p>
+                <p className="mt-2 text-sm leading-7" style={{ color: "var(--muted)" }}>
+                  {copy}
+                </p>
+              </div>
+            ))}
+          </div>
+        </MarketingCard>
+      </section>
 
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {modules.map((module) => (
@@ -65,13 +113,19 @@ export default function ModulesPage() {
             key={module.title}
             className="rounded-[1.85rem] p-6"
             tone="default"
+            interactive
           >
-            <h2
-              className="text-2xl font-semibold tracking-[-0.03em]"
-              style={{ color: "var(--text)" }}
-            >
-              {module.title}
-            </h2>
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text)]">
+                <MarketingIcon icon="dot" className="h-4 w-4" />
+              </span>
+              <h2
+                className="text-2xl font-semibold tracking-[-0.03em]"
+                style={{ color: "var(--text)" }}
+              >
+                {module.title}
+              </h2>
+            </div>
             <p
               className="mt-3 text-sm leading-7"
               style={{ color: "var(--muted)" }}
@@ -82,7 +136,7 @@ export default function ModulesPage() {
         ))}
       </div>
 
-      <section className="grid gap-6 lg:grid-cols-[1fr_0.95fr]">
+      <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
         <MarketingCard className="rounded-[2rem] p-7 sm:p-8" tone="default">
           <p
             className="text-xs font-semibold uppercase tracking-[0.24em]"

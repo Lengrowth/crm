@@ -1,8 +1,13 @@
 import { env } from "@/lib/env";
 import { getAuthTokenCookie } from "@/lib/auth";
 import type {
+  AuthEmailVerificationConfirmPayload,
+  AuthEmailVerificationRequestPayload,
   AuthLoginPayload,
   AuthMeResponse,
+  AuthMessageResponse,
+  AuthPasswordResetConfirmPayload,
+  AuthPasswordResetRequestPayload,
   AuthRegisterPayload,
   AuthTokenResponse,
 } from "@/features/auth/types";
@@ -61,4 +66,49 @@ export function fetchLocalSession(): Promise<AuthMeResponse> {
 
 export function logoutLocalUser(): Promise<{ detail: string }> {
   return requestJson<{ detail: string }>("/auth/logout", { method: "POST" }, true);
+}
+
+export function requestPasswordReset(
+  payload: AuthPasswordResetRequestPayload,
+): Promise<AuthMessageResponse> {
+  return requestJson<AuthMessageResponse>("/auth/password-reset/request", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function confirmPasswordReset(
+  payload: AuthPasswordResetConfirmPayload,
+): Promise<AuthMessageResponse> {
+  return requestJson<AuthMessageResponse>("/auth/password-reset/confirm", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function requestEmailVerification(
+  payload: AuthEmailVerificationRequestPayload,
+): Promise<AuthMessageResponse> {
+  return requestJson<AuthMessageResponse>("/auth/email-verification/request", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function resendEmailVerification(
+  payload: AuthEmailVerificationRequestPayload,
+): Promise<AuthMessageResponse> {
+  return requestJson<AuthMessageResponse>("/auth/email-verification/resend", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function confirmEmailVerification(
+  payload: AuthEmailVerificationConfirmPayload,
+): Promise<AuthMessageResponse> {
+  return requestJson<AuthMessageResponse>("/auth/email-verification/verify", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }

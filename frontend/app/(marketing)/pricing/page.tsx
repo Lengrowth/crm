@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import {
   MarketingButtonLink,
   MarketingCard,
+  MarketingIcon,
+  MarketingIconBadge,
   MarketingPageCta,
   MarketingSectionIntro,
 } from "@/components/MarketingPrimitives";
@@ -60,17 +62,65 @@ const pricingNotes = [
 
 export default function PricingPage() {
   return (
-    <div className="space-y-8 sm:space-y-10 lg:space-y-12">
-      <MarketingCard
-        className="rounded-[2.25rem] px-7 py-8 sm:px-10 sm:py-10"
-        tone="accent"
-      >
-        <MarketingSectionIntro
-          eyebrow="Pricing"
-          title="Commercial structure that matches how rollout work actually happens."
-          description="LenQuant pricing keeps the SaaS product offer clear while leaving implementation-heavy work visible. You get a credible product package for pilots and a straightforward path into guided rollout conversations."
-        />
-      </MarketingCard>
+    <div className="space-y-10 lg:space-y-14">
+      <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+        <MarketingCard
+          className="rounded-[2.25rem] px-7 py-8 sm:px-10 sm:py-10"
+          tone="accent"
+        >
+          <MarketingSectionIntro
+            eyebrow="Pricing"
+            title="Commercial structure that matches how rollout work actually happens."
+            description="LenQuant keeps the SaaS product offer clear while leaving implementation-heavy work visible. The buying motion should feel calm, credible, and guided instead of self-serve and noisy."
+          />
+          <div className="mt-6 flex flex-wrap gap-3">
+            <MarketingIconBadge icon="chart" label="Clear scope" />
+            <MarketingIconBadge icon="shield" label="No hidden runtime promise" />
+            <MarketingIconBadge icon="spark" label="Guided rollout available" />
+          </div>
+        </MarketingCard>
+
+        <MarketingCard className="rounded-[2rem] p-7 sm:p-8" tone="default" interactive>
+          <div className="flex items-start gap-4">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text)]">
+              <MarketingIcon icon="grid" className="h-5 w-5" />
+            </span>
+            <div>
+              <p
+                className="text-xs font-semibold uppercase tracking-[0.24em]"
+                style={{ color: "var(--muted)" }}
+              >
+                Buying model
+              </p>
+              <h2
+                className="mt-3 text-3xl font-semibold tracking-[-0.04em]"
+                style={{ color: "var(--text)" }}
+              >
+                Subscription plus guided rollout.
+              </h2>
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            {[
+              ["Included", "The control plane, public website, and rollout visibility."],
+              ["Scoped separately", "Implementation planning, cutover work, and deeper rollout support."],
+            ].map(([title, copy]) => (
+              <div
+                key={title}
+                className="rounded-[1.35rem] border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-4"
+              >
+                <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+                  {title}
+                </p>
+                <p className="mt-2 text-sm leading-7" style={{ color: "var(--muted)" }}>
+                  {copy}
+                </p>
+              </div>
+            ))}
+          </div>
+        </MarketingCard>
+      </section>
 
       <div className="grid gap-5 lg:grid-cols-3">
         {plans.map((plan) => (
@@ -95,7 +145,7 @@ export default function PricingPage() {
                 </h2>
               </div>
               <p
-                className="text-sm font-semibold uppercase tracking-[0.2em]"
+                className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em]"
                 style={{ color: "var(--muted)" }}
               >
                 {plan.price}
@@ -127,7 +177,7 @@ export default function PricingPage() {
         ))}
       </div>
 
-      <section className="grid gap-6 lg:grid-cols-[1fr_0.95fr]">
+      <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
         <MarketingCard className="rounded-[2rem] p-7 sm:p-8" tone="default">
           <p
             className="text-xs font-semibold uppercase tracking-[0.24em]"

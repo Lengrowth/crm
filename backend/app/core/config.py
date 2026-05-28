@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     erpnext_api_secret: Optional[str] = None
 
     auth_session_days: int = 30
+    auth_password_reset_token_minutes: int = 60
+    auth_email_verification_token_hours: int = 24
 
     billing_provider: Optional[str] = None
     billing_allow_mock_in_non_local: bool = False
@@ -38,7 +40,7 @@ class Settings(BaseSettings):
     rate_limit_enabled: bool = False
     rate_limit_max_requests: int = 120
     rate_limit_window_seconds: int = 60
-    rate_limit_exempt_paths: str = "/health,/docs,/openapi.json,/redoc,/auth/login,/auth/register"
+    rate_limit_exempt_paths: str = "/health,/docs,/openapi.json,/redoc"
 
     # Resend (marketing email) configuration
     resend_api_key: Optional[str] = None

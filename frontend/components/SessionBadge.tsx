@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { clearAuthTokenCookie, getAuthTokenCookie } from "@/lib/auth";
 import { fetchLocalSession, logoutLocalUser } from "@/lib/auth-api";
@@ -94,6 +95,17 @@ export function SessionBadge() {
               ? "Platform admin access"
               : `${user.memberships.length} organization membership${user.memberships.length === 1 ? "" : "s"}`}
           </p>
+          {!user.email_verified_at ? (
+            <div className="rounded-xl border px-3 py-2 text-xs leading-5" style={{ borderColor: "var(--border)", color: "var(--text)" }}>
+              <p className="font-semibold">Email not verified</p>
+              <p className="mt-1" style={{ color: "var(--muted)" }}>
+                Verify your address to keep password recovery and account notifications reliable.
+              </p>
+              <Link href="/resend-verification" className="mt-2 inline-flex underline underline-offset-4" style={{ color: "var(--accent)" }}>
+                Resend verification email
+              </Link>
+            </div>
+          ) : null}
           {error ? (
             <p className="text-xs" style={{ color: "var(--muted)" }}>
               {error}

@@ -37,38 +37,38 @@
 :root.dark,
 :root[data-theme="dark"] {
     color-scheme: dark;
-    --bg: #07101f;
-    --bg-soft: #0d1830;
-    --surface: rgba(12, 22, 41, 0.78);
-    --surface-strong: rgba(15, 27, 48, 0.96);
-    --surface-muted: rgba(20, 33, 60, 0.92);
-    --surface-overlay: rgba(10, 18, 34, 0.74);
-    --text: #eff4ff;
-    --muted: #a8b8d7;
-    --accent: #8ba9ff;
-    --accent-strong: #c5d5ff;
-    --accent-soft: rgba(139, 169, 255, 0.16);
-    --accent-foreground: #06101d;
+    --bg: #09090b;
+    --bg-soft: #111113;
+    --surface: rgba(24, 24, 27, 0.78);
+    --surface-strong: rgba(35, 35, 38, 0.96);
+    --surface-muted: rgba(39, 39, 42, 0.92);
+    --surface-overlay: rgba(17, 17, 19, 0.74);
+    --text: #fafafa;
+    --muted: #a1a1aa;
+    --accent: #4f8cff;
+    --accent-strong: #9bc2ff;
+    --accent-soft: rgba(79, 140, 255, 0.16);
+    --accent-foreground: #050505;
     --border: rgba(255, 255, 255, 0.08);
     --border-strong: rgba(255, 255, 255, 0.14);
-    --shadow: rgba(0, 0, 0, 0.28);
-    --shadow-strong: rgba(0, 0, 0, 0.42);
-    --hero-start: #112245;
-    --hero-end: #07101f;
-    --grid-line: rgba(139, 169, 255, 0.11);
-    --glow: rgba(109, 140, 255, 0.22);
+    --shadow: rgba(0, 0, 0, 0.34);
+    --shadow-strong: rgba(0, 0, 0, 0.52);
+    --hero-start: #18181b;
+    --hero-end: #09090b;
+    --grid-line: rgba(255, 255, 255, 0.06);
+    --glow: rgba(79, 140, 255, 0.18);
     --app-gradient:
         radial-gradient(
             circle at top left,
-            rgba(65, 96, 183, 0.28) 0%,
-            transparent 36%
+            rgba(82, 82, 91, 0.26) 0%,
+            transparent 34%
         ),
         radial-gradient(
             circle at top right,
-            rgba(39, 97, 183, 0.14) 0%,
-            transparent 22%
+            rgba(79, 140, 255, 0.12) 0%,
+            transparent 24%
         ),
-        linear-gradient(180deg, #0d1730 0%, var(--bg) 44%, #050b16 100%);
+        linear-gradient(180deg, #111113 0%, var(--bg) 48%, #030303 100%);
 }
 
 .theme-shell {

@@ -21,7 +21,7 @@ export function MarketingHeader() {
         <div className="flex items-center gap-4">
           <Link
             href="/"
-            className="text-sm font-semibold uppercase tracking-[0.28em]"
+            className="text-sm font-semibold uppercase tracking-[0.28em] transition hover:opacity-80"
             style={{ color: "var(--text)" }}
             onClick={() => setMobileOpen(false)}
           >
@@ -35,16 +35,16 @@ export function MarketingHeader() {
               color: "var(--muted)",
             }}
           >
-            ERP rollout control plane
+            SaaS control plane for rollout teams
           </div>
         </div>
 
-        <nav className="hidden items-center gap-6 lg:flex">
+        <nav className="hidden items-center gap-5 xl:flex">
           {marketingNav.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={`marketing-nav-link text-sm ${isActive(item.href) ? "active" : ""}`}
+              className={`marketing-nav-link rounded-full px-3 py-2 text-sm ${isActive(item.href) ? "active" : ""}`}
             >
               {item.label}
             </Link>
@@ -86,7 +86,7 @@ export function MarketingHeader() {
       {mobileOpen ? (
         <div className="border-t border-[color:var(--border)] px-6 py-4 md:px-8 lg:hidden">
           <div className="flex flex-col gap-3">
-            {marketingNav.concat(marketingUtilityNav).map((item) => (
+            {marketingNav.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -104,6 +104,17 @@ export function MarketingHeader() {
                 {item.label}
               </Link>
             ))}
+            <div className="mt-1 grid grid-cols-2 gap-3">
+              <MarketingButtonLink href={marketingUtilityNav[0].href}>
+                {marketingUtilityNav[0].label}
+              </MarketingButtonLink>
+              <MarketingButtonLink
+                href={marketingUtilityNav[2].href}
+                variant="secondary"
+              >
+                {marketingUtilityNav[2].label}
+              </MarketingButtonLink>
+            </div>
           </div>
         </div>
       ) : null}

@@ -5,7 +5,10 @@ import { useState } from "react";
 import {
   MarketingButtonLink,
   MarketingCard,
+  MarketingIcon,
+  MarketingIconBadge,
   MarketingPageCta,
+  MarketingSectionIntro,
 } from "@/components/MarketingPrimitives";
 import { sendDemoRequest, trackMarketingEvent } from "@/lib/api";
 
@@ -49,43 +52,36 @@ export default function DemoPage() {
   }
 
   return (
-    <div className="space-y-8 sm:space-y-10 lg:space-y-12">
-      <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+    <div className="space-y-10 lg:space-y-14">
+      <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
         <MarketingCard
           className="rounded-[2.25rem] px-7 py-8 sm:px-10 sm:py-10"
           tone="accent"
         >
-          <p
-            className="text-xs font-semibold uppercase tracking-[0.28em]"
-            style={{ color: "var(--muted)" }}
-          >
-            Book a demo
-          </p>
-          <h1
-            className="mt-4 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl"
-            style={{ color: "var(--text)" }}
-          >
-            See how the control plane makes onboarding, tenants, and rollout
-            readiness visible.
-          </h1>
-          <p
-            className="mt-5 text-base leading-8"
-            style={{ color: "var(--muted)" }}
-          >
-            This is a product-led walkthrough for teams evaluating pilots,
-            implementation flow, or launch readiness. We will show the SaaS
-            control surface clearly and explain the ERPNext runtime boundary
-            without hand-waving.
-          </p>
+          <MarketingSectionIntro
+            eyebrow="Book a demo"
+            title="See how the control plane makes onboarding, tenants, and rollout readiness visible."
+            description="This is a product-led walkthrough for teams evaluating pilots, implementation flow, or launch readiness. We will show the SaaS control surface clearly and explain the boundary without hand-waving."
+          />
+          <div className="mt-6 flex flex-wrap gap-3">
+            <MarketingIconBadge icon="spark" label="Product-led walkthrough" />
+            <MarketingIconBadge icon="chart" label="Clear rollout story" />
+          </div>
 
-          <div className="mt-8 space-y-3">
+          <div className="mt-8 grid gap-3 sm:grid-cols-3">
             {demoExpectations.map((item) => (
               <div
                 key={item}
-                className="rounded-[1.25rem] border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-4 text-sm leading-7"
-                style={{ color: "var(--text)" }}
+                className="rounded-[1.25rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-4"
               >
-                {item}
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text)]">
+                    <MarketingIcon icon="dot" className="h-4 w-4" />
+                  </span>
+                  <p className="text-sm leading-6" style={{ color: "var(--text)" }}>
+                    {item}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
@@ -103,33 +99,19 @@ export default function DemoPage() {
           </p>
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
             <label className="block space-y-2">
-              <span
-                className="text-xs font-semibold uppercase tracking-[0.18em]"
-                style={{ color: "var(--muted)" }}
-              >
+              <span className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--muted)" }}>
                 Name
               </span>
               <input name="name" required className="marketing-input" />
             </label>
             <label className="block space-y-2">
-              <span
-                className="text-xs font-semibold uppercase tracking-[0.18em]"
-                style={{ color: "var(--muted)" }}
-              >
+              <span className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--muted)" }}>
                 Work email
               </span>
-              <input
-                name="email"
-                required
-                type="email"
-                className="marketing-input"
-              />
+              <input name="email" required type="email" className="marketing-input" />
             </label>
             <label className="block space-y-2">
-              <span
-                className="text-xs font-semibold uppercase tracking-[0.18em]"
-                style={{ color: "var(--muted)" }}
-              >
+              <span className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--muted)" }}>
                 What should we focus on?
               </span>
               <textarea
@@ -159,43 +141,36 @@ export default function DemoPage() {
 
       <section className="grid gap-5 md:grid-cols-3">
         {[
-          [
-            "Best fit",
-            "Teams planning a pilot, guided rollout, or implementation-led evaluation.",
-          ],
-          [
-            "What you will not get",
-            "A vague sales pitch. The demo is designed to clarify product boundaries and real rollout posture.",
-          ],
-          [
-            "Already have access?",
-            "Sign in if you are returning to the dashboard or reviewing an active workspace.",
-          ],
+          ["Best fit", "Teams planning a pilot, guided rollout, or implementation-led evaluation."],
+          ["What you will not get", "A vague sales pitch. The demo is designed to clarify product boundaries and real rollout posture."],
+          ["Already have access?", "Sign in if you are returning to the dashboard or reviewing an active workspace."],
         ].map(([title, description], index) => (
           <MarketingCard
             key={title}
             className="rounded-[1.75rem] p-6"
             tone={index === 1 ? "muted" : "default"}
+            interactive
           >
-            <h2
-              className="text-xl font-semibold"
-              style={{ color: "var(--text)" }}
-            >
-              {title}
-            </h2>
-            <p
-              className="mt-3 text-sm leading-7"
-              style={{ color: "var(--muted)" }}
-            >
-              {description}
-            </p>
-            {title === "Already have access?" ? (
-              <div className="mt-5">
-                <MarketingButtonLink href="/login" variant="secondary">
-                  Sign in
-                </MarketingButtonLink>
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text)]">
+                <MarketingIcon icon={index === 2 ? "grid" : "chart"} className="h-4 w-4" />
+              </span>
+              <div>
+                <h2 className="text-xl font-semibold" style={{ color: "var(--text)" }}>
+                  {title}
+                </h2>
+                <p className="mt-3 text-sm leading-7" style={{ color: "var(--muted)" }}>
+                  {description}
+                </p>
+                {title === "Already have access?" ? (
+                  <div className="mt-5">
+                    <MarketingButtonLink href="/login" variant="secondary">
+                      Sign in
+                    </MarketingButtonLink>
+                  </div>
+                ) : null}
               </div>
-            ) : null}
+            </div>
           </MarketingCard>
         ))}
       </section>

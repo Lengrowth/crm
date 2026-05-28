@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import {
   MarketingButtonLink,
   MarketingCard,
+  MarketingIcon,
+  MarketingIconBadge,
   MarketingPageCta,
   MarketingSectionIntro,
 } from "@/components/MarketingPrimitives";
@@ -39,17 +41,45 @@ const drillingOutcomes = [
 
 export default function DrillingPage() {
   return (
-    <div className="space-y-8 sm:space-y-10 lg:space-y-12">
-      <MarketingCard
-        className="rounded-[2.25rem] px-7 py-8 sm:px-10 sm:py-10"
-        tone="accent"
-      >
-        <MarketingSectionIntro
-          eyebrow="Flagship vertical"
-          title="A drilling-specific rollout story with field-ready structure and a cleaner product boundary."
-          description="LenQuant starts with drilling because the operational reality is demanding: crews, equipment, safety, dispatch pressure, and implementation complexity all need visibility before go-live."
-        />
-      </MarketingCard>
+    <div className="space-y-10 lg:space-y-14">
+      <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+        <MarketingCard
+          className="rounded-[2.25rem] px-7 py-8 sm:px-10 sm:py-10"
+          tone="accent"
+        >
+          <MarketingSectionIntro
+            eyebrow="Flagship vertical"
+            title="A drilling-specific rollout story with field-ready structure and a cleaner product boundary."
+            description="LenQuant starts with drilling because the operational reality is demanding: crews, equipment, safety, dispatch pressure, and implementation complexity all need visibility before go-live."
+          />
+          <div className="mt-6 flex flex-wrap gap-3">
+            <MarketingIconBadge icon="shield" label="Industrial credibility" />
+            <MarketingIconBadge icon="spark" label="Field-ready rollout" />
+          </div>
+        </MarketingCard>
+
+        <MarketingCard className="rounded-[2rem] p-7 sm:p-8" tone="default" interactive>
+          <div className="flex items-start gap-4">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text)]">
+              <MarketingIcon icon="chart" className="h-5 w-5" />
+            </span>
+            <div>
+              <p
+                className="text-xs font-semibold uppercase tracking-[0.24em]"
+                style={{ color: "var(--muted)" }}
+              >
+                Why this vertical fits first
+              </p>
+              <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em]" style={{ color: "var(--text)" }}>
+                Drilling forces the product to be operationally honest.
+              </h2>
+            </div>
+          </div>
+          <p className="mt-5 text-base leading-7" style={{ color: "var(--muted)" }}>
+            If a platform can support the planning, visibility, and launch discipline that drilling teams expect, it earns the right to expand into adjacent industries with confidence.
+          </p>
+        </MarketingCard>
+      </section>
 
       <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
         <MarketingCard className="rounded-[2rem] p-7 sm:p-8" tone="default">
@@ -57,40 +87,42 @@ export default function DrillingPage() {
             className="text-xs font-semibold uppercase tracking-[0.24em]"
             style={{ color: "var(--muted)" }}
           >
-            Why this vertical fits first
+            Field workflows
           </p>
-          <h2
-            className="mt-4 text-3xl font-semibold tracking-[-0.04em]"
-            style={{ color: "var(--text)" }}
-          >
-            Drilling forces the product to be operationally honest.
-          </h2>
-          <p
-            className="mt-4 text-base leading-7"
-            style={{ color: "var(--muted)" }}
-          >
-            If a platform can support the planning, visibility, and launch
-            discipline that drilling teams expect, it earns the right to expand
-            into adjacent industries with confidence.
-          </p>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            {drillingWorkflows.map((workflow) => (
+              <div
+                key={workflow}
+                className="rounded-[1.35rem] border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-4"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] text-[color:var(--text)]">
+                    <MarketingIcon icon="dot" className="h-4 w-4" />
+                  </span>
+                  <p className="text-sm font-semibold leading-6" style={{ color: "var(--text)" }}>
+                    {workflow}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         </MarketingCard>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          {drillingWorkflows.map((workflow) => (
-            <MarketingCard
-              key={workflow}
-              className="rounded-[1.75rem] p-5"
-              tone="muted"
-            >
-              <p
-                className="text-sm font-semibold leading-6"
-                style={{ color: "var(--text)" }}
-              >
-                {workflow}
-              </p>
-            </MarketingCard>
-          ))}
-        </div>
+        <MarketingCard className="rounded-[2rem] p-7 sm:p-8" tone="muted">
+          <p
+            className="text-xs font-semibold uppercase tracking-[0.24em]"
+            style={{ color: "var(--muted)" }}
+          >
+            Why it matters
+          </p>
+          <p className="mt-4 text-base leading-7" style={{ color: "var(--muted)" }}>
+            Drilling makes the product story specific enough to feel credible. It also gives the public site a clearer industrial tone without turning the UI into a generic dashboard template.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <MarketingIconBadge icon="chart" label="Visibility first" />
+            <MarketingIconBadge icon="shield" label="Safer launch discipline" />
+          </div>
+        </MarketingCard>
       </section>
 
       <div className="grid gap-5 lg:grid-cols-3">
@@ -99,13 +131,16 @@ export default function DrillingPage() {
             key={item.title}
             className="rounded-[1.75rem] p-6"
             tone="default"
+            interactive
           >
-            <h3
-              className="text-xl font-semibold"
-              style={{ color: "var(--text)" }}
-            >
-              {item.title}
-            </h3>
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text)]">
+                <MarketingIcon icon="spark" className="h-4 w-4" />
+              </span>
+              <h3 className="text-xl font-semibold" style={{ color: "var(--text)" }}>
+                {item.title}
+              </h3>
+            </div>
             <p
               className="mt-3 text-sm leading-7"
               style={{ color: "var(--muted)" }}

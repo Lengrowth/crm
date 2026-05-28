@@ -2,6 +2,7 @@
 
 import type { FormEvent } from "react";
 import { Suspense, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { setAuthTokenCookie } from "@/lib/auth";
 import { loginLocalUser, registerLocalUser } from "@/lib/auth-api";
@@ -39,6 +40,12 @@ function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next") ?? "/app";
+  const successMessage =
+    searchParams.get("verified") === "1"
+      ? "Your email address was verified successfully. You can sign in now."
+      : searchParams.get("reset") === "1"
+        ? "Your password was updated successfully. Sign in with the new password."
+        : null;
 
   const [mode, setMode] = useState<Mode>("login");
   const [fullName, setFullName] = useState("");
@@ -107,7 +114,7 @@ function LoginPageContent() {
         >
           Authentication lives in the SaaS layer so operators can manage
           organizations, tenants, and rollout work without mixing credentials
-          with ERPNext tenant access.
+          with the product runtime.
         </p>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -118,7 +125,7 @@ function LoginPageContent() {
             ],
             [
               "Clean runtime boundary",
-              "ERPNext remains an external runtime target; live cutover is not part of this sign-in flow.",
+              "Keep product credentials separate from runtime-specific access and operational handoff steps.",
             ],
             [
               "Workspace accounts",
@@ -280,6 +287,15 @@ function LoginPageContent() {
             </div>
           ) : null}
 
+          {successMessage ? (
+            <div
+              className="rounded-xl border px-4 py-3 text-sm"
+              style={{ borderColor: "var(--border)", color: "var(--text)" }}
+            >
+              {successMessage}
+            </div>
+          ) : null}
+
           <button
             type="submit"
             disabled={busy === "submitting"}
@@ -300,7 +316,11 @@ function LoginPageContent() {
 
         <p className="mt-5 text-xs leading-5" style={{ color: "var(--muted)" }}>
           This environment uses SaaS-layer authentication for dashboard access.
-          ERPNext integration remains a later, explicit cutover step.
+          The control plane remains the source of truth for user access and lifecycle operations.
+        </p>
+
+        <p className="mt-6 text-sm leading-6" style={{ color: "var(--muted)" }}>
+          Need access help? <Link href="/contact" className="underline underline-offset-4" style={{ color: "var(--accent)" }}>Contact us</Link> and we will route you to the right path.
         </p>
       </section>
     </div>

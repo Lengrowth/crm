@@ -17,6 +17,7 @@ export interface AuthUser {
   full_name: string;
   status: string;
   is_platform_admin: boolean;
+  email_verified_at: string | null;
   last_login_at: string | null;
   memberships: AuthMembership[];
 }
@@ -53,4 +54,25 @@ export interface AuthRegisterPayload extends AuthLoginPayload {
   organization_name: string;
   membership_role?: OrganizationMembershipRole;
   is_platform_admin?: boolean;
+}
+
+export interface AuthPasswordResetRequestPayload {
+  email: string;
+}
+
+export interface AuthPasswordResetConfirmPayload {
+  token: string;
+  new_password: string;
+}
+
+export interface AuthEmailVerificationRequestPayload {
+  email: string;
+}
+
+export interface AuthEmailVerificationConfirmPayload {
+  token: string;
+}
+
+export interface AuthMessageResponse {
+  detail: string;
 }

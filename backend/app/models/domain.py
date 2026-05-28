@@ -10,6 +10,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
+    Index,
     String,
     Text,
     UniqueConstraint,
@@ -50,6 +51,12 @@ class SaaSUser(Base, UUIDMixin, TimestampMixin):
     is_platform_admin: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
     )
+    email_verified_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    password_changed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     last_login_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
@@ -72,6 +79,30 @@ class AuthSession(Base, UUIDMixin, TimestampMixin):
         DateTime(timezone=True), nullable=True
     )
     last_used_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+
+class AuthToken(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "auth_tokens"
+    __table_args__ = (
+        UniqueConstraint("token_hash", name="uq_auth_tokens_token_hash"),
+        Index("ix_auth_tokens_user_purpose", "user_id", "purpose"),
+    )
+
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("saas_users.id"), nullable=False, index=True
+    )
+    purpose: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    sent_to_email: Mapped[str] = mapped_column(String(255), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    used_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 

@@ -37,3 +37,4 @@ Copy `./.env.example` to `.env.local` before running the app.
 - Phase 05 adds organization and tenant route scaffolds under `/app`, including list, detail, and create screens.
 - ERPNext/Frappe is not required for local development.
 - The current UI does not rely on shadcn; it uses Tailwind plus local theme variables so light and dark layouts stay under our control.
+- Phase 20 expands auth UX with dedicated forgot-password, reset-password, verify-email, and resend-verification screens while keeping the `/login` sign-in/register toggle.

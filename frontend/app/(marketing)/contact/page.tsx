@@ -5,7 +5,10 @@ import { useState } from "react";
 import {
   MarketingButtonLink,
   MarketingCard,
+  MarketingIcon,
+  MarketingIconBadge,
   MarketingPageCta,
+  MarketingSectionIntro,
 } from "@/components/MarketingPrimitives";
 import { sendContact, trackMarketingEvent } from "@/lib/api";
 
@@ -40,64 +43,47 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="space-y-8 sm:space-y-10 lg:space-y-12">
-      <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+    <div className="space-y-10 lg:space-y-14">
+      <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
         <MarketingCard
           className="rounded-[2.25rem] px-7 py-8 sm:px-10 sm:py-10"
           tone="accent"
         >
-          <p
-            className="text-xs font-semibold uppercase tracking-[0.28em]"
-            style={{ color: "var(--muted)" }}
-          >
-            Talk to us
-          </p>
-          <h1
-            className="mt-4 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl"
-            style={{ color: "var(--text)" }}
-          >
-            Start the conversation before rollout complexity becomes a risk.
-          </h1>
-          <p
-            className="mt-5 text-base leading-8"
-            style={{ color: "var(--muted)" }}
-          >
-            Contact us if you are evaluating a pilot, planning implementation
-            work, or trying to structure the boundary between your
-            customer-facing SaaS layer and the ERP runtime behind it.
-          </p>
+          <MarketingSectionIntro
+            eyebrow="Talk to us"
+            title="Start the conversation before rollout complexity becomes a risk."
+            description="Contact us if you are evaluating a pilot, planning implementation work, or trying to structure the boundary between your customer-facing SaaS layer and the runtime behind it."
+          />
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            <MarketingIconBadge icon="spark" label="Pilot scope" />
+            <MarketingIconBadge icon="chart" label="Commercial fit" />
+            <MarketingIconBadge icon="shield" label="Rollout blockers" />
+          </div>
 
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
             {[
-              [
-                "Pilot scope",
-                "Share your timeline, team shape, and what the first launch needs to prove.",
-              ],
-              [
-                "Rollout blockers",
-                "Tell us where onboarding, tenants, or implementation visibility are breaking down.",
-              ],
-              [
-                "Commercial fit",
-                "Use this route if you need help with packaging, pricing, or a guided deployment conversation.",
-              ],
+              ["Pilot scope", "Share your timeline, team shape, and what the first launch needs to prove."],
+              ["Rollout blockers", "Tell us where onboarding, tenants, or implementation visibility are breaking down."],
+              ["Commercial fit", "Use this route if you need help with packaging, pricing, or a guided deployment conversation."],
             ].map(([title, description]) => (
               <div
                 key={title}
                 className="rounded-[1.25rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-4"
               >
-                <p
-                  className="text-sm font-semibold"
-                  style={{ color: "var(--text)" }}
-                >
-                  {title}
-                </p>
-                <p
-                  className="mt-2 text-sm leading-6"
-                  style={{ color: "var(--muted)" }}
-                >
-                  {description}
-                </p>
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text)]">
+                    <MarketingIcon icon="dot" className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+                      {title}
+                    </p>
+                    <p className="mt-2 text-sm leading-6" style={{ color: "var(--muted)" }}>
+                      {description}
+                    </p>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -113,38 +99,21 @@ export default function ContactPage() {
           >
             Contact form
           </p>
-          <form
-            className="mt-6 grid gap-4 md:grid-cols-2"
-            onSubmit={handleSubmit}
-          >
+          <form className="mt-6 grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
             <label className="block space-y-2">
-              <span
-                className="text-xs font-semibold uppercase tracking-[0.18em]"
-                style={{ color: "var(--muted)" }}
-              >
+              <span className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--muted)" }}>
                 Name
               </span>
               <input name="name" required className="marketing-input" />
             </label>
             <label className="block space-y-2">
-              <span
-                className="text-xs font-semibold uppercase tracking-[0.18em]"
-                style={{ color: "var(--muted)" }}
-              >
+              <span className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--muted)" }}>
                 Work email
               </span>
-              <input
-                name="email"
-                required
-                type="email"
-                className="marketing-input"
-              />
+              <input name="email" required type="email" className="marketing-input" />
             </label>
             <label className="block space-y-2 md:col-span-2">
-              <span
-                className="text-xs font-semibold uppercase tracking-[0.18em]"
-                style={{ color: "var(--muted)" }}
-              >
+              <span className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--muted)" }}>
                 What do you need help with?
               </span>
               <textarea
@@ -163,9 +132,7 @@ export default function ContactPage() {
                 {loading ? "Sending..." : "Send message"}
               </button>
 
-              {error ? (
-                <p className="mt-3 text-sm text-red-500">{error}</p>
-              ) : null}
+              {error ? <p className="mt-3 text-sm text-red-500">{error}</p> : null}
               {success ? (
                 <p className="mt-3 text-sm" style={{ color: "var(--muted)" }}>
                   {success}
@@ -177,43 +144,43 @@ export default function ContactPage() {
       </section>
 
       <section className="grid gap-5 md:grid-cols-2">
-        <MarketingCard className="rounded-[1.85rem] p-6" tone="default">
-          <h2
-            className="text-2xl font-semibold"
-            style={{ color: "var(--text)" }}
-          >
-            Prefer a walkthrough first?
-          </h2>
-          <p
-            className="mt-3 text-sm leading-7"
-            style={{ color: "var(--muted)" }}
-          >
-            Book a demo if you would rather see the product live before
-            discussing scope.
-          </p>
-          <div className="mt-5">
-            <MarketingButtonLink href="/demo">Book a demo</MarketingButtonLink>
+        <MarketingCard className="rounded-[1.85rem] p-6" tone="default" interactive>
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text)]">
+              <MarketingIcon icon="spark" className="h-4 w-4" />
+            </span>
+            <div>
+              <h2 className="text-2xl font-semibold" style={{ color: "var(--text)" }}>
+                Prefer a walkthrough first?
+              </h2>
+              <p className="mt-3 text-sm leading-7" style={{ color: "var(--muted)" }}>
+                Book a demo if you would rather see the product live before discussing scope.
+              </p>
+              <div className="mt-5">
+                <MarketingButtonLink href="/demo">Book a demo</MarketingButtonLink>
+              </div>
+            </div>
           </div>
         </MarketingCard>
 
-        <MarketingCard className="rounded-[1.85rem] p-6" tone="muted">
-          <h2
-            className="text-2xl font-semibold"
-            style={{ color: "var(--text)" }}
-          >
-            Existing client or operator?
-          </h2>
-          <p
-            className="mt-3 text-sm leading-7"
-            style={{ color: "var(--muted)" }}
-          >
-            Sign in if you are returning to the dashboard for tenant,
-            organization, or implementation work.
-          </p>
-          <div className="mt-5">
-            <MarketingButtonLink href="/login" variant="secondary">
-              Sign in
-            </MarketingButtonLink>
+        <MarketingCard className="rounded-[1.85rem] p-6" tone="muted" interactive>
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text)]">
+              <MarketingIcon icon="shield" className="h-4 w-4" />
+            </span>
+            <div>
+              <h2 className="text-2xl font-semibold" style={{ color: "var(--text)" }}>
+                Existing client or operator?
+              </h2>
+              <p className="mt-3 text-sm leading-7" style={{ color: "var(--muted)" }}>
+                Sign in if you are returning to the dashboard for tenant, organization, or implementation work.
+              </p>
+              <div className="mt-5">
+                <MarketingButtonLink href="/login" variant="secondary">
+                  Sign in
+                </MarketingButtonLink>
+              </div>
+            </div>
           </div>
         </MarketingCard>
       </section>

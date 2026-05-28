@@ -19,17 +19,20 @@ Create a dedicated documentation package for a major public website redesign and
 
 ### Website direction documented
 - Captured the requested design ambition:
-  - premium, memorable, high-trust public website
-  - Awwwards-inspired taste without sacrificing usability
+  - premium, memorable, startup-like public website
+  - less text-heavy and more visually led
+  - stronger spacing, hierarchy, and CTA clarity
 - Documented the requested frontend direction:
   - Tailwind CSS
   - shadcn/ui selectively
-  - icons via a clean system such as Lucide
+  - Lucide-style icons and a cleaner icon vocabulary
+  - icon-based Sun / Moon theme toggle instead of text labels
+  - Zinc-based dark mode surfaces and contrast
 - Documented the requested quality improvements:
-  - stronger hero and homepage storytelling
-  - better menu and footer
-  - stronger CTA structure
-  - better page flow and section composition
+  - stronger homepage hero with a clear primary button
+  - interactive or animated hero background treatment
+  - more varied section layouts instead of repeated card grids
+  - animations and hover interactions that feel polished, not gimmicky
   - real end-user copy instead of scaffold copy
 
 ### Implementation structure
@@ -41,6 +44,8 @@ Create a dedicated documentation package for a major public website redesign and
   - modules
   - industries
   - drilling
+  - login
+- Added section-level design and copy guidance for each page.
 - Added component-system direction and phased implementation order.
 
 ### Master index sync

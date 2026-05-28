@@ -1,7 +1,12 @@
 """API schemas for the SaaS control backend."""
 
 from app.schemas.auth import (
+    AuthEmailVerificationConfirm,
+    AuthEmailVerificationRequest,
+    AuthMessageResponse,
     AuthLoginRequest,
+    AuthPasswordResetConfirm,
+    AuthPasswordResetRequest,
     AuthLogoutResponse,
     AuthMeResponse,
     AuthMembershipRead,
@@ -32,7 +37,12 @@ from app.schemas.implementation import (
 )
 
 __all__ = [
+    "AuthEmailVerificationConfirm",
+    "AuthEmailVerificationRequest",
+    "AuthMessageResponse",
     "AuthLoginRequest",
+    "AuthPasswordResetConfirm",
+    "AuthPasswordResetRequest",
     "AuthLogoutResponse",
     "AuthMeResponse",
     "AuthMembershipRead",
