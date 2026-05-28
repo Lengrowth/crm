@@ -150,7 +150,7 @@ export default function AppTenantsPage() {
             ],
             [
               "Boundary safety",
-              "The production path should never rely on hidden mock defaults; Phase 15 makes that behavior explicit.",
+              "The production path should never rely on hidden mock defaults; the product boundary stays explicit.",
             ],
           ].map(([title, description]) => (
             <div

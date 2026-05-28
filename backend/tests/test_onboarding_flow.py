@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+import hashlib
+import hmac
+import json
+from time import time
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from app.core.config import settings
 from app.db.base import Base
 from app.integrations.mock_erpnext import MockERPNextClient
 from app.models.domain import Organization, SaaSUser, Tenant
@@ -75,9 +81,25 @@ def test_full_onboarding_flow():
     assert tenant.status == "ready"
 
     # simulate invoice.paid webhook
-    billing.process_webhook(
-        session, {"event": "invoice.paid", "data": {"invoice_id": invoice.id}}
-    )
+    webhook_payload = {"event": "invoice.paid", "data": {"invoice_id": invoice.id}}
+    previous_secret = settings.billing_webhook_secret
+    settings.billing_webhook_secret = "test-billing-secret"
+    try:
+        canonical_payload = json.dumps(webhook_payload, sort_keys=True, separators=(",", ":"))
+        timestamp = str(int(time()))
+        signature = hmac.new(
+            settings.billing_webhook_secret.encode("utf-8"),
+            f"{timestamp}.{canonical_payload}".encode("utf-8"),
+            hashlib.sha256,
+        ).hexdigest()
+        billing.process_webhook(
+            session,
+            webhook_payload,
+            signature=signature,
+            timestamp=timestamp,
+        )
+    finally:
+        settings.billing_webhook_secret = previous_secret
     session.refresh(invoice)
     assert invoice.status == "paid"
     assert invoice.paid_at is not None

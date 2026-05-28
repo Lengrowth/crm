@@ -1,21 +1,31 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_db_session, require_platform_admin
+from app.api.dependencies import (
+    get_accessible_organization,
+    get_db_session,
+    require_organization_write_access,
+    require_platform_admin,
+)
 from app.schemas.billing import (
     InvoiceCreateRequest,
     InvoiceOut,
     PlanOut,
+    PlanCreateRequest,
     SubscribeRequest,
     SubscriptionOut,
     WebhookPayload,
 )
-from app.schemas.billing import (
-    PlanOut as PlanCreateOut,
+from app.services.billing_service import (
+    BillingError,
+    BillingService,
+    BillingWebhookVerificationError,
+    PlanNotFound,
 )
-from app.services.billing_service import BillingError, BillingService, PlanNotFound
 
 router = APIRouter(prefix="/billing", tags=["billing"])
 service = BillingService()
@@ -33,7 +43,7 @@ def list_plans(session: Session = Depends(get_db_session)):
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_platform_admin)],
 )
-def create_plan(payload: PlanOut, session: Session = Depends(get_db_session)):
+def create_plan(payload: PlanCreateRequest, session: Session = Depends(get_db_session)):
     plan = service.create_plan(
         session,
         payload.name,
@@ -49,6 +59,7 @@ def create_plan(payload: PlanOut, session: Session = Depends(get_db_session)):
     "/organizations/{organization_id}/subscribe",
     response_model=SubscriptionOut,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_organization_write_access)],
 )
 def subscribe_organization(
     organization_id: str,
@@ -73,7 +84,11 @@ def subscribe_organization(
 @router.get(
     "/organizations/{organization_id}/subscription", response_model=SubscriptionOut
 )
-def get_subscription(organization_id: str, session: Session = Depends(get_db_session)):
+def get_subscription(
+    organization_id: str,
+    _: object = Depends(get_accessible_organization),
+    session: Session = Depends(get_db_session),
+):
     sub = service.get_subscription_for_organization(session, organization_id)
     if sub is None:
         raise HTTPException(
@@ -86,10 +101,11 @@ def get_subscription(organization_id: str, session: Session = Depends(get_db_ses
     "/organizations/{organization_id}/invoices",
     response_model=InvoiceOut,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_organization_write_access)],
 )
 def create_invoice(
     organization_id: str,
-    payload: InvoiceCreateRequest | None = None,
+    payload: Optional[InvoiceCreateRequest] = None,
     session: Session = Depends(get_db_session),
 ):
     # Find subscription for organization
@@ -114,7 +130,10 @@ def create_invoice(
     "/organizations/{organization_id}/invoices/{invoice_id}", response_model=InvoiceOut
 )
 def get_invoice(
-    organization_id: str, invoice_id: str, session: Session = Depends(get_db_session)
+    organization_id: str,
+    invoice_id: str,
+    _: object = Depends(get_accessible_organization),
+    session: Session = Depends(get_db_session),
 ):
     from app.models.billing import BillingInvoice
 
@@ -127,9 +146,23 @@ def get_invoice(
 
 
 @router.post("/webhook")
-def webhook(payload: WebhookPayload, session: Session = Depends(get_db_session)):
+def webhook(
+    payload: WebhookPayload,
+    session: Session = Depends(get_db_session),
+    x_billing_signature: Optional[str] = Header(default=None, alias="X-Billing-Signature"),
+    x_billing_timestamp: Optional[str] = Header(default=None, alias="X-Billing-Timestamp"),
+):
     try:
-        result = service.process_webhook(session, payload.model_dump())
+        result = service.process_webhook(
+            session,
+            payload.model_dump(),
+            signature=x_billing_signature,
+            timestamp=x_billing_timestamp,
+        )
+    except BillingWebhookVerificationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)
+        ) from exc
     except BillingError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)

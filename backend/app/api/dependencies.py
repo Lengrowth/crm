@@ -1,21 +1,36 @@
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, Optional, Union
 
 from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.security import extract_session_token
 from app.db.session import get_db_session
-from app.models.domain import AuthSession, SaaSUser
+from app.models.domain import AuthSession, Organization, SaaSUser, Tenant
 from app.services.auth_service import AuthContext, AuthError, AuthService
+from app.services.control_plane_service import (
+    ControlPlaneAccessError,
+    ControlPlaneNotFoundError,
+    ControlPlaneService,
+)
 
 auth_service = AuthService()
+control_plane_service = ControlPlaneService()
+
+
+def _raise_control_plane_http_error(
+    exc: Union[ControlPlaneAccessError, ControlPlaneNotFoundError]
+) -> None:
+    if isinstance(exc, ControlPlaneNotFoundError):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
 
 
 def get_auth_token(
-    authorization: str | None = Header(default=None),
-    x_session_token: str | None = Header(default=None, alias="X-Session-Token"),
+    authorization: Optional[str] = Header(default=None),
+    x_session_token: Optional[str] = Header(default=None, alias="X-Session-Token"),
 ) -> str:
     return extract_session_token(authorization, x_session_token)
 
@@ -44,6 +59,58 @@ def require_platform_admin(current_user: SaaSUser = Depends(get_current_user)) -
     if not current_user.is_platform_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Platform admin access required.")
     return current_user
+
+
+def get_accessible_organization(
+    organization_id: str,
+    session: Session = Depends(get_db_session),
+    current_user: SaaSUser = Depends(get_current_user),
+) -> Organization:
+    try:
+        return control_plane_service.get_organization(session, current_user, organization_id)
+    except (ControlPlaneAccessError, ControlPlaneNotFoundError) as exc:
+        _raise_control_plane_http_error(exc)
+
+
+def require_organization_write_access(
+    organization_id: str,
+    session: Session = Depends(get_db_session),
+    current_user: SaaSUser = Depends(get_current_user),
+) -> Organization:
+    organization = get_accessible_organization(
+        organization_id, session=session, current_user=current_user
+    )
+    try:
+        control_plane_service._ensure_organization_write_access(session, current_user, organization.id)
+    except (ControlPlaneAccessError, ControlPlaneNotFoundError) as exc:
+        _raise_control_plane_http_error(exc)
+    return organization
+
+
+def get_accessible_tenant(
+    tenant_id: str,
+    session: Session = Depends(get_db_session),
+    current_user: SaaSUser = Depends(get_current_user),
+) -> Tenant:
+    try:
+        return control_plane_service.get_tenant(session, current_user, tenant_id)
+    except (ControlPlaneAccessError, ControlPlaneNotFoundError) as exc:
+        _raise_control_plane_http_error(exc)
+
+
+def require_tenant_write_access(
+    tenant_id: str,
+    session: Session = Depends(get_db_session),
+    current_user: SaaSUser = Depends(get_current_user),
+) -> Tenant:
+    tenant = get_accessible_tenant(tenant_id, session=session, current_user=current_user)
+    try:
+        control_plane_service._ensure_organization_write_access(
+            session, current_user, tenant.organization_id
+        )
+    except (ControlPlaneAccessError, ControlPlaneNotFoundError) as exc:
+        _raise_control_plane_http_error(exc)
+    return tenant
 
 
 def require_organization_role(

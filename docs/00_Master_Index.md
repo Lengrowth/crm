@@ -16,10 +16,13 @@ This repository is being built as a SaaS-first control platform that will later 
 10. `21_GCP_SaaS_And_ERPNext_Deployment_Guide.md`
 11. `22_GitHub_Actions_SaaS_Auto_Deploy.md`
 12. `23_Website_Experience_Design_And_Copy_Upgrade.md`
-13. `02_ERPNext_SaaS_Product_Build_Runbook.md`
-14. `03_ERPNext_Tenant_Provisioning_And_SaaS_Connection_Runbook.md`
-15. `04_Drilling_ERPNext_Implementation_Blueprint.md`
-16. `05_Custom_Frappe_App_Development_Runbook.md`
+13. `24_Production_Security_Authorization_And_Billing_Integrity.md`
+14. `25_Durable_Provisioning_Domain_Automation_Observability_And_Recovery.md`
+15. `26_Frontend_Completion_And_End_To_End_Launch_Certification.md`
+16. `02_ERPNext_SaaS_Product_Build_Runbook.md`
+17. `03_ERPNext_Tenant_Provisioning_And_SaaS_Connection_Runbook.md`
+18. `04_Drilling_ERPNext_Implementation_Blueprint.md`
+19. `05_Custom_Frappe_App_Development_Runbook.md`
 
 ## Current Architecture
 
@@ -49,6 +52,8 @@ This repository is being built as a SaaS-first control platform that will later 
 - `phase_summaries/15_Production_Website_And_Readiness_Cleanup.md`
 - `phase_summaries/16_SaaS_Control_Plane_Deployment_Readiness.md`
 - `phase_summaries/17_ERPNext_Deployment_Readiness.md`
+- `phase_summaries/18_Live_SaaS_ERPNext_Integration_Cutover.md`
+- `phase_summaries/19_Operational_Hardening_And_Recovery_Readiness.md`
 
 ## Phase Sequence
 

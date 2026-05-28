@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from uuid import uuid4
+from typing import Optional
 
 from sqlalchemy import (
     JSON,
@@ -44,12 +45,12 @@ class SaaSUser(Base, UUIDMixin, TimestampMixin):
         String(255), unique=True, nullable=False, index=True
     )
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="invited")
     is_platform_admin: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
     )
-    last_login_at: Mapped[datetime | None] = mapped_column(
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 
@@ -67,10 +68,10 @@ class AuthSession(Base, UUIDMixin, TimestampMixin):
     expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
-    revoked_at: Mapped[datetime | None] = mapped_column(
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    last_used_at: Mapped[datetime | None] = mapped_column(
+    last_used_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 
@@ -79,11 +80,11 @@ class Organization(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "organizations"
 
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
-    legal_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    industry: Mapped[str | None] = mapped_column(String(120), nullable=True)
-    country: Mapped[str | None] = mapped_column(String(120), nullable=True)
-    timezone: Mapped[str | None] = mapped_column(String(120), nullable=True)
-    billing_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    legal_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    industry: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    country: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    timezone: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    billing_email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="lead")
 
 
@@ -112,12 +113,12 @@ class Tenant(Base, UUIDMixin, TimestampMixin):
     tenant_slug: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
     environment: Mapped[str] = mapped_column(String(32), nullable=False, default="demo")
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="planned")
-    primary_domain: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    custom_domain: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    erpnext_site_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    erpnext_base_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    erpnext_api_key_ref: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    erpnext_api_secret_ref: Mapped[str | None] = mapped_column(
+    primary_domain: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    custom_domain: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    erpnext_site_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    erpnext_base_url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    erpnext_api_key_ref: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    erpnext_api_secret_ref: Mapped[Optional[str]] = mapped_column(
         String(255), nullable=True
     )
     provisioning_status: Mapped[str] = mapped_column(
@@ -131,7 +132,7 @@ class Plan(Base, UUIDMixin, TimestampMixin):
 
     code: Mapped[str] = mapped_column(String(64), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     monthly_price_cents: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     annual_price_cents: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
@@ -143,8 +144,8 @@ class Module(Base, UUIDMixin, TimestampMixin):
 
     code: Mapped[str] = mapped_column(String(64), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    category: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    category: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 
@@ -161,13 +162,13 @@ class OrganizationModule(Base, UUIDMixin, TimestampMixin):
         ForeignKey("modules.id"), nullable=False, index=True
     )
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="enabled")
-    enabled_by: Mapped[str | None] = mapped_column(
+    enabled_by: Mapped[Optional[str]] = mapped_column(
         ForeignKey("saas_users.id"), nullable=True
     )
-    enabled_at: Mapped[datetime | None] = mapped_column(
+    enabled_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    disabled_at: Mapped[datetime | None] = mapped_column(
+    disabled_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     settings_json: Mapped[dict[str, object]] = mapped_column(
@@ -185,16 +186,16 @@ class Subscription(Base, UUIDMixin, TimestampMixin):
         ForeignKey("plans.id"), nullable=False, index=True
     )
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="trialing")
-    billing_provider_customer_ref: Mapped[str | None] = mapped_column(
+    billing_provider_customer_ref: Mapped[Optional[str]] = mapped_column(
         String(255), nullable=True
     )
-    billing_provider_subscription_ref: Mapped[str | None] = mapped_column(
+    billing_provider_subscription_ref: Mapped[Optional[str]] = mapped_column(
         String(255), nullable=True
     )
-    current_period_start: Mapped[datetime | None] = mapped_column(
+    current_period_start: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    current_period_end: Mapped[datetime | None] = mapped_column(
+    current_period_end: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 
@@ -205,8 +206,8 @@ class ImplementationTemplate(Base, UUIDMixin, TimestampMixin):
 
     code: Mapped[str] = mapped_column(String(64), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    industry: Mapped[str | None] = mapped_column(String(120), nullable=True)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    industry: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     default_modules_json: Mapped[list[str]] = mapped_column(
         JSON, nullable=False, default=list
     )
@@ -230,14 +231,14 @@ class ImplementationProject(Base, UUIDMixin, TimestampMixin):
     tenant_id: Mapped[str] = mapped_column(
         ForeignKey("tenants.id"), nullable=False, index=True
     )
-    template_id: Mapped[str | None] = mapped_column(
+    template_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("implementation_templates.id"), nullable=True
     )
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="discovery")
-    owner_user_id: Mapped[str | None] = mapped_column(
+    owner_user_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("saas_users.id"), nullable=True
     )
-    target_go_live_date: Mapped[datetime | None] = mapped_column(
+    target_go_live_date: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 
@@ -249,13 +250,13 @@ class ImplementationTask(Base, UUIDMixin, TimestampMixin):
         ForeignKey("implementation_projects.id"), nullable=False, index=True
     )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="todo")
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    assigned_to_user_id: Mapped[str | None] = mapped_column(
+    assigned_to_user_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("saas_users.id"), nullable=True
     )
-    due_date: Mapped[datetime | None] = mapped_column(
+    due_date: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 
@@ -268,7 +269,7 @@ class ImplementationTaskStatus(Base, UUIDMixin, TimestampMixin):
 
     code: Mapped[str] = mapped_column(String(64), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_terminal: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -288,24 +289,24 @@ class DomainMapping(Base, UUIDMixin, TimestampMixin):
     status: Mapped[str] = mapped_column(
         String(32), nullable=False, default="pending_dns"
     )
-    dns_target: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    dns_target: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     manual_activation_required: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
     )
-    dns_verified_at: Mapped[datetime | None] = mapped_column(
+    dns_verified_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     ssl_status: Mapped[str] = mapped_column(
         String(32), nullable=False, default="unknown"
     )
-    verified_at: Mapped[datetime | None] = mapped_column(
+    verified_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    manual_activation_by: Mapped[str | None] = mapped_column(
+    manual_activation_by: Mapped[Optional[str]] = mapped_column(
         ForeignKey("saas_users.id"), nullable=True
     )
-    manual_activation_at: Mapped[datetime | None] = mapped_column(
+    manual_activation_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     notes_json: Mapped[dict[str, object]] = mapped_column(
@@ -321,32 +322,32 @@ class ProvisioningJob(Base, UUIDMixin, TimestampMixin):
     )
     job_type: Mapped[str] = mapped_column(String(64), nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="queued")
-    requested_by_user_id: Mapped[str | None] = mapped_column(
+    requested_by_user_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("saas_users.id"), nullable=True
     )
-    started_at: Mapped[datetime | None] = mapped_column(
+    started_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    finished_at: Mapped[datetime | None] = mapped_column(
+    finished_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     logs_json: Mapped[list[dict[str, object]]] = mapped_column(
         JSON, nullable=False, default=list
     )
-    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
 
 class AuditLog(Base, UUIDMixin):
     __tablename__ = "audit_logs"
 
-    actor_user_id: Mapped[str | None] = mapped_column(
+    actor_user_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("saas_users.id"), nullable=True, index=True
     )
-    organization_id: Mapped[str | None] = mapped_column(
+    organization_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("organizations.id"), nullable=True, index=True
     )
-    tenant_id: Mapped[str | None] = mapped_column(
+    tenant_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("tenants.id"), nullable=True, index=True
     )
     action: Mapped[str] = mapped_column(String(120), nullable=False)
@@ -355,7 +356,7 @@ class AuditLog(Base, UUIDMixin):
     metadata_json: Mapped[dict[str, object]] = mapped_column(
         JSON, nullable=False, default=dict
     )
-    ip_address: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    ip_address: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, nullable=False
     )
@@ -367,10 +368,10 @@ class IntegrationCredential(Base, UUIDMixin, TimestampMixin):
         UniqueConstraint("provider", "label", name="uq_integration_provider_label"),
     )
 
-    organization_id: Mapped[str | None] = mapped_column(
+    organization_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("organizations.id"), nullable=True, index=True
     )
-    tenant_id: Mapped[str | None] = mapped_column(
+    tenant_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("tenants.id"), nullable=True, index=True
     )
     provider: Mapped[str] = mapped_column(String(64), nullable=False)

@@ -9,15 +9,40 @@ import {
   manualActivateDomain,
   provisionTenant,
   getProvisioningStatus,
+  updateTenant,
 } from "@/lib/api";
+
+type TenantFormState = {
+  tenant_slug: string;
+  environment: string;
+  status: string;
+  primary_domain: string;
+  custom_domain: string;
+  erpnext_site_name: string;
+  erpnext_base_url: string;
+  provisioning_status: string;
+};
 
 export default function TenantDetailPage() {
   const params = useParams<{ tenantId: string }>();
   const tenantId = params.tenantId;
   const [tenant, setTenant] = useState<any | null>(null);
   const [domains, setDomains] = useState<any[]>([]);
+  const [form, setForm] = useState<TenantFormState>({
+    tenant_slug: "",
+    environment: "demo",
+    status: "planned",
+    primary_domain: "",
+    custom_domain: "",
+    erpnext_site_name: "",
+    erpnext_base_url: "",
+    provisioning_status: "pending",
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   const [provLoading, setProvLoading] = useState(false);
   const [provStatus, setProvStatus] = useState<string | null>(null);
@@ -39,6 +64,21 @@ export default function TenantDetailPage() {
       mounted = false;
     };
   }, [tenantId]);
+
+  useEffect(() => {
+    if (!tenant) return;
+
+    setForm({
+      tenant_slug: tenant.tenant_slug ?? "",
+      environment: tenant.environment ?? "demo",
+      status: tenant.status ?? "planned",
+      primary_domain: tenant.primary_domain ?? "",
+      custom_domain: tenant.custom_domain ?? "",
+      erpnext_site_name: tenant.erpnext_site_name ?? "",
+      erpnext_base_url: tenant.erpnext_base_url ?? "",
+      provisioning_status: tenant.provisioning_status ?? "pending",
+    });
+  }, [tenant]);
 
   useEffect(() => {
     let interval: number | undefined;
@@ -92,6 +132,39 @@ export default function TenantDetailPage() {
     } catch (err: any) {
       setError(err?.message ?? "Provisioning failed");
       setProvLoading(false);
+    }
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!tenant) return;
+
+    setSaving(true);
+    setSaveError(null);
+    setSaveMessage(null);
+
+    try {
+      const updated = await updateTenant(tenant.id, {
+        tenant_slug: form.tenant_slug.trim(),
+        environment: form.environment,
+        status: form.status,
+        primary_domain: form.primary_domain.trim() || undefined,
+        custom_domain: form.custom_domain.trim() || undefined,
+        erpnext_site_name: form.erpnext_site_name.trim() || undefined,
+        erpnext_base_url: form.erpnext_base_url.trim() || undefined,
+        provisioning_status: form.provisioning_status,
+      });
+
+      setTenant(updated);
+      setSaveMessage("Tenant updated successfully.");
+    } catch (submitError) {
+      setSaveError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Unable to update the tenant.",
+      );
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -352,15 +425,144 @@ export default function TenantDetailPage() {
               className="text-xl font-semibold"
               style={{ color: "var(--text)" }}
             >
-              Edit
+              Edit tenant
             </h2>
-            <p
-              className="mt-3 text-sm leading-7"
-              style={{ color: "var(--muted)" }}
-            >
-              The live tenant edit flow will eventually connect to the protected
-              {"PATCH /tenants/{tenantId}"} route.
-            </p>
+            <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
+              {[
+                ["tenant_slug", "Tenant slug", form.tenant_slug],
+                ["primary_domain", "Primary domain", form.primary_domain],
+                ["custom_domain", "Custom domain", form.custom_domain],
+                ["erpnext_site_name", "ERPNext site name", form.erpnext_site_name],
+                ["erpnext_base_url", "ERPNext base URL", form.erpnext_base_url],
+              ].map(([key, label, value]) => (
+                <label key={key} className="block space-y-2">
+                  <span
+                    className="text-xs font-semibold uppercase tracking-[0.18em]"
+                    style={{ color: "var(--muted)" }}
+                  >
+                    {label}
+                  </span>
+                  <input
+                    value={value}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        [key]: event.target.value,
+                      }))
+                    }
+                    className="w-full rounded-xl border px-4 py-3 text-sm outline-none"
+                    style={{
+                      borderColor: "var(--border)",
+                      backgroundColor: "var(--surface)",
+                      color: "var(--text)",
+                    }}
+                  />
+                </label>
+              ))}
+
+              <label className="block space-y-2">
+                <span
+                  className="text-xs font-semibold uppercase tracking-[0.18em]"
+                  style={{ color: "var(--muted)" }}
+                >
+                  Environment
+                </span>
+                <select
+                  value={form.environment}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, environment: event.target.value }))
+                  }
+                  className="w-full rounded-xl border px-4 py-3 text-sm outline-none"
+                  style={{
+                    borderColor: "var(--border)",
+                    backgroundColor: "var(--surface)",
+                    color: "var(--text)",
+                  }}
+                >
+                  <option value="demo">demo</option>
+                  <option value="staging">staging</option>
+                  <option value="production">production</option>
+                </select>
+              </label>
+
+              <label className="block space-y-2">
+                <span
+                  className="text-xs font-semibold uppercase tracking-[0.18em]"
+                  style={{ color: "var(--muted)" }}
+                >
+                  Status
+                </span>
+                <select
+                  value={form.status}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, status: event.target.value }))
+                  }
+                  className="w-full rounded-xl border px-4 py-3 text-sm outline-none"
+                  style={{
+                    borderColor: "var(--border)",
+                    backgroundColor: "var(--surface)",
+                    color: "var(--text)",
+                  }}
+                >
+                  <option value="planned">planned</option>
+                  <option value="provisioning">provisioning</option>
+                  <option value="ready">ready</option>
+                  <option value="suspended">suspended</option>
+                  <option value="failed">failed</option>
+                  <option value="archived">archived</option>
+                </select>
+              </label>
+
+              <label className="block space-y-2">
+                <span
+                  className="text-xs font-semibold uppercase tracking-[0.18em]"
+                  style={{ color: "var(--muted)" }}
+                >
+                  Provisioning status
+                </span>
+                <select
+                  value={form.provisioning_status}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      provisioning_status: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded-xl border px-4 py-3 text-sm outline-none"
+                  style={{
+                    borderColor: "var(--border)",
+                    backgroundColor: "var(--surface)",
+                    color: "var(--text)",
+                  }}
+                >
+                  <option value="pending">pending</option>
+                  <option value="queued">queued</option>
+                  <option value="running">running</option>
+                  <option value="ready">ready</option>
+                  <option value="failed">failed</option>
+                </select>
+              </label>
+
+              {saveError ? (
+                <p className="text-sm text-red-500">{saveError}</p>
+              ) : saveMessage ? (
+                <p className="text-sm" style={{ color: "var(--muted)" }}>
+                  {saveMessage}
+                </p>
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={saving}
+                className="rounded-full px-4 py-2 text-sm font-semibold transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  backgroundColor: "var(--accent)",
+                  color: "var(--accent-foreground)",
+                }}
+              >
+                {saving ? "Saving..." : "Save tenant"}
+              </button>
+            </form>
           </div>
           <div
             className="rounded-[2rem] border p-6"

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -25,7 +25,7 @@ class AuthUserRead(AuthBaseModel):
     full_name: str
     status: str
     is_platform_admin: bool
-    last_login_at: datetime | None = None
+    last_login_at: Optional[datetime] = None
     memberships: list[AuthMembershipRead] = Field(default_factory=list)
 
 
@@ -33,8 +33,8 @@ class AuthSessionRead(AuthBaseModel):
     id: str
     user_id: str
     expires_at: datetime
-    revoked_at: datetime | None = None
-    last_used_at: datetime | None = None
+    revoked_at: Optional[datetime] = None
+    last_used_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Optional
 from uuid import uuid4
 
 from app.integrations.erpnext_client import (
@@ -22,7 +22,7 @@ class MockERPNextClient(ERPNextClient):
     - Optionally can persist state to a JSON file path (not enabled by default).
     """
 
-    def __init__(self, *, failures: dict[str, Any] | None = None, clock=None) -> None:
+    def __init__(self, *, failures: Optional[dict[str, Any]] = None, clock=None) -> None:
         # failures map keys like "create_site", "install_app", "backup_site" -> bool or callable
         self.failures = failures or {}
         self.clock = clock or datetime.utcnow

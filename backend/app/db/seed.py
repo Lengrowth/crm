@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional
+
 from sqlalchemy.orm import Session
 
 from app.models.domain import ImplementationTaskStatus, ImplementationTemplate, Module, Plan
@@ -103,7 +105,7 @@ def _ensure_task_status(session: Session, repository: CatalogRepository, payload
     return False
 
 
-def seed_reference_data(session: Session, repository: CatalogRepository | None = None) -> dict[str, int]:
+def seed_reference_data(session: Session, repository: Optional[CatalogRepository] = None) -> dict[str, int]:
     repository = repository or CatalogRepository()
     counts = {"plans": 0, "modules": 0, "templates": 0, "task_statuses": 0}
 

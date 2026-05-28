@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from uuid import uuid4
+from typing import Optional
 
 from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
@@ -17,7 +17,7 @@ class BillingPlan(Base, UUIDMixin, TimestampMixin):
     slug: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
     price_cents: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
 
 class BillingSubscription(Base, UUIDMixin, TimestampMixin):
@@ -26,24 +26,24 @@ class BillingSubscription(Base, UUIDMixin, TimestampMixin):
     organization_id: Mapped[str] = mapped_column(
         ForeignKey("organizations.id"), nullable=False, index=True
     )
-    tenant_id: Mapped[str | None] = mapped_column(
+    tenant_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("tenants.id"), nullable=True, index=True
     )
     plan_id: Mapped[str] = mapped_column(
         ForeignKey("billing_plans.id"), nullable=False, index=True
     )
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
-    started_at: Mapped[datetime | None] = mapped_column(
+    started_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    current_period_end: Mapped[datetime | None] = mapped_column(
+    current_period_end: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    ended_at: Mapped[datetime | None] = mapped_column(
+    ended_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     metadata_json: Mapped[dict[str, object]] = mapped_column(
-        "metadata", JSON, nullable=False, default=dict
+        "metadata", JSON, key="metadata_json", nullable=False, default=dict
     )
 
 
@@ -53,24 +53,24 @@ class BillingInvoice(Base, UUIDMixin, TimestampMixin):
     organization_id: Mapped[str] = mapped_column(
         ForeignKey("organizations.id"), nullable=False, index=True
     )
-    tenant_id: Mapped[str | None] = mapped_column(
+    tenant_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("tenants.id"), nullable=True, index=True
     )
     amount_cents: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="draft")
-    due_date: Mapped[datetime | None] = mapped_column(
+    due_date: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    issued_at: Mapped[datetime | None] = mapped_column(
+    issued_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    paid_at: Mapped[datetime | None] = mapped_column(
+    paid_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     lines: Mapped[list[dict[str, object]]] = mapped_column(
         JSON, nullable=False, default=list
     )
     metadata_json: Mapped[dict[str, object]] = mapped_column(
-        "metadata", JSON, nullable=False, default=dict
+        "metadata", JSON, key="metadata_json", nullable=False, default=dict
     )

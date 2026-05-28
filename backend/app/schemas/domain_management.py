@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -14,33 +15,33 @@ class DomainOut(IdentifiedModel, ORMBaseModel):
     domain: str
     type: str
     status: str
-    dns_target: str | None = None
+    dns_target: Optional[str] = None
     is_active: bool
     manual_activation_required: bool
-    dns_verified_at: datetime | None = None
+    dns_verified_at: Optional[datetime] = None
     ssl_status: str
-    verified_at: datetime | None = None
-    manual_activation_by: str | None = None
-    manual_activation_at: datetime | None = None
+    verified_at: Optional[datetime] = None
+    manual_activation_by: Optional[str] = None
+    manual_activation_at: Optional[datetime] = None
     notes_json: dict[str, object]
 
 
 class DomainCreateRequest(ORMBaseModel):
     domain: str
-    type: str | None = "custom"
-    dns_target: str | None = None
-    manual_activation_required: bool | None = False
+    type: Optional[str] = "custom"
+    dns_target: Optional[str] = None
+    manual_activation_required: Optional[bool] = False
 
 
 class DomainUpdateRequest(ORMBaseModel):
-    domain: str | None = None
-    dns_target: str | None = None
-    is_active: bool | None = None
-    manual_activation_required: bool | None = None
-    ssl_status: str | None = None
-    notes_json: dict[str, object] | None = None
+    domain: Optional[str] = None
+    dns_target: Optional[str] = None
+    is_active: Optional[bool] = None
+    manual_activation_required: Optional[bool] = None
+    ssl_status: Optional[str] = None
+    notes_json: Optional[dict[str, object]] = None
 
 
 class ManualActivationRequest(ORMBaseModel):
     activate: bool
-    notes: str | None = None
+    notes: Optional[str] = None

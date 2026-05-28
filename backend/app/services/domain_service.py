@@ -26,7 +26,7 @@ class DomainAccessError(DomainError):
     pass
 
 
-@dataclass(slots=True)
+@dataclass
 class DomainSummary:
     id: str
     tenant_id: str
@@ -72,10 +72,14 @@ class DomainService:
         session.commit()
         return record
 
-    def update_domain(self, session: Session, domain_id: str, payload) -> DomainMapping:
+    def update_domain(
+        self, session: Session, tenant_id: str, domain_id: str, payload
+    ) -> DomainMapping:
         record = session.get(DomainMapping, domain_id)
         if record is None:
             raise DomainNotFoundError("Domain not found.")
+        if record.tenant_id != tenant_id:
+            raise DomainAccessError("Domain access denied.")
 
         if payload.domain:
             domain = payload.domain.strip().lower()
@@ -127,11 +131,18 @@ class DomainService:
         return record
 
     def manual_activate(
-        self, session: Session, domain_id: str, user: SaaSUser, request
+        self,
+        session: Session,
+        tenant_id: str,
+        domain_id: str,
+        user: SaaSUser,
+        request,
     ) -> DomainMapping:
         record = session.get(DomainMapping, domain_id)
         if record is None:
             raise DomainNotFoundError("Domain not found.")
+        if record.tenant_id != tenant_id:
+            raise DomainAccessError("Domain access denied.")
 
         # Toggle manual activation state
         if request.activate:

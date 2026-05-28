@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional
+
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -436,7 +438,7 @@ class ImplementationService:
         return tenant
 
     @staticmethod
-    def _require_template_exists(session: Session, template_id: str | None) -> ImplementationTemplate | None:
+    def _require_template_exists(session: Session, template_id: Optional[str]) -> Optional[ImplementationTemplate]:
         if template_id is None:
             return None
         template = session.get(ImplementationTemplate, template_id)
@@ -445,7 +447,7 @@ class ImplementationService:
         return template
 
     @staticmethod
-    def _require_user_exists(session: Session, user_id: str | None) -> SaaSUser | None:
+    def _require_user_exists(session: Session, user_id: Optional[str]) -> Optional[SaaSUser]:
         if user_id is None:
             return None
         user = session.get(SaaSUser, user_id)
@@ -454,7 +456,7 @@ class ImplementationService:
         return user
 
     @staticmethod
-    def _require_task_status_exists(session: Session, status_code: str | None) -> ImplementationTaskStatus | None:
+    def _require_task_status_exists(session: Session, status_code: Optional[str]) -> Optional[ImplementationTaskStatus]:
         if status_code is None:
             return None
         statement = select(ImplementationTaskStatus).where(ImplementationTaskStatus.code == status_code)
@@ -466,19 +468,19 @@ class ImplementationService:
         return status
 
     @staticmethod
-    def _fetch_project(session: Session, project_id: str) -> ImplementationProject | None:
+    def _fetch_project(session: Session, project_id: str) -> Optional[ImplementationProject]:
         return session.get(ImplementationProject, project_id)
 
     @staticmethod
-    def _fetch_task(session: Session, task_id: str) -> ImplementationTask | None:
+    def _fetch_task(session: Session, task_id: str) -> Optional[ImplementationTask]:
         return session.get(ImplementationTask, task_id)
 
     @staticmethod
-    def _fetch_task_status(session: Session, status_id: str) -> ImplementationTaskStatus | None:
+    def _fetch_task_status(session: Session, status_id: str) -> Optional[ImplementationTaskStatus]:
         return session.get(ImplementationTaskStatus, status_id)
 
     @staticmethod
-    def _fetch_template(session: Session, template_id: str) -> ImplementationTemplate | None:
+    def _fetch_template(session: Session, template_id: str) -> Optional[ImplementationTemplate]:
         return session.get(ImplementationTemplate, template_id)
 
     @staticmethod

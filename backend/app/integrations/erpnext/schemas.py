@@ -1,8 +1,9 @@
 from pydantic import BaseModel
+from typing import Optional
 
 
 class ERPNextOperationResult(BaseModel):
     status: str
-    site_name: str | None = None
+    site_name: Optional[str] = None
     mock: bool = True
-    action: str | None = None
+    action: Optional[str] = None

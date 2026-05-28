@@ -23,7 +23,10 @@ export function InfoCard({
       }}
     >
       {eyebrow ? (
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>
+        <p
+          className="mb-2 text-xs font-semibold uppercase tracking-[0.2em]"
+          style={{ color: "var(--muted)" }}
+        >
           {eyebrow}
         </p>
       ) : null}

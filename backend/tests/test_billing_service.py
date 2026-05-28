@@ -1,13 +1,22 @@
 from __future__ import annotations
 
+import hashlib
+import hmac
+import json
 import unittest
 from datetime import timedelta
+from time import time
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app import models as _models  # noqa: F401
+from app.core.config import settings
 from app.db.base import Base
+from app.services.billing_provider import (
+    BillingProviderConfigurationError,
+    get_billing_provider,
+)
 from app.services.billing_service import BillingService, PlanNotFound
 
 
@@ -69,18 +78,50 @@ class BillingServiceTestCase(unittest.TestCase):
             invoice2 = self.service.generate_invoice_for_subscription(
                 session, sub.id, amount_cents=2000
             )
-            self.service.process_webhook(
-                session,
-                {
-                    "provider": "mock",
-                    "event": "invoice.paid",
-                    "data": {"invoice_id": invoice2.id},
-                },
-            )
+            payload = {
+                "provider": "mock",
+                "event": "invoice.paid",
+                "data": {"invoice_id": invoice2.id},
+            }
+            previous_secret = settings.billing_webhook_secret
+            settings.billing_webhook_secret = "billing-service-test-secret"
+            try:
+                canonical_payload = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+                timestamp = str(int(time()))
+                signature = hmac.new(
+                    settings.billing_webhook_secret.encode("utf-8"),
+                    f"{timestamp}.{canonical_payload}".encode("utf-8"),
+                    hashlib.sha256,
+                ).hexdigest()
+                self.service.process_webhook(
+                    session,
+                    payload,
+                    signature=signature,
+                    timestamp=timestamp,
+                )
+            finally:
+                settings.billing_webhook_secret = previous_secret
             invoice2_from_db = session.get(type(invoice2), invoice2.id)
             self.assertEqual(invoice2_from_db.status, "paid")
         finally:
             session.close()
+
+    def test_mock_provider_is_blocked_outside_local_when_not_allowed(self) -> None:
+        previous_environment = settings.environment
+        previous_provider = settings.billing_provider
+        previous_allow_mock = settings.billing_allow_mock_in_non_local
+
+        settings.environment = "production"
+        settings.billing_provider = "mock"
+        settings.billing_allow_mock_in_non_local = False
+
+        try:
+            with self.assertRaises(BillingProviderConfigurationError):
+                get_billing_provider()
+        finally:
+            settings.environment = previous_environment
+            settings.billing_provider = previous_provider
+            settings.billing_allow_mock_in_non_local = previous_allow_mock
 
 
 if __name__ == "__main__":

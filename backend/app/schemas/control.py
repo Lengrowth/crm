@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -16,33 +16,33 @@ class ControlBaseModel(BaseModel):
 
 class OrganizationCreateRequest(ControlBaseModel):
     name: str = Field(min_length=1, max_length=255)
-    legal_name: str | None = Field(default=None, max_length=255)
-    industry: str | None = Field(default=None, max_length=120)
-    country: str | None = Field(default=None, max_length=120)
-    timezone: str | None = Field(default=None, max_length=120)
-    billing_email: str | None = Field(default=None, max_length=255)
+    legal_name: Optional[str] = Field(default=None, max_length=255)
+    industry: Optional[str] = Field(default=None, max_length=120)
+    country: Optional[str] = Field(default=None, max_length=120)
+    timezone: Optional[str] = Field(default=None, max_length=120)
+    billing_email: Optional[str] = Field(default=None, max_length=255)
     status: OrganizationStatus = "lead"
 
 
 class OrganizationUpdateRequest(ControlBaseModel):
-    name: str | None = Field(default=None, min_length=1, max_length=255)
-    legal_name: str | None = Field(default=None, max_length=255)
-    industry: str | None = Field(default=None, max_length=120)
-    country: str | None = Field(default=None, max_length=120)
-    timezone: str | None = Field(default=None, max_length=120)
-    billing_email: str | None = Field(default=None, max_length=255)
-    status: OrganizationStatus | None = None
+    name: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    legal_name: Optional[str] = Field(default=None, max_length=255)
+    industry: Optional[str] = Field(default=None, max_length=120)
+    country: Optional[str] = Field(default=None, max_length=120)
+    timezone: Optional[str] = Field(default=None, max_length=120)
+    billing_email: Optional[str] = Field(default=None, max_length=255)
+    status: Optional[OrganizationStatus] = None
 
 
 class TenantCreateRequest(ControlBaseModel):
-    organization_id: str | None = None
+    organization_id: Optional[str] = None
     tenant_slug: str = Field(min_length=1, max_length=120)
     environment: TenantEnvironment = "demo"
     status: TenantStatus = "planned"
-    primary_domain: str | None = Field(default=None, max_length=255)
-    custom_domain: str | None = Field(default=None, max_length=255)
-    erpnext_site_name: str | None = Field(default=None, max_length=255)
-    erpnext_base_url: str | None = Field(default=None, max_length=255)
+    primary_domain: Optional[str] = Field(default=None, max_length=255)
+    custom_domain: Optional[str] = Field(default=None, max_length=255)
+    erpnext_site_name: Optional[str] = Field(default=None, max_length=255)
+    erpnext_base_url: Optional[str] = Field(default=None, max_length=255)
     provisioning_status: ProvisioningStatus = "pending"
 
     @field_validator("tenant_slug")
@@ -55,21 +55,26 @@ class TenantCreateRequest(ControlBaseModel):
 
 
 class TenantUpdateRequest(ControlBaseModel):
-    tenant_slug: str | None = Field(default=None, min_length=1, max_length=120)
-    environment: TenantEnvironment | None = None
-    status: TenantStatus | None = None
-    primary_domain: str | None = Field(default=None, max_length=255)
-    custom_domain: str | None = Field(default=None, max_length=255)
-    erpnext_site_name: str | None = Field(default=None, max_length=255)
-    erpnext_base_url: str | None = Field(default=None, max_length=255)
-    provisioning_status: ProvisioningStatus | None = None
+    tenant_slug: Optional[str] = Field(default=None, min_length=1, max_length=120)
+    environment: Optional[TenantEnvironment] = None
+    status: Optional[TenantStatus] = None
+    primary_domain: Optional[str] = Field(default=None, max_length=255)
+    custom_domain: Optional[str] = Field(default=None, max_length=255)
+    erpnext_site_name: Optional[str] = Field(default=None, max_length=255)
+    erpnext_base_url: Optional[str] = Field(default=None, max_length=255)
+    provisioning_status: Optional[ProvisioningStatus] = None
 
     @field_validator("tenant_slug")
     @classmethod
-    def normalize_slug(cls, value: str | None) -> str | None:
+    def normalize_slug(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
             return None
         normalized = value.strip().lower().replace(" ", "-")
         if not normalized:
             raise ValueError("Tenant slug is required.")
         return normalized
+
+
+class TenantLifecycleActionRequest(ControlBaseModel):
+    reason: Optional[str] = Field(default=None, max_length=500)
+    notes: Optional[str] = Field(default=None, max_length=1000)

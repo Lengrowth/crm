@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -31,7 +31,7 @@ class IdentifiedImplementationModel(ImplementationBaseModel):
 class ImplementationTaskStatusCreateRequest(ImplementationBaseModel):
     code: str = Field(min_length=1, max_length=64)
     name: str = Field(min_length=1, max_length=255)
-    description: str | None = Field(default=None, max_length=2000)
+    description: Optional[str] = Field(default=None, max_length=2000)
     sort_order: int = 0
     is_active: bool = True
     is_terminal: bool = False
@@ -46,16 +46,16 @@ class ImplementationTaskStatusCreateRequest(ImplementationBaseModel):
 
 
 class ImplementationTaskStatusUpdateRequest(ImplementationBaseModel):
-    code: str | None = Field(default=None, min_length=1, max_length=64)
-    name: str | None = Field(default=None, min_length=1, max_length=255)
-    description: str | None = Field(default=None, max_length=2000)
-    sort_order: int | None = None
-    is_active: bool | None = None
-    is_terminal: bool | None = None
+    code: Optional[str] = Field(default=None, min_length=1, max_length=64)
+    name: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    description: Optional[str] = Field(default=None, max_length=2000)
+    sort_order: Optional[int] = None
+    is_active: Optional[bool] = None
+    is_terminal: Optional[bool] = None
 
     @field_validator("code")
     @classmethod
-    def normalize_code(cls, value: str | None) -> str | None:
+    def normalize_code(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
             return None
         normalized = value.strip().lower().replace(" ", "-")
@@ -67,7 +67,7 @@ class ImplementationTaskStatusUpdateRequest(ImplementationBaseModel):
 class ImplementationTaskStatusRead(IdentifiedImplementationModel):
     code: str
     name: str
-    description: str | None = None
+    description: Optional[str] = None
     sort_order: int
     is_active: bool
     is_terminal: bool
@@ -76,8 +76,8 @@ class ImplementationTaskStatusRead(IdentifiedImplementationModel):
 class ImplementationTemplateCreateRequest(ImplementationBaseModel):
     code: str = Field(min_length=1, max_length=64)
     name: str = Field(min_length=1, max_length=255)
-    industry: str | None = Field(default=None, max_length=120)
-    description: str | None = Field(default=None, max_length=2000)
+    industry: Optional[str] = Field(default=None, max_length=120)
+    description: Optional[str] = Field(default=None, max_length=2000)
     default_modules_json: list[str] = Field(default_factory=list)
     default_roles_json: list[str] = Field(default_factory=list)
     default_checklists_json: list[str] = Field(default_factory=list)
@@ -93,18 +93,18 @@ class ImplementationTemplateCreateRequest(ImplementationBaseModel):
 
 
 class ImplementationTemplateUpdateRequest(ImplementationBaseModel):
-    code: str | None = Field(default=None, min_length=1, max_length=64)
-    name: str | None = Field(default=None, min_length=1, max_length=255)
-    industry: str | None = Field(default=None, max_length=120)
-    description: str | None = Field(default=None, max_length=2000)
-    default_modules_json: list[str] | None = None
-    default_roles_json: list[str] | None = None
-    default_checklists_json: list[str] | None = None
-    default_settings_json: dict[str, object] | None = None
+    code: Optional[str] = Field(default=None, min_length=1, max_length=64)
+    name: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    industry: Optional[str] = Field(default=None, max_length=120)
+    description: Optional[str] = Field(default=None, max_length=2000)
+    default_modules_json: Optional[list[str]] = None
+    default_roles_json: Optional[list[str]] = None
+    default_checklists_json: Optional[list[str]] = None
+    default_settings_json: Optional[dict[str, object]] = None
 
     @field_validator("code")
     @classmethod
-    def normalize_code(cls, value: str | None) -> str | None:
+    def normalize_code(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
             return None
         normalized = value.strip().lower().replace(" ", "-")
@@ -116,8 +116,8 @@ class ImplementationTemplateUpdateRequest(ImplementationBaseModel):
 class ImplementationTemplateRead(IdentifiedImplementationModel):
     code: str
     name: str
-    industry: str | None = None
-    description: str | None = None
+    industry: Optional[str] = None
+    description: Optional[str] = None
     default_modules_json: list[str]
     default_roles_json: list[str]
     default_checklists_json: list[str]
@@ -127,26 +127,26 @@ class ImplementationTemplateRead(IdentifiedImplementationModel):
 class ImplementationProjectCreateRequest(ImplementationBaseModel):
     organization_id: str
     tenant_id: str
-    template_id: str | None = None
+    template_id: Optional[str] = None
     status: ImplementationProjectStatus = "discovery"
-    owner_user_id: str | None = None
-    target_go_live_date: datetime | None = None
+    owner_user_id: Optional[str] = None
+    target_go_live_date: Optional[datetime] = None
 
 
 class ImplementationProjectUpdateRequest(ImplementationBaseModel):
-    template_id: str | None = None
-    status: ImplementationProjectStatus | None = None
-    owner_user_id: str | None = None
-    target_go_live_date: datetime | None = None
+    template_id: Optional[str] = None
+    status: Optional[ImplementationProjectStatus] = None
+    owner_user_id: Optional[str] = None
+    target_go_live_date: Optional[datetime] = None
 
 
 class ImplementationProjectRead(IdentifiedImplementationModel):
     organization_id: str
     tenant_id: str
-    template_id: str | None = None
+    template_id: Optional[str] = None
     status: str
-    owner_user_id: str | None = None
-    target_go_live_date: datetime | None = None
+    owner_user_id: Optional[str] = None
+    target_go_live_date: Optional[datetime] = None
     task_count: int = 0
     completed_task_count: int = 0
     progress_percent: int = 0
@@ -154,11 +154,11 @@ class ImplementationProjectRead(IdentifiedImplementationModel):
 
 class ImplementationTaskCreateRequest(ImplementationBaseModel):
     title: str = Field(min_length=1, max_length=255)
-    description: str | None = Field(default=None, max_length=2000)
+    description: Optional[str] = Field(default=None, max_length=2000)
     status: str = Field(default="todo", min_length=1, max_length=64)
     sort_order: int = 0
-    assigned_to_user_id: str | None = None
-    due_date: datetime | None = None
+    assigned_to_user_id: Optional[str] = None
+    due_date: Optional[datetime] = None
 
     @field_validator("status")
     @classmethod
@@ -170,16 +170,16 @@ class ImplementationTaskCreateRequest(ImplementationBaseModel):
 
 
 class ImplementationTaskUpdateRequest(ImplementationBaseModel):
-    title: str | None = Field(default=None, min_length=1, max_length=255)
-    description: str | None = Field(default=None, max_length=2000)
-    status: str | None = Field(default=None, min_length=1, max_length=64)
-    sort_order: int | None = None
-    assigned_to_user_id: str | None = None
-    due_date: datetime | None = None
+    title: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    description: Optional[str] = Field(default=None, max_length=2000)
+    status: Optional[str] = Field(default=None, min_length=1, max_length=64)
+    sort_order: Optional[int] = None
+    assigned_to_user_id: Optional[str] = None
+    due_date: Optional[datetime] = None
 
     @field_validator("status")
     @classmethod
-    def normalize_status(cls, value: str | None) -> str | None:
+    def normalize_status(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
             return None
         normalized = value.strip().lower().replace(" ", "-")
@@ -191,8 +191,8 @@ class ImplementationTaskUpdateRequest(ImplementationBaseModel):
 class ImplementationTaskRead(IdentifiedImplementationModel):
     implementation_project_id: str
     title: str
-    description: str | None = None
+    description: Optional[str] = None
     status: str
     sort_order: int
-    assigned_to_user_id: str | None = None
-    due_date: datetime | None = None
+    assigned_to_user_id: Optional[str] = None
+    due_date: Optional[datetime] = None

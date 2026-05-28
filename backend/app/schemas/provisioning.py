@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import BaseModel
 
@@ -11,13 +11,13 @@ from app.schemas.domain import ORMBaseModel
 class ProvisioningJobLogEntry(BaseModel):
     ts: datetime
     event: str
-    payload: dict[str, Any] | None = None
-    message: str | None = None
+    payload: Optional[dict[str, Any]] = None
+    message: Optional[str] = None
 
 
 class ProvisioningJobCreate(BaseModel):
     job_type: str
-    payload: dict[str, Any] | None = None
+    payload: Optional[dict[str, Any]] = None
 
 
 class ProvisioningJobRead(ORMBaseModel):
@@ -25,9 +25,9 @@ class ProvisioningJobRead(ORMBaseModel):
     tenant_id: str
     job_type: str
     status: str
-    requested_by_user_id: str | None = None
-    started_at: datetime | None = None
-    finished_at: datetime | None = None
+    requested_by_user_id: Optional[str] = None
+    started_at: Optional[datetime] = None
+    finished_at: Optional[datetime] = None
     attempt_count: int
     logs_json: list[dict[str, Any]]
-    error_message: str | None = None
+    error_message: Optional[str] = None

@@ -3,13 +3,49 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createTenant } from "@/lib/api";
 
 export default function NewTenantPage() {
+  const router = useRouter();
   const [submitted, setSubmitted] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitted(true);
+    setBusy(true);
+    setError(null);
+
+    const form = event.currentTarget;
+    const fd = new FormData(form);
+    const read = (name: string) => String(fd.get(name) ?? "").trim();
+
+    try {
+      const created = await createTenant({
+        organization_id: read("organization_id") || undefined,
+        tenant_slug: read("tenant_slug"),
+        environment: read("environment") || "demo",
+        status: read("status") || "planned",
+        primary_domain: read("primary_domain") || undefined,
+        custom_domain: read("custom_domain") || undefined,
+        erpnext_site_name: read("erpnext_site_name") || undefined,
+        erpnext_base_url: read("erpnext_base_url") || undefined,
+        provisioning_status: read("provisioning_status") || "pending",
+      });
+
+      setSubmitted(true);
+      router.push(`/app/tenants/${created.id}`);
+      router.refresh();
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Unable to create the tenant.",
+      );
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -49,6 +85,8 @@ export default function NewTenantPage() {
               Organization ID
             </span>
             <input
+              name="organization_id"
+              required
               className="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:translate-y-[-1px]"
               style={{
                 borderColor: "var(--border)",
@@ -73,6 +111,15 @@ export default function NewTenantPage() {
                 {label}
               </span>
               <input
+                name={
+                  label === "Tenant slug"
+                    ? "tenant_slug"
+                    : label === "ERPNext site name"
+                      ? "erpnext_site_name"
+                      : label === "Primary domain"
+                        ? "primary_domain"
+                        : "custom_domain"
+                }
                 className="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:translate-y-[-1px]"
                 style={{
                   borderColor: "var(--border)",
@@ -93,6 +140,7 @@ export default function NewTenantPage() {
                 Environment
               </span>
               <select
+                name="environment"
                 className="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:translate-y-[-1px]"
                 style={{
                   borderColor: "var(--border)",
@@ -114,6 +162,7 @@ export default function NewTenantPage() {
                 Status
               </span>
               <select
+                name="status"
                 className="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:translate-y-[-1px]"
                 style={{
                   borderColor: "var(--border)",
@@ -130,8 +179,54 @@ export default function NewTenantPage() {
             </label>
           </div>
 
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="block space-y-2">
+              <span
+                className="text-xs font-semibold uppercase tracking-[0.18em]"
+                style={{ color: "var(--muted)" }}
+              >
+                Provisioning status
+              </span>
+              <select
+                name="provisioning_status"
+                className="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:translate-y-[-1px]"
+                style={{
+                  borderColor: "var(--border)",
+                  backgroundColor: "var(--surface-strong)",
+                  color: "var(--text)",
+                }}
+                defaultValue="pending"
+              >
+                <option value="pending">pending</option>
+                <option value="queued">queued</option>
+                <option value="running">running</option>
+                <option value="ready">ready</option>
+                <option value="failed">failed</option>
+              </select>
+            </label>
+            <label className="block space-y-2">
+              <span
+                className="text-xs font-semibold uppercase tracking-[0.18em]"
+                style={{ color: "var(--muted)" }}
+              >
+                ERPNext base URL
+              </span>
+              <input
+                name="erpnext_base_url"
+                className="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:translate-y-[-1px]"
+                style={{
+                  borderColor: "var(--border)",
+                  backgroundColor: "var(--surface-strong)",
+                  color: "var(--text)",
+                }}
+                placeholder="https://north-ridge-demo.example.com"
+              />
+            </label>
+          </div>
+
           <button
             type="submit"
+            disabled={busy}
             className="rounded-full px-5 py-3 text-sm font-semibold transition hover:translate-y-[-1px]"
             style={{
               backgroundColor: "var(--accent)",
@@ -139,12 +234,13 @@ export default function NewTenantPage() {
               boxShadow: "0 16px 32px var(--shadow)",
             }}
           >
-            Save tenant draft
+            {busy ? "Creating..." : "Create tenant"}
           </button>
-          {submitted ? (
+          {error ? (
+            <p className="text-sm text-red-500">{error}</p>
+          ) : submitted ? (
             <p className="text-sm" style={{ color: "var(--muted)" }}>
-              Draft captured for demo and planning use. Persist this screen when
-              you connect it to the protected tenant create route.
+              Tenant created successfully. Redirecting to the detail screen.
             </p>
           ) : null}
         </form>

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -21,16 +22,26 @@ class Settings(BaseSettings):
     # - Production-like environments default to a safe disabled state unless an
     #   explicit mode is chosen.
     erpnext_mock_enabled: bool = True
-    erpnext_mode: str | None = None
+    erpnext_mode: Optional[str] = None
     erpnext_allow_mock_in_non_local: bool = False
-    erpnext_base_url: str | None = None
-    erpnext_api_key: str | None = None
-    erpnext_api_secret: str | None = None
+    erpnext_base_url: Optional[str] = None
+    erpnext_api_key: Optional[str] = None
+    erpnext_api_secret: Optional[str] = None
 
     auth_session_days: int = 30
 
+    billing_provider: Optional[str] = None
+    billing_allow_mock_in_non_local: bool = False
+    billing_webhook_secret: Optional[str] = None
+
+    security_headers_enabled: bool = True
+    rate_limit_enabled: bool = False
+    rate_limit_max_requests: int = 120
+    rate_limit_window_seconds: int = 60
+    rate_limit_exempt_paths: str = "/health,/docs,/openapi.json,/redoc,/auth/login,/auth/register"
+
     # Resend (marketing email) configuration
-    resend_api_key: str | None = None
+    resend_api_key: Optional[str] = None
     resend_from_email: str = "hello@local-saas.test"
     # Recipient for marketing intake emails (contact/demo)
     marketing_contact_recipient: str = "hello@local-saas.test"
@@ -52,6 +63,14 @@ class Settings(BaseSettings):
     @property
     def is_local_environment(self) -> bool:
         return self.normalized_environment in {"local", "development", "dev", "test"}
+
+    @property
+    def rate_limit_exempt_path_list(self) -> list[str]:
+        return [path.strip() for path in self.rate_limit_exempt_paths.split(",") if path.strip()]
+
+    @property
+    def rate_limit_effective_enabled(self) -> bool:
+        return bool(self.rate_limit_enabled and not self.is_local_environment)
 
 
 @lru_cache(maxsize=1)

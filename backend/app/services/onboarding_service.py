@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy.orm import Session
 
@@ -18,7 +18,7 @@ class OnboardingService:
     best-effort and do not fail the local flow.
     """
 
-    def __init__(self, billing_provider: Any | None = None) -> None:
+    def __init__(self, billing_provider: Optional[Any] = None) -> None:
         self.control = ControlPlaneService()
         self.billing = BillingService(provider=billing_provider)
 
@@ -29,9 +29,9 @@ class OnboardingService:
         org_payload: dict[str, Any],
         tenant_payload: dict[str, Any],
         plan_slug: str,
-        site_options: dict[str, Any] | None = None,
+        site_options: Optional[dict[str, Any]] = None,
         run_provision_now: bool = False,
-        provisioning_client: Any | None = None,
+        provisioning_client: Optional[Any] = None,
     ) -> dict[str, Any]:
         """Run the pilot onboarding orchestration.
 

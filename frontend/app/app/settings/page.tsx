@@ -19,15 +19,14 @@ export default function AppSettingsPage() {
           className="mt-4 text-4xl font-semibold tracking-tight"
           style={{ color: "var(--text)" }}
         >
-          Platform controls, environment safety, and operator guidance.
+          Platform controls for environment safety and operator execution.
         </h1>
         <p
           className="mt-4 max-w-2xl text-sm leading-7"
           style={{ color: "var(--muted)" }}
         >
           Use this area to keep the control plane grounded in safe operational
-          defaults while broader admin and integration controls continue to
-          mature.
+          defaults while admin and integration settings remain centralized.
         </p>
       </section>
 
@@ -35,15 +34,15 @@ export default function AppSettingsPage() {
         {[
           [
             "Theme",
-            "Light and dark mode remain available for operator comfort across demos and internal reviews.",
+            "Light and dark mode remain available for operator comfort across routine work.",
           ],
           [
             "Integration safety",
-            "Mock ERPNext behavior stays available for local work, while production-like environments now default to an explicit non-mock state.",
+            "Mock ERPNext behavior stays available for local work, while production-like environments default to an explicit non-mock state.",
           ],
           [
             "Admin readiness",
-            "Future phases can expand this area with platform-level policies, secret references, and runtime status checks.",
+            "Centralized policies, secret references, and runtime status checks can be added here as the platform grows.",
           ],
         ].map(([title, description]) => (
           <div

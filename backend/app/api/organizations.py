@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Union
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -19,7 +21,9 @@ router = APIRouter(tags=["organizations"])
 control_plane_service = ControlPlaneService()
 
 
-def _raise_control_plane_error(exc: ControlPlaneAccessError | ControlPlaneNotFoundError | ControlPlaneValidationError) -> None:
+def _raise_control_plane_error(
+    exc: Union[ControlPlaneAccessError, ControlPlaneNotFoundError, ControlPlaneValidationError]
+) -> None:
     if isinstance(exc, ControlPlaneNotFoundError):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     if isinstance(exc, ControlPlaneValidationError):

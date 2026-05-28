@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -22,17 +23,17 @@ class AuthError(Exception):
     pass
 
 
-@dataclass(slots=True)
+@dataclass
 class AuthMembershipSummary:
     organization_id: str
     organization_name: str
     role: str
 
 
-@dataclass(slots=True)
+@dataclass
 class AuthContext:
     user: SaaSUser
-    session: AuthSession | None
+    session: Optional[AuthSession]
     memberships: list[AuthMembershipSummary]
 
 
@@ -69,7 +70,7 @@ class AuthService:
         session.add(membership)
         session.flush()
 
-        user.last_login_at = datetime.now(UTC)
+        user.last_login_at = datetime.now(timezone.utc)
         access_token, auth_session = self._create_session(session, user)
         session.commit()
 
@@ -82,7 +83,7 @@ class AuthService:
         if not verify_password(payload.password, user.password_hash):
             raise AuthError("Invalid email or password.")
 
-        user.last_login_at = datetime.now(UTC)
+        user.last_login_at = datetime.now(timezone.utc)
         access_token, auth_session = self._create_session(session, user)
         session.commit()
 
@@ -90,7 +91,7 @@ class AuthService:
 
     def logout(self, session: Session, current_session: AuthSession) -> None:
         if current_session.revoked_at is None:
-            current_session.revoked_at = datetime.now(UTC)
+            current_session.revoked_at = datetime.now(timezone.utc)
             session.commit()
 
     def get_context(self, session: Session, token: str) -> AuthContext:
@@ -99,8 +100,8 @@ class AuthService:
             raise AuthError("Invalid or expired session.")
         if session_record.revoked_at is not None:
             raise AuthError("Session has been revoked.")
-        if self._as_utc(session_record.expires_at) <= datetime.now(UTC):
-            session_record.revoked_at = datetime.now(UTC)
+        if self._as_utc(session_record.expires_at) <= datetime.now(timezone.utc):
+            session_record.revoked_at = datetime.now(timezone.utc)
             session.commit()
             raise AuthError("Session has expired.")
 
@@ -108,7 +109,7 @@ class AuthService:
         if user is None or user.status != "active":
             raise AuthError("User account is not active.")
 
-        session_record.last_used_at = datetime.now(UTC)
+        session_record.last_used_at = datetime.now(timezone.utc)
         session.commit()
 
         return AuthContext(user=user, session=session_record, memberships=self._list_memberships(session, user.id))
@@ -118,7 +119,7 @@ class AuthService:
         session: Session,
         user: SaaSUser,
         organization_id: str,
-        allowed_roles: set[str] | None = None,
+        allowed_roles: Optional[set[str]] = None,
     ) -> bool:
         if user.is_platform_admin:
             return True
@@ -177,22 +178,22 @@ class AuthService:
 
     def _create_session(self, session: Session, user: SaaSUser) -> tuple[str, AuthSession]:
         cleartext_token = generate_session_token()
-        expires_at = datetime.now(UTC) + timedelta(days=self.session_ttl_days)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=self.session_ttl_days)
         auth_session = AuthSession(
             user_id=user.id,
             session_token_hash=hash_session_token(cleartext_token),
             expires_at=expires_at,
-            last_used_at=datetime.now(UTC),
+            last_used_at=datetime.now(timezone.utc),
         )
         session.add(auth_session)
         session.flush()
         return cleartext_token, auth_session
 
-    def _get_user_by_email(self, session: Session, email: str) -> SaaSUser | None:
+    def _get_user_by_email(self, session: Session, email: str) -> Optional[SaaSUser]:
         statement = select(SaaSUser).where(SaaSUser.email == email.strip().lower())
         return session.execute(statement).scalar_one_or_none()
 
-    def _get_session_by_token(self, session: Session, token: str) -> AuthSession | None:
+    def _get_session_by_token(self, session: Session, token: str) -> Optional[AuthSession]:
         statement = select(AuthSession).where(AuthSession.session_token_hash == hash_session_token(token))
         return session.execute(statement).scalar_one_or_none()
 
@@ -214,9 +215,9 @@ class AuthService:
         ]
 
     @staticmethod
-    def _as_utc(value: datetime | None) -> datetime | None:
+    def _as_utc(value: Optional[datetime]) -> Optional[datetime]:
         if value is None:
             return None
         if value.tzinfo is None:
-            return value.replace(tzinfo=UTC)
-        return value.astimezone(UTC)
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)

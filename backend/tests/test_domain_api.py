@@ -9,6 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app import models as _models  # noqa: F401
+from app.api.dependencies import get_current_user, get_db_session
 from app.db.base import Base
 from app.main import app
 from app.schemas.auth import AuthRegisterRequest
@@ -46,7 +47,7 @@ class DomainAPITestCase(unittest.TestCase):
             AuthRegisterRequest(
                 email="api-admin@example.test",
                 full_name="API Admin",
-                password="pw",
+                password="pw123456",
                 organization_name="API Org",
                 membership_role="owner",
                 is_platform_admin=True,
@@ -55,12 +56,13 @@ class DomainAPITestCase(unittest.TestCase):
         # fetch user from session
         context = self.auth_service.get_context(self.session, reg.access_token)
         self.user = context.user
+        self.organization_id = context.memberships[0].organization_id
 
         # create a tenant directly
         from app.models.domain import Tenant
 
         tenant = Tenant(
-            organization_id=self.user.id,
+            organization_id=self.organization_id,
             tenant_slug="api-tenant",
             environment="demo",
             status="planned",
@@ -79,8 +81,8 @@ class DomainAPITestCase(unittest.TestCase):
         def _get_current_user():
             return self.user
 
-        app.dependency_overrides["get_db_session"] = _get_test_db  # type: ignore[index]
-        app.dependency_overrides["get_current_user"] = _get_current_user  # type: ignore[index]
+        app.dependency_overrides[get_db_session] = _get_test_db
+        app.dependency_overrides[get_current_user] = _get_current_user
 
         self.client = TestClient(app)
 

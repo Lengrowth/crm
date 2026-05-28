@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+from typing import Union
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
 from app.db.session import get_db_session
 from app.models.domain import SaaSUser
-from app.schemas.control import TenantCreateRequest, TenantUpdateRequest
+from app.schemas.control import TenantCreateRequest, TenantLifecycleActionRequest, TenantUpdateRequest
 from app.schemas.domain import TenantRead
 from app.services.control_plane_service import (
     ControlPlaneAccessError,
@@ -19,7 +21,9 @@ router = APIRouter(tags=["tenants"])
 control_plane_service = ControlPlaneService()
 
 
-def _raise_control_plane_error(exc: ControlPlaneAccessError | ControlPlaneNotFoundError | ControlPlaneValidationError) -> None:
+def _raise_control_plane_error(
+    exc: Union[ControlPlaneAccessError, ControlPlaneNotFoundError, ControlPlaneValidationError]
+) -> None:
     if isinstance(exc, ControlPlaneNotFoundError):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     if isinstance(exc, ControlPlaneValidationError):
@@ -68,5 +72,31 @@ def update_tenant(
 ):
     try:
         return control_plane_service.update_tenant(session, current_user, tenant_id, payload)
+    except (ControlPlaneAccessError, ControlPlaneNotFoundError, ControlPlaneValidationError) as exc:
+        _raise_control_plane_error(exc)
+
+
+@router.post("/tenants/{tenant_id}/suspend", response_model=TenantRead)
+def suspend_tenant(
+    tenant_id: str,
+    payload: TenantLifecycleActionRequest,
+    session: Session = Depends(get_db_session),
+    current_user: SaaSUser = Depends(get_current_user),
+):
+    try:
+        return control_plane_service.suspend_tenant(session, current_user, tenant_id, payload)
+    except (ControlPlaneAccessError, ControlPlaneNotFoundError, ControlPlaneValidationError) as exc:
+        _raise_control_plane_error(exc)
+
+
+@router.post("/tenants/{tenant_id}/reactivate", response_model=TenantRead)
+def reactivate_tenant(
+    tenant_id: str,
+    payload: TenantLifecycleActionRequest,
+    session: Session = Depends(get_db_session),
+    current_user: SaaSUser = Depends(get_current_user),
+):
+    try:
+        return control_plane_service.reactivate_tenant(session, current_user, tenant_id, payload)
     except (ControlPlaneAccessError, ControlPlaneNotFoundError, ControlPlaneValidationError) as exc:
         _raise_control_plane_error(exc)

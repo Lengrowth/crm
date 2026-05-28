@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 from uuid import uuid4
 
 from sqlalchemy.orm import Session
@@ -10,9 +10,9 @@ from app.integrations.erpnext_client import (
     BackupRecord,
     ERPNextClient,
     OperationResult,
-    ProvisionRecord,
     SiteStatus,
 )
+from app.models.domain import Tenant
 from app.models.erpnext import (
     ERPNextIntegrationMetadata,
     TenantProvisioningRecord,
@@ -115,7 +115,7 @@ class ERPNextService:
         self._provisioning[provision_id]["finished_at"] = now
         self._provisioning[provision_id]["error_message"] = message
 
-    def get_provisioning_record(self, provision_id: str) -> dict[str, Any] | None:
+    def get_provisioning_record(self, provision_id: str) -> Optional[dict[str, Any]]:
         return self._provisioning.get(provision_id)
 
     def get_site_status(self, site_id: str) -> SiteStatus:
@@ -156,6 +156,13 @@ class PersistentERPNextService(ERPNextService):
             details={},
         )
         session.add(rec)
+
+        tenant = session.get(Tenant, tenant_id)
+        if tenant is not None:
+            tenant.provisioning_status = "running"
+            tenant.status = "provisioning"
+            session.add(tenant)
+
         session.commit()
         session.refresh(rec)
         return rec
@@ -178,14 +185,25 @@ class PersistentERPNextService(ERPNextService):
         session: Session,
         rec: TenantProvisioningRecord,
         site_id: str,
-        site_name: str | None = None,
-        base_url: str | None = None,
+        site_name: Optional[str] = None,
+        base_url: Optional[str] = None,
     ) -> None:
         rec.status = "success"
         rec.finished_at = utcnow()
         rec.details = dict(rec.details or {})
         # persist
         session.add(rec)
+
+        tenant = session.get(Tenant, rec.tenant_id)
+        if tenant is not None:
+            tenant.provisioning_status = "ready"
+            tenant.status = "ready"
+            if site_name:
+                tenant.erpnext_site_name = site_name
+            if base_url:
+                tenant.erpnext_base_url = base_url
+            session.add(tenant)
+
         # update or create integration metadata
         meta = (
             session.query(ERPNextIntegrationMetadata)
@@ -217,6 +235,13 @@ class PersistentERPNextService(ERPNextService):
         rec.finished_at = utcnow()
         rec.error_message = message
         session.add(rec)
+
+        tenant = session.get(Tenant, rec.tenant_id)
+        if tenant is not None:
+            tenant.provisioning_status = "failed"
+            tenant.status = "failed"
+            session.add(tenant)
+
         session.commit()
 
     def provision_tenant_persistent(
@@ -283,8 +308,10 @@ class PersistentERPNextService(ERPNextService):
 
         # success
         # try to infer site_name/base_url from create_site response
-        site_name = res.get("site_name")
-        base_url = res.get("base_url")
+        raw_site_name = res.get("site_name")
+        site_name = str(raw_site_name) if raw_site_name is not None else None
+        raw_base_url = res.get("base_url")
+        base_url = str(raw_base_url) if raw_base_url is not None else None
         self._finalize_success(
             session, rec, site_id, site_name=site_name, base_url=base_url
         )

@@ -4,10 +4,16 @@ import logging
 import os
 from typing import Any, Dict, Optional
 
+from app.core.config import settings
+
 logger = logging.getLogger(__name__)
 
 
 class BillingProviderError(Exception):
+    pass
+
+
+class BillingProviderConfigurationError(BillingProviderError):
     pass
 
 
@@ -101,10 +107,9 @@ class StripeBillingProvider(BillingProvider):
         self.api_key = os.environ.get("STRIPE_API_KEY")
         self._stripe = None
         if not self.api_key:
-            logger.warning(
-                "StripeBillingProvider initialized without STRIPE_API_KEY; provider will be disabled"
+            raise BillingProviderConfigurationError(
+                "StripeBillingProvider requires STRIPE_API_KEY to be configured."
             )
-            return
         try:
             import stripe
 
@@ -113,7 +118,9 @@ class StripeBillingProvider(BillingProvider):
             logger.info("StripeBillingProvider initialized with STRIPE_API_KEY")
         except Exception as e:  # ImportError or other
             logger.exception("Failed to initialize stripe SDK: %s", e)
-            self._stripe = None
+            raise BillingProviderConfigurationError(
+                "StripeBillingProvider could not initialize the Stripe SDK."
+            ) from e
 
     def _is_enabled(self) -> bool:
         return bool(self._stripe)
@@ -233,9 +240,21 @@ def get_billing_provider(provider_name: Optional[str] = None) -> BillingProvider
       `BILLING_PROVIDER` is read (default: "mock").
     - Supported names: "mock", "stripe".
     """
-    name = provider_name or os.environ.get("BILLING_PROVIDER", "mock")
+    name = provider_name or settings.billing_provider or os.environ.get("BILLING_PROVIDER")
+    if not name:
+        if settings.is_local_environment:
+            return MockBillingProvider()
+        raise BillingProviderConfigurationError(
+            "BILLING_PROVIDER must be configured for non-local environments."
+        )
+
     name = name.strip().lower()
     if name == "mock":
+        if not settings.is_local_environment and not settings.billing_allow_mock_in_non_local:
+            raise BillingProviderConfigurationError(
+                "Mock billing is blocked outside local/test environments unless "
+                "BILLING_ALLOW_MOCK_IN_NON_LOCAL=true is set intentionally."
+            )
         return MockBillingProvider()
     if name == "stripe":
         return StripeBillingProvider()

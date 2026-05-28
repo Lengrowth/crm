@@ -114,7 +114,7 @@ ssh -T git@github.com
 Expected remote URL:
 
 ```text
-git@github.com:guerra2fernando/crm.git
+git@github.com:BuildGrowthNow/crm.git
 ```
 
 ### Important security note
@@ -182,7 +182,7 @@ If both work without asking for a password, the deploy runner has the required s
 
 In GitHub:
 
-1. open the repository `guerra2fernando/crm`
+1. open the repository `BuildGrowthNow/crm`
 2. click **Settings**
 3. click **Actions**
 4. click **Runners**
@@ -223,7 +223,7 @@ Run the exact `config.sh` command shown by GitHub.
 It will look similar to:
 
 ```bash
-./config.sh --url https://github.com/guerra2fernando/crm --token REPLACE_WITH_GITHUB_RUNNER_TOKEN
+./config.sh --url https://github.com/BuildGrowthNow/crm --token REPLACE_WITH_GITHUB_RUNNER_TOKEN
 ```
 
 When prompted:
@@ -292,7 +292,7 @@ git remote -v
 If the remote is not already SSH, set it to:
 
 ```bash
-git remote set-url origin git@github.com:guerra2fernando/crm.git
+git remote set-url origin git@github.com:BuildGrowthNow/crm.git
 ```
 
 Then verify:
@@ -304,8 +304,8 @@ git remote -v
 Expected:
 
 ```text
-origin  git@github.com:guerra2fernando/crm.git (fetch)
-origin  git@github.com:guerra2fernando/crm.git (push)
+origin  git@github.com:BuildGrowthNow/crm.git (fetch)
+origin  git@github.com:BuildGrowthNow/crm.git (push)
 ```
 
 Again: read-only access is enough for the VM deploy key even if the push URL is present.
@@ -465,7 +465,7 @@ npm run build
 ### On the VM
 
 - repo exists at `/opt/saas-control/repo`
-- repo remote uses `git@github.com:guerra2fernando/crm.git`
+- repo remote uses `git@github.com:BuildGrowthNow/crm.git`
 - GitHub deploy key on the VM works
 - env files exist in `/opt/saas-control/shared/env/`
 - backend venv exists in `/opt/saas-control/shared/backend-venv`

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PlaceholderCard } from "@/components/PlaceholderCard";
+import { InfoCard } from "@/components/InfoCard";
 
 export default function AppHomePage() {
   return (
@@ -31,8 +31,8 @@ export default function AppHomePage() {
             style={{ color: "var(--muted)" }}
           >
             Use the protected app to review organizations, inspect tenants,
-            coordinate rollout work, and prepare the operational layer that will
-            later connect to ERPNext through an explicit live cutover.
+            coordinate rollout work, and prepare the operational layer for a
+            clean ERPNext cutover.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
@@ -62,17 +62,17 @@ export default function AppHomePage() {
       </section>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <PlaceholderCard
+        <InfoCard
           eyebrow="Customer ops"
           title="Organizations first"
           description="Track accounts, ownership, status, and rollout context before environment-level work begins."
         />
-        <PlaceholderCard
+        <InfoCard
           eyebrow="Tenant control"
           title="Clear environment visibility"
           description="Review tenant environments, provisioning posture, and domain information from the SaaS layer."
         />
-        <PlaceholderCard
+        <InfoCard
           eyebrow="Cutover safety"
           title="Mock stays explicit"
           description="Local demos can keep mock ERPNext behavior, while production-like environments avoid silent mock fallback."

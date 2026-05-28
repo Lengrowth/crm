@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+from typing import Union
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_current_user
+from app.api.dependencies import (
+    get_accessible_tenant,
+    get_current_user,
+    require_tenant_write_access,
+)
 from app.db.session import get_db_session
 from app.models.domain import SaaSUser
 from app.schemas.domain_management import (
@@ -24,7 +30,7 @@ service = DomainService()
 
 
 def _raise_domain_error(
-    exc: DomainAccessError | DomainNotFoundError | DomainValidationError,
+    exc: Union[DomainAccessError, DomainNotFoundError, DomainValidationError],
 ) -> None:
     if isinstance(exc, DomainNotFoundError):
         raise HTTPException(
@@ -41,7 +47,7 @@ def _raise_domain_error(
 def list_domains(
     tenant_id: str,
     session: Session = Depends(get_db_session),
-    current_user: SaaSUser = Depends(get_current_user),
+    _: object = Depends(get_accessible_tenant),
 ):
     return service.list_domains(session, tenant_id)
 
@@ -55,7 +61,7 @@ def create_domain(
     tenant_id: str,
     payload: DomainCreateRequest,
     session: Session = Depends(get_db_session),
-    current_user: SaaSUser = Depends(get_current_user),
+    _: object = Depends(require_tenant_write_access),
 ):
     try:
         return service.create_domain(session, tenant_id, payload)
@@ -69,11 +75,10 @@ def update_domain(
     domain_id: str,
     payload: DomainUpdateRequest,
     session: Session = Depends(get_db_session),
-    current_user: SaaSUser = Depends(get_current_user),
+    _: object = Depends(require_tenant_write_access),
 ):
     try:
-        # note: tenant_id not enforced here but could be enforced by service
-        return service.update_domain(session, domain_id, payload)
+        return service.update_domain(session, tenant_id, domain_id, payload)
     except (DomainAccessError, DomainNotFoundError, DomainValidationError) as exc:
         _raise_domain_error(exc)
 
@@ -86,9 +91,10 @@ def manual_activate(
     domain_id: str,
     payload: ManualActivationRequest,
     session: Session = Depends(get_db_session),
+    _: object = Depends(require_tenant_write_access),
     current_user: SaaSUser = Depends(get_current_user),
 ):
     try:
-        return service.manual_activate(session, domain_id, current_user, payload)
+        return service.manual_activate(session, tenant_id, domain_id, current_user, payload)
     except (DomainAccessError, DomainNotFoundError, DomainValidationError) as exc:
         _raise_domain_error(exc)

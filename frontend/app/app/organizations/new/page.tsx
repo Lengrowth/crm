@@ -3,13 +3,47 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createOrganization } from "@/lib/api";
 
 export default function NewOrganizationPage() {
+  const router = useRouter();
   const [submitted, setSubmitted] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitted(true);
+    setBusy(true);
+    setError(null);
+
+    const form = event.currentTarget;
+    const fd = new FormData(form);
+    const read = (name: string) => String(fd.get(name) ?? "").trim();
+
+    try {
+      const created = await createOrganization({
+        name: read("name"),
+        legal_name: read("legal_name") || undefined,
+        industry: read("industry") || undefined,
+        country: read("country") || undefined,
+        timezone: read("timezone") || undefined,
+        billing_email: read("billing_email") || undefined,
+        status: read("status") || "lead",
+      });
+
+      setSubmitted(true);
+      router.push(`/app/organizations/${created.id}`);
+      router.refresh();
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Unable to create the organization.",
+      );
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -35,9 +69,9 @@ export default function NewOrganizationPage() {
           Capture a customer account brief for pilot planning and onboarding.
         </h1>
         <p className="mt-4 text-sm leading-7" style={{ color: "var(--muted)" }}>
-          Use this screen to walk through the information an operator should
-          collect before tenant rollout, implementation planning, or billing
-          activation.
+          Use this screen to create the organization record that anchors tenant
+          rollout, implementation planning, and billing ownership in the SaaS
+          layer.
         </p>
 
         <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
@@ -56,6 +90,18 @@ export default function NewOrganizationPage() {
                 {label}
               </span>
               <input
+                name={
+                  label === "Organization name"
+                    ? "name"
+                    : label === "Legal name"
+                      ? "legal_name"
+                      : label === "Industry"
+                        ? "industry"
+                        : label === "Country"
+                          ? "country"
+                          : "billing_email"
+                }
+                required={label === "Organization name"}
                 className="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:translate-y-[-1px]"
                 style={{
                   borderColor: "var(--border)",
@@ -72,9 +118,29 @@ export default function NewOrganizationPage() {
               className="text-xs font-semibold uppercase tracking-[0.18em]"
               style={{ color: "var(--muted)" }}
             >
+              Timezone
+            </span>
+            <input
+              name="timezone"
+              className="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:translate-y-[-1px]"
+              style={{
+                borderColor: "var(--border)",
+                backgroundColor: "var(--surface-strong)",
+                color: "var(--text)",
+              }}
+              placeholder="UTC"
+            />
+          </label>
+
+          <label className="block space-y-2">
+            <span
+              className="text-xs font-semibold uppercase tracking-[0.18em]"
+              style={{ color: "var(--muted)" }}
+            >
               Status
             </span>
             <select
+              name="status"
               className="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:translate-y-[-1px]"
               style={{
                 borderColor: "var(--border)",
@@ -91,6 +157,7 @@ export default function NewOrganizationPage() {
 
           <button
             type="submit"
+            disabled={busy}
             className="rounded-full px-5 py-3 text-sm font-semibold transition hover:translate-y-[-1px]"
             style={{
               backgroundColor: "var(--accent)",
@@ -98,12 +165,14 @@ export default function NewOrganizationPage() {
               boxShadow: "0 16px 32px var(--shadow)",
             }}
           >
-            Save organization draft
+            {busy ? "Creating..." : "Create organization"}
           </button>
-          {submitted ? (
+          {error ? (
+            <p className="text-sm text-red-500">{error}</p>
+          ) : submitted ? (
             <p className="text-sm" style={{ color: "var(--muted)" }}>
-              Draft captured for a walkthrough flow. Persist this screen when
-              you connect it to the protected create route.
+              Organization created successfully. Redirecting to the detail
+              screen.
             </p>
           ) : null}
         </form>

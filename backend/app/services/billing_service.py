@@ -1,17 +1,26 @@
 from __future__ import annotations
 
+import hashlib
+import hmac
+import json
 from datetime import timedelta
-from typing import List
+from typing import List, Optional
+from time import time
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.billing import BillingInvoice, BillingPlan, BillingSubscription
 from app.models.domain import Organization
+from app.core.config import settings
 from app.models.erpnext import utcnow
 
 
 class BillingError(Exception):
+    pass
+
+
+class BillingWebhookVerificationError(BillingError):
     pass
 
 
@@ -27,7 +36,7 @@ class InvoiceNotFound(BillingError):
     pass
 
 
-from app.services.billing_provider import BillingProvider, MockBillingProvider
+from app.services.billing_provider import BillingProvider, get_billing_provider
 
 
 class BillingService:
@@ -36,9 +45,8 @@ class BillingService:
     Provider interactions are best-effort and will not fail local flows.
     """
 
-    def __init__(self, provider: BillingProvider | None = None) -> None:
-        # default to MockBillingProvider to preserve test behavior when no provider is passed
-        self.provider = provider or MockBillingProvider()
+    def __init__(self, provider: Optional[BillingProvider] = None) -> None:
+        self.provider = provider or get_billing_provider()
 
     def list_plans(self, session: Session) -> List[BillingPlan]:
         statement = select(BillingPlan).order_by(BillingPlan.created_at)
@@ -51,7 +59,7 @@ class BillingService:
         slug: str,
         price_cents: int,
         currency: str = "USD",
-        description: str | None = None,
+        description: Optional[str] = None,
     ) -> BillingPlan:
         plan = BillingPlan(
             name=name.strip(),
@@ -65,7 +73,7 @@ class BillingService:
         session.refresh(plan)
         return plan
 
-    def get_plan_by_slug(self, session: Session, slug: str) -> BillingPlan | None:
+    def get_plan_by_slug(self, session: Session, slug: str) -> Optional[BillingPlan]:
         statement = select(BillingPlan).where(BillingPlan.slug == slug)
         return session.execute(statement).scalar_one_or_none()
 
@@ -74,7 +82,7 @@ class BillingService:
         session: Session,
         organization_id: str,
         plan_slug: str,
-        tenant_id: str | None = None,
+        tenant_id: Optional[str] = None,
     ) -> BillingSubscription:
         plan = self.get_plan_by_slug(session, plan_slug)
         if plan is None:
@@ -154,7 +162,7 @@ class BillingService:
 
     def get_subscription_for_organization(
         self, session: Session, organization_id: str
-    ) -> BillingSubscription | None:
+    ) -> Optional[BillingSubscription]:
         statement = select(BillingSubscription).where(
             BillingSubscription.organization_id == organization_id
         )
@@ -164,8 +172,8 @@ class BillingService:
         self,
         session: Session,
         subscription_id: str,
-        amount_cents: int | None = None,
-        lines: List[dict] | None = None,
+        amount_cents: Optional[int] = None,
+        lines: Optional[List[dict]] = None,
     ) -> BillingInvoice:
         subscription = session.get(BillingSubscription, subscription_id)
         if subscription is None:
@@ -258,7 +266,16 @@ class BillingService:
         session.refresh(invoice)
         return invoice
 
-    def process_webhook(self, session: Session, payload: dict) -> dict:
+    def process_webhook(
+        self,
+        session: Session,
+        payload: dict,
+        *,
+        signature: Optional[str] = None,
+        timestamp: Optional[str] = None,
+    ) -> dict:
+        self._verify_webhook_signature(payload, signature=signature, timestamp=timestamp)
+
         # Minimal provider-agnostic processing for two events: invoice.paid and subscription.canceled
         event = payload.get("event")
         data = payload.get("data") or {}
@@ -283,3 +300,41 @@ class BillingService:
             return {"handled": True}
 
         return {"handled": False}
+
+    def _verify_webhook_signature(
+        self,
+        payload: dict,
+        *,
+        signature: Optional[str],
+        timestamp: Optional[str],
+    ) -> None:
+        secret = settings.billing_webhook_secret
+        if not secret:
+            if settings.is_local_environment:
+                return
+            raise BillingWebhookVerificationError(
+                "Billing webhook secret is not configured for this environment."
+            )
+
+        if not signature or not timestamp:
+            raise BillingWebhookVerificationError(
+                "Billing webhook signature and timestamp headers are required."
+            )
+
+        try:
+            timestamp_int = int(timestamp)
+        except ValueError as exc:
+            raise BillingWebhookVerificationError("Billing webhook timestamp is invalid.") from exc
+
+        current_time = int(time())
+        if abs(current_time - timestamp_int) > 300:
+            raise BillingWebhookVerificationError("Billing webhook timestamp is outside the allowed window.")
+
+        canonical_payload = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        signed_message = f"{timestamp}.{canonical_payload}".encode("utf-8")
+        expected_signature = hmac.new(
+            secret.encode("utf-8"), signed_message, hashlib.sha256
+        ).hexdigest()
+
+        if not hmac.compare_digest(signature.strip(), expected_signature):
+            raise BillingWebhookVerificationError("Billing webhook signature is invalid.")

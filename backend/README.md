@@ -43,4 +43,6 @@ Copy `./.env.example` to `.env` before running the backend.
 - Phase 03 adds local SaaS auth with opaque sessions, password hashing, membership awareness, and current-user route protection scaffolding.
 - Phase 05 adds protected organization and tenant CRUD with membership-aware access checks while keeping ERPNext mocked.
 - The default database is a local SQLite file for MVP simplicity, but the `DATABASE_URL` stays configurable for PostgreSQL later.
-- ERPNext/Frappe remains a mock integration and is not required for local development.
+- ERPNext/Frappe is still not required for local development; local/test can continue using mock mode.
+- Phase 18 enables the explicit live ERPNext client path when `ERPNEXT_MODE=live` and live credentials/base URL are configured intentionally.
+- Phase 19 adds the production-hardening runtime layer: security headers, lightweight rate limiting, tenant suspend/reactivate actions, and audit-log inspection for platform admins.

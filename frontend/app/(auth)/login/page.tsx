@@ -42,7 +42,7 @@ function LoginPageContent() {
 
   const [mode, setMode] = useState<Mode>("login");
   const [fullName, setFullName] = useState("");
-  const [organizationName, setOrganizationName] = useState("Pilot Workspace");
+  const [organizationName, setOrganizationName] = useState("LenQuant Workspace");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState<"idle" | "submitting">("idle");
@@ -105,9 +105,9 @@ function LoginPageContent() {
           className="mt-4 max-w-2xl text-sm leading-7"
           style={{ color: "var(--muted)" }}
         >
-          Authentication lives in the SaaS layer so operators and pilot users
-          can manage organizations, tenants, and rollout work without mixing
-          credentials with ERPNext tenant access.
+          Authentication lives in the SaaS layer so operators can manage
+          organizations, tenants, and rollout work without mixing credentials
+          with ERPNext tenant access.
         </p>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -121,8 +121,8 @@ function LoginPageContent() {
               "ERPNext remains an external runtime target; live cutover is not part of this sign-in flow.",
             ],
             [
-              "Pilot-ready accounts",
-              "Use the same control-plane account model for demos, pilots, and pre-launch validation.",
+              "Workspace accounts",
+              "Use the same control-plane account model for onboarding, rollout, and launch operations.",
             ],
           ].map(([title, copy]) => (
             <div
@@ -300,7 +300,7 @@ function LoginPageContent() {
 
         <p className="mt-5 text-xs leading-5" style={{ color: "var(--muted)" }}>
           This environment uses SaaS-layer authentication for dashboard access.
-          Live ERPNext integration remains a later, explicit cutover step.
+          ERPNext integration remains a later, explicit cutover step.
         </p>
       </section>
     </div>

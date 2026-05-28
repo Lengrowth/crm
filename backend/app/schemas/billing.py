@@ -15,6 +15,14 @@ class PlanOut(BaseModel):
     description: Optional[str]
 
 
+class PlanCreateRequest(BaseModel):
+    name: str
+    slug: str
+    price_cents: int
+    currency: str = "USD"
+    description: Optional[str] = None
+
+
 class SubscriptionOut(BaseModel):
     id: str
     organization_id: str

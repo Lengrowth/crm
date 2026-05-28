@@ -3,14 +3,17 @@ from __future__ import annotations
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from typing import Optional
 
 from app.models.domain import Organization, OrganizationMembership, SaaSUser, Tenant
 from app.schemas.control import (
     OrganizationCreateRequest,
     OrganizationUpdateRequest,
+    TenantLifecycleActionRequest,
     TenantCreateRequest,
     TenantUpdateRequest,
 )
+from app.services.audit_service import audit_service
 
 WRITE_ROLES = {"owner", "admin", "implementation_manager"}
 
@@ -32,6 +35,66 @@ class ControlPlaneValidationError(ControlPlaneError):
 
 
 class ControlPlaneService:
+    def suspend_tenant(
+        self,
+        session: Session,
+        current_user: SaaSUser,
+        tenant_id: str,
+        payload: TenantLifecycleActionRequest,
+    ) -> Tenant:
+        tenant = self._fetch_tenant(session, tenant_id)
+        if tenant is None:
+            raise ControlPlaneNotFoundError("Tenant not found.")
+        self._ensure_organization_write_access(session, current_user, tenant.organization_id)
+
+        tenant.status = "suspended"
+        session.commit()
+        session.refresh(tenant)
+        audit_service.record_event(
+            session,
+            actor_user_id=current_user.id,
+            organization_id=tenant.organization_id,
+            tenant_id=tenant.id,
+            action="tenant.suspended",
+            entity_type="tenant",
+            entity_id=tenant.id,
+            metadata_json={
+                "reason": payload.reason,
+                "notes": payload.notes,
+            },
+        )
+        return tenant
+
+    def reactivate_tenant(
+        self,
+        session: Session,
+        current_user: SaaSUser,
+        tenant_id: str,
+        payload: TenantLifecycleActionRequest,
+    ) -> Tenant:
+        tenant = self._fetch_tenant(session, tenant_id)
+        if tenant is None:
+            raise ControlPlaneNotFoundError("Tenant not found.")
+        self._ensure_organization_write_access(session, current_user, tenant.organization_id)
+
+        tenant.status = "ready"
+        session.commit()
+        session.refresh(tenant)
+        audit_service.record_event(
+            session,
+            actor_user_id=current_user.id,
+            organization_id=tenant.organization_id,
+            tenant_id=tenant.id,
+            action="tenant.reactivated",
+            entity_type="tenant",
+            entity_id=tenant.id,
+            metadata_json={
+                "reason": payload.reason,
+                "notes": payload.notes,
+            },
+        )
+        return tenant
+
     def list_organizations(self, session: Session, current_user: SaaSUser) -> list[Organization]:
         if current_user.is_platform_admin:
             statement = select(Organization).order_by(Organization.created_at.desc())
@@ -105,7 +168,7 @@ class ControlPlaneService:
         self,
         session: Session,
         current_user: SaaSUser,
-        organization_id: str | None = None,
+        organization_id: Optional[str] = None,
     ) -> list[Tenant]:
         statement = select(Tenant).order_by(Tenant.created_at.desc())
 
@@ -127,7 +190,7 @@ class ControlPlaneService:
         session: Session,
         current_user: SaaSUser,
         payload: TenantCreateRequest,
-        organization_id: str | None = None,
+        organization_id: Optional[str] = None,
     ) -> Tenant:
         resolved_organization_id = organization_id or payload.organization_id
         if not resolved_organization_id:
@@ -228,11 +291,11 @@ class ControlPlaneService:
             raise ControlPlaneAccessError("Organization write access denied.")
 
     @staticmethod
-    def _fetch_organization(session: Session, organization_id: str) -> Organization | None:
+    def _fetch_organization(session: Session, organization_id: str) -> Optional[Organization]:
         return session.get(Organization, organization_id)
 
     @staticmethod
-    def _fetch_tenant(session: Session, tenant_id: str) -> Tenant | None:
+    def _fetch_tenant(session: Session, tenant_id: str) -> Optional[Tenant]:
         return session.get(Tenant, tenant_id)
 
     def _require_organization_exists(self, session: Session, organization_id: str) -> Organization:

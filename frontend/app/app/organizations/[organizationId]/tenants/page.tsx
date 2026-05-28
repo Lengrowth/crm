@@ -80,7 +80,7 @@ export default function OrganizationTenantsPage() {
               open detail to manage provisioning and domains.
             </p>
           </div>
-          <form onSubmit={() => {}}>
+          <div>
             <Link
               href="/app/tenants/new"
               className="inline-flex rounded-full px-5 py-3 text-sm font-semibold transition hover:translate-y-[-1px]"
@@ -92,7 +92,7 @@ export default function OrganizationTenantsPage() {
             >
               Create tenant
             </Link>
-          </form>
+          </div>
         </div>
       </section>
 

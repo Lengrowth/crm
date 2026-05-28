@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 import httpx
 
@@ -23,9 +23,9 @@ class ERPNextHTTPClient(ERPNextClient):
 
     def __init__(
         self,
-        base_url: str | None = None,
-        api_key: str | None = None,
-        api_secret: str | None = None,
+        base_url: Optional[str] = None,
+        api_key: Optional[str] = None,
+        api_secret: Optional[str] = None,
         timeout_seconds: float = 10.0,
     ) -> None:
         self.base_url = (base_url or settings.erpnext_base_url or "").rstrip("/")
@@ -42,7 +42,7 @@ class ERPNextHTTPClient(ERPNextClient):
         return headers
 
     def _request(
-        self, method: str, path: str, payload: dict[str, Any] | None = None
+        self, method: str, path: str, payload: Optional[dict[str, Any]] = None
     ) -> dict[str, object]:
         if not self.base_url:
             return {

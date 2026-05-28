@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import Optional
 from uuid import uuid4
 
 from sqlalchemy import JSON, DateTime, ForeignKey, String, Text, UniqueConstraint
@@ -34,9 +35,9 @@ class ERPNextIntegrationMetadata(Base, UUIDMixin, TimestampMixin):
     tenant_id: Mapped[str] = mapped_column(
         ForeignKey("tenants.id"), nullable=False, index=True
     )
-    site_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    site_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    base_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    site_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    site_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    base_url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     metadata_json: Mapped[dict[str, object]] = mapped_column(
         JSON, nullable=False, default=dict
     )
@@ -52,16 +53,16 @@ class TenantProvisioningRecord(Base, UUIDMixin, TimestampMixin):
         ForeignKey("tenants.id"), nullable=False, index=True
     )
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
-    started_at: Mapped[datetime | None] = mapped_column(
+    started_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    finished_at: Mapped[datetime | None] = mapped_column(
+    finished_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     details: Mapped[dict[str, object]] = mapped_column(
         JSON, nullable=False, default=dict
     )
-    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     __table_args__ = (
         UniqueConstraint(

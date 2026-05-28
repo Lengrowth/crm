@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy.orm import Session
 
@@ -18,7 +18,7 @@ class ProvisioningWorker:
     already finished.
     """
 
-    def __init__(self, client: ERPNextClient | None = None) -> None:
+    def __init__(self, client: Optional[ERPNextClient] = None) -> None:
         self.client = client or get_erpnext_client()
         self.service = PersistentERPNextService(self.client)
 
@@ -41,8 +41,8 @@ class ProvisioningWorker:
 
 
 def run_next_job(
-    session: Session, client: ERPNextClient | None = None, max_attempts: int = 3
-) -> ProvisioningJob | None:
+    session: Session, client: Optional[ERPNextClient] = None, max_attempts: int = 3
+) -> Optional[ProvisioningJob]:
     """Pick the next queued provisioning job and execute it synchronously."""
     job = (
         session.query(ProvisioningJob)
@@ -62,7 +62,7 @@ def run_next_job(
         session, job, {"event": "started", "attempt": job.attempt_count}
     )
 
-    payload: dict[str, Any] | None = None
+    payload: Optional[dict[str, Any]] = None
     if job.logs_json and job.logs_json[0].get("payload"):
         raw_payload = job.logs_json[0].get("payload")
         if isinstance(raw_payload, dict):

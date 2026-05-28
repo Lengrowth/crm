@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy.orm import Session
 
@@ -21,8 +21,8 @@ class ProvisioningService:
         session: Session,
         tenant_id: str,
         job_type: str,
-        requested_by_user_id: str | None = None,
-        payload: dict[str, Any] | None = None,
+        requested_by_user_id: Optional[str] = None,
+        payload: Optional[dict[str, Any]] = None,
     ) -> ProvisioningJob:
         now = utcnow()
         initial_log: dict[str, Any] = {
@@ -45,7 +45,7 @@ class ProvisioningService:
         session.refresh(rec)
         return rec
 
-    def get_job(self, session: Session, job_id: str) -> ProvisioningJob | None:
+    def get_job(self, session: Session, job_id: str) -> Optional[ProvisioningJob]:
         return session.query(ProvisioningJob).filter_by(id=job_id).one_or_none()
 
     def list_jobs_for_tenant(
@@ -77,7 +77,7 @@ class ProvisioningService:
         session: Session,
         job: ProvisioningJob,
         status: str,
-        err: str | None = None,
+        err: Optional[str] = None,
     ) -> ProvisioningJob:
         job.status = status
         if status == "running":

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional
+
 from sqlalchemy.orm import Session
 
 from app.db.seed import seed_reference_data
@@ -7,7 +9,7 @@ from app.repositories.catalog_repository import CatalogRepository
 
 
 class CatalogService:
-    def __init__(self, repository: CatalogRepository | None = None) -> None:
+    def __init__(self, repository: Optional[CatalogRepository] = None) -> None:
         self.repository = repository or CatalogRepository()
 
     def list_organizations(self, session: Session):

@@ -85,9 +85,26 @@ export function fetchOrganizations() {
   return requestJsonAuth<any[]>("/organizations", { method: "GET" });
 }
 
+export function createOrganization(payload: Record<string, unknown>) {
+  return requestJsonAuth<any>("/organizations", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function fetchOrganization(organizationId: string) {
   return requestJsonAuth<any>(`/organizations/${organizationId}`, {
     method: "GET",
+  });
+}
+
+export function updateOrganization(
+  organizationId: string,
+  payload: Record<string, unknown>,
+) {
+  return requestJsonAuth<any>(`/organizations/${organizationId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
   });
 }
 
@@ -111,8 +128,22 @@ export function fetchTenants() {
   return requestJsonAuth<any[]>("/tenants", { method: "GET" });
 }
 
+export function createTenant(payload: Record<string, unknown>) {
+  return requestJsonAuth<any>("/tenants", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function fetchTenant(tenantId: string) {
   return requestJsonAuth<any>(`/tenants/${tenantId}`, { method: "GET" });
+}
+
+export function updateTenant(tenantId: string, payload: Record<string, unknown>) {
+  return requestJsonAuth<any>(`/tenants/${tenantId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
 }
 
 export function listTenantDomains(tenantId: string) {

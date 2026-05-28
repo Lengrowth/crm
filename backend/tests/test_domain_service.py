@@ -57,19 +57,15 @@ class DomainServiceTestCase(unittest.TestCase):
             )
             user = context.user
 
-            # create an organization/tenant
-            org = context.memberships[0].organization_id
-            # The AuthService.register flow already created an organization and membership above; fetch tenant creation using models
-            # For test simplicity, create a tenant directly
+            org_id = context.memberships[0].organization_id
             from app.models.domain import Tenant
 
             tenant = Tenant(
-                organization_id=user.id,
+                organization_id=org_id,
                 tenant_slug="acme-test",
                 environment="demo",
                 status="planned",
             )
-            # Note: organization_id should reference an organization; using user.id here is hacky but sufficient for schema constraints off in sqlite for FK
             session.add(tenant)
             session.flush()
 
@@ -89,7 +85,7 @@ class DomainServiceTestCase(unittest.TestCase):
                 activate=True, notes="manual enable for test"
             )
             activated = self.domain_service.manual_activate(
-                session, created.id, user, man_req
+                session, tenant.id, created.id, user, man_req
             )
             self.assertTrue(activated.is_active)
             self.assertIsNotNone(activated.manual_activation_by)

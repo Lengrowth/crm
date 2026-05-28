@@ -5,6 +5,7 @@ import hashlib
 import hmac
 import secrets
 from dataclasses import dataclass
+from typing import Optional
 
 from fastapi import HTTPException, status
 from fastapi.security.utils import get_authorization_scheme_param
@@ -14,7 +15,7 @@ PASSWORD_SALT_BYTES = 16
 SESSION_TOKEN_BYTES = 32
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class ParsedSessionToken:
     token: str
 
@@ -37,7 +38,7 @@ def hash_password(password: str) -> str:
     )
 
 
-def verify_password(password: str, stored_hash: str | None) -> bool:
+def verify_password(password: str, stored_hash: Optional[str]) -> bool:
     if not stored_hash:
         return False
 
@@ -69,8 +70,8 @@ def hash_session_token(token: str) -> str:
 
 
 def extract_session_token(
-    authorization: str | None = None,
-    x_session_token: str | None = None,
+    authorization: Optional[str] = None,
+    x_session_token: Optional[str] = None,
 ) -> str:
     if x_session_token:
         token = x_session_token.strip()
