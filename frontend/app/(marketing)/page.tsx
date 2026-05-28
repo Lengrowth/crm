@@ -1,456 +1,488 @@
 import type { Metadata } from "next";
+import Image from "next/image";
+import ModuleTabs from "@/components/ModuleTabs";
+import HeroGridSvg from "@/components/HeroGridSvg";
 import {
   MarketingBackdrop,
   MarketingButtonLink,
   MarketingCard,
   MarketingIcon,
-  MarketingIconBadge,
   MarketingPageCta,
-  MarketingSectionIntro,
-  MarketingStat,
+  ScrollReveal,
   type MarketingIconName,
 } from "@/components/MarketingPrimitives";
 
 export const metadata: Metadata = {
-  title: "Operational ERP rollout control for implementation-led teams",
+  title: "LenERP — The only ERP you'll ever need",
   description:
-    "LenQuant gives operations-heavy teams a premium SaaS control plane for onboarding, tenant readiness, module packaging, and rollout visibility around ERPNext-backed delivery.",
+    "LenERP is a full-featured CRM & ERP platform covering accounting, sales, procurement, inventory, manufacturing, projects, and more. Built for any business, any industry.",
 };
 
-const tensionPoints = [
+const problems = [
   {
-    icon: "spark",
-    title: "Delivery gets noisy fast",
+    icon: "spark" as MarketingIconName,
+    title: "Proprietary ERPs are expensive and rigid",
     description:
-      "Sales, implementation, and launch work spread across inboxes and spreadsheets instead of one visible workflow.",
+      "SAP, Oracle, and NetSuite drain budgets and lock you in. Businesses deserve a modern, open, and flexible alternative.",
   },
   {
-    icon: "shield",
-    title: "The product boundary should stay clear",
+    icon: "chart" as MarketingIconName,
+    title: "Disconnected apps create blind spots",
     description:
-      "The public site should explain the SaaS layer first and keep the runtime relationship deliberate.",
+      "Multiple tools that don't talk to each other lead to manual work, poor visibility, and broken traceability across the business.",
   },
   {
-    icon: "chart",
-    title: "Readiness has to be visible",
+    icon: "shield" as MarketingIconName,
+    title: "Growth should not mean more software costs",
     description:
-      "Teams should see onboarding, module fit, and launch status before go-live pressure shows up.",
-  },
-];
-
-const workflowSteps = [
-  {
-    step: "01",
-    icon: "grid",
-    title: "Map the account",
-    description:
-      "Set the organization, package, and commercial story in the SaaS control plane first.",
-  },
-  {
-    step: "02",
-    icon: "spark",
-    title: "Shape the rollout",
-    description:
-      "Track modules, readiness, and implementation ownership before any runtime cutover begins.",
-  },
-  {
-    step: "03",
-    icon: "shield",
-    title: "Coordinate the boundary",
-    description:
-      "Keep operators, delivery teams, and customers aligned on what belongs in the front door and what stays behind it.",
-  },
-  {
-    step: "04",
-    icon: "arrow",
-    title: "Cut over deliberately",
-    description:
-      "Move to runtime only when the rollout is ready, visible, and approved.",
+      "Per-user pricing compounds as you grow. Your ERP should scale with your business, not hold it back.",
   },
 ];
 
-const capabilityHighlights = [
+const steps = [
   {
-    icon: "grid",
-    title: "Product packaging",
+    num: "01",
+    title: "Capture and manage customers",
     description:
-      "Shape CRM, modules, and rollout offer structure from one public surface.",
+      "Full CRM pipeline: leads, opportunities, quotes, and deal history — from first contact to signed contract.",
   },
   {
-    icon: "spark",
-    title: "Implementation visibility",
+    num: "02",
+    title: "Run your operations",
     description:
-      "Show the current state of onboarding and launch work without clutter.",
+      "Manufacturing, field services, procurement, and project management — all inside the same system.",
   },
   {
-    icon: "chart",
-    title: "Operational signal",
+    num: "03",
+    title: "Control inventory and stock",
     description:
-      "Surface the status, pacing, and readiness story in a way customers can scan quickly.",
+      "Warehouses, serial and batch tracking, stock ledger, and procurement visibility across every location.",
   },
   {
-    icon: "shield",
-    title: "Controlled cutover",
+    num: "04",
+    title: "Close, invoice, and report",
     description:
-      "Keep the runtime boundary explicit so the product stays credible during launch.",
-  },
-];
-
-const industrySignals = [
-  {
-    icon: "dot",
-    title: "Drilling first",
-    description:
-      "A flagship vertical that proves the product can handle field reality and launch discipline.",
-  },
-  {
-    icon: "grid",
-    title: "Field operations next",
-    description:
-      "Extend the same model to crews, dispatch, and execution-heavy workflows.",
-  },
-  {
-    icon: "chart",
-    title: "Inventory and assets",
-    description:
-      "Keep materials, maintenance, and rollout readiness in a coherent product story.",
+      "Accounting, invoicing, financial statements, and management dashboards — fully connected to operations.",
   },
 ];
 
-const trustSignals = [
-  "Clear SaaS control plane story",
-  "Icon-led public experience",
-  "Compact, premium navigation",
-  "Zinc-based dark mode surfaces",
+const capabilities = [
+  {
+    icon: "building" as MarketingIconName,
+    title: "CRM",
+    description:
+      "Leads, opportunities, quotations, multi-territory sales, SLA management, and customer communications in one pipeline.",
+  },
+  {
+    icon: "chart" as MarketingIconName,
+    title: "Accounting",
+    description:
+      "General ledger, accounts payable/receivable, financial statements, fixed assets, and global tax compliance.",
+  },
+  {
+    icon: "spark" as MarketingIconName,
+    title: "Sales",
+    description:
+      "Order-to-cash, sales orders, invoicing, pricing rules, print formats, and integrated payments.",
+  },
+  {
+    icon: "shield" as MarketingIconName,
+    title: "Procurement",
+    description:
+      "Procure-to-pay cycle, material requests, purchase orders, multi-level approvals, and supplier scorecards.",
+  },
+  {
+    icon: "layers" as MarketingIconName,
+    title: "Inventory & Stock",
+    description:
+      "Item master, warehouses, serial and batch tracking, stock ledger, and inventory reports across every location.",
+  },
+  {
+    icon: "bolt" as MarketingIconName,
+    title: "Manufacturing",
+    description:
+      "Multi-level BOM, production planning, work orders, job cards, subcontracting, and quality checks.",
+  },
+  {
+    icon: "clock" as MarketingIconName,
+    title: "Projects",
+    description:
+      "Project and task tracking, revenue recognition, expense tracking, timesheets, and cashflow management.",
+  },
+  {
+    icon: "grid" as MarketingIconName,
+    title: "Reporting & Dashboards",
+    description:
+      "Customisable reports, management dashboards, cost analysis, and real-time KPIs for leadership and teams.",
+  },
 ];
+
 
 export default function HomePage() {
   return (
-    <div className="space-y-10 lg:space-y-14">
+    <div className="space-y-20 lg:space-y-32">
+      {/* ── Hero ───────────────────────────────────────────── */}
       <MarketingCard
-        className="relative overflow-hidden rounded-[2.5rem] px-7 py-8 sm:px-10 sm:py-10 lg:px-12 lg:py-12"
+        className="relative overflow-hidden rounded-[2.5rem] px-8 py-16 sm:px-12 sm:py-20 lg:px-16 lg:py-24"
         tone="accent"
       >
         <MarketingBackdrop />
-        <div className="relative grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-          <div className="max-w-2xl">
-            <div className="flex flex-wrap gap-3">
-              <MarketingIconBadge icon="spark" label="Startup-like website" />
-              <MarketingIconBadge icon="shield" label="Clear product boundary" />
-              <MarketingIconBadge icon="grid" label="Zinc dark mode" />
-            </div>
+        <HeroGridSvg />
 
-            <p
-              className="mt-7 text-xs font-semibold uppercase tracking-[0.28em]"
-              style={{ color: "var(--muted)" }}
-            >
-              LenQuant control plane
-            </p>
-            <h1
-              className="mt-4 max-w-3xl text-5xl font-semibold tracking-[-0.06em] sm:text-6xl lg:text-7xl"
-              style={{ color: "var(--text)" }}
-            >
-              Control the rollout before it turns into operational noise.
-            </h1>
-            <p
-              className="mt-6 max-w-2xl text-base leading-8 sm:text-lg"
-              style={{ color: "var(--muted)" }}
-            >
-              LenQuant gives ops-heavy teams a premium SaaS front door for
-              onboarding, tenant readiness, module packaging, and launch
-              coordination. The runtime stays behind a deliberate boundary.
-            </p>
+        {/* Full-bleed product screenshot — right half, bleeds to card edge */}
+        <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[50%] translate-x-20 lg:block">
+          <Image
+            src="/dashboard.png"
+            alt="LenERP — business dashboard overview"
+            fill
+            sizes="58vw"
+            className="object-cover object-left-top opacity-75"
+            priority
+          />
+        </div>
 
-            <div className="mt-8 flex flex-wrap gap-3">
-              <MarketingButtonLink href="/demo">Book a demo</MarketingButtonLink>
-              <MarketingButtonLink href="/contact" variant="secondary">
-                Talk to us
-              </MarketingButtonLink>
-              <MarketingButtonLink href="/login" variant="ghost">
-                Sign in
-              </MarketingButtonLink>
-            </div>
-
-            <div className="mt-8 grid gap-3 sm:grid-cols-3">
-              {trustSignals.map((item) => (
-                <div
-                  key={item}
-                  className="rounded-[1.25rem] border border-[color:var(--border)] bg-[color:var(--surface-overlay)] px-4 py-4"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text)]">
-                      <MarketingIcon icon="dot" className="h-4 w-4" />
-                    </span>
-                    <p className="text-sm font-semibold leading-6" style={{ color: "var(--text)" }}>
-                      {item}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid gap-4">
-            <MarketingCard className="rounded-[1.9rem] p-6" tone="default">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p
-                    className="text-xs font-semibold uppercase tracking-[0.24em]"
-                    style={{ color: "var(--muted)" }}
-                  >
-                    Public surface
-                  </p>
-                  <h2
-                    className="mt-3 text-2xl font-semibold tracking-[-0.04em]"
-                    style={{ color: "var(--text)" }}
-                  >
-                    One place to explain the product, the rollout, and the next step.
-                  </h2>
-                </div>
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text)]">
-                  <MarketingIcon icon="grid" className="h-6 w-6" />
-                </span>
-              </div>
-
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-[1.35rem] border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-4">
-                  <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>
-                    SaaS control plane
-                  </p>
-                  <p className="mt-2 text-sm leading-6" style={{ color: "var(--muted)" }}>
-                    Accounts, tenants, modules, implementation, and launch visibility.
-                  </p>
-                </div>
-                <div className="rounded-[1.35rem] border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-4">
-                  <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>
-                    Runtime boundary
-                  </p>
-                  <p className="mt-2 text-sm leading-6" style={{ color: "var(--muted)" }}>
-                    Operational execution stays explicit until cutover is ready.
-                  </p>
-                </div>
-              </div>
-            </MarketingCard>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <MarketingStat
-                value="01"
-                label="Primary front door"
-                description="Homepage, pricing, demo, and contact all follow one design system."
-              />
-              <MarketingStat
-                value="04"
-                label="Core rollout layers"
-                description="Organization, tenant, module, and launch readiness are visible."
-              />
-            </div>
+        {/* Left: text content */}
+        <div className="relative max-w-xl">
+          <p
+            className="marketing-reveal text-xs font-semibold uppercase tracking-[0.28em]"
+            style={{ color: "var(--accent)" }}
+          >
+            LenERP
+          </p>
+          <h1
+            className="marketing-reveal mt-5 text-6xl font-semibold sm:text-7xl lg:text-8xl marketing-gradient-text"
+            style={{ animationDelay: "60ms" }}
+          >
+            The only ERP you'll ever need.
+          </h1>
+          <p
+            className="marketing-reveal mt-6 max-w-lg text-lg leading-8"
+            style={{ color: "var(--muted)", animationDelay: "120ms" }}
+          >
+            Accounts, CRM, sales, procurement, inventory, manufacturing,
+            projects, and more — in one modern platform built for any
+            business, any industry.
+          </p>
+          <div
+            className="marketing-reveal mt-8 flex flex-wrap gap-3"
+            style={{ animationDelay: "180ms" }}
+          >
+            <MarketingButtonLink href="/demo">Book a demo</MarketingButtonLink>
+            <MarketingButtonLink href="/modules" variant="secondary">
+              Explore features
+            </MarketingButtonLink>
           </div>
         </div>
       </MarketingCard>
 
-      <section className="grid gap-6 lg:grid-cols-[0.88fr_1.12fr] lg:items-start">
-        <MarketingCard className="rounded-[2rem] p-7 sm:p-8" tone="default">
-          <MarketingSectionIntro
-            eyebrow="Why this matters"
-            title="The site should feel designed, not assembled."
-            description="Public pages need stronger hierarchy, lighter copy, and a more confident lead-in so the product feels credible before a sales conversation starts."
-          />
-          <div className="mt-6 flex flex-wrap gap-3">
-            <MarketingIconBadge icon="spark" label="More breathing room" />
-            <MarketingIconBadge icon="chart" label="Clear primary CTA" />
-          </div>
-        </MarketingCard>
-
-        <div className="space-y-4">
-          {tensionPoints.map((item) => (
-            <MarketingCard
-              key={item.title}
-              className="rounded-[1.75rem] p-5 sm:p-6"
-              tone="muted"
-              interactive
-            >
-              <div className="flex items-start gap-4">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text)]">
-                  <MarketingIcon icon={item.icon as MarketingIconName} className="h-5 w-5" />
-                </span>
-                <div>
-                  <h2
-                    className="text-lg font-semibold tracking-[-0.03em]"
-                    style={{ color: "var(--text)" }}
-                  >
-                    {item.title}
-                  </h2>
-                  <p
-                    className="mt-2 text-sm leading-7"
-                    style={{ color: "var(--muted)" }}
-                  >
-                    {item.description}
-                  </p>
-                </div>
-              </div>
-            </MarketingCard>
-          ))}
-        </div>
-      </section>
-
-      <section className="grid gap-6 lg:grid-cols-[0.92fr_1.08fr] lg:items-start">
-        <MarketingCard className="rounded-[2rem] p-7 sm:p-8" tone="accent">
-          <MarketingSectionIntro
-            eyebrow="How it works"
-            title="A simple operating sequence that reads quickly."
-            description="Each step gives visitors a clearer sense of what happens first, what is controlled in the SaaS layer, and when runtime cutover is allowed."
-          />
-          <div className="mt-6 flex flex-wrap gap-3">
-            <MarketingButtonLink href="/modules">View modules</MarketingButtonLink>
-            <MarketingButtonLink href="/industries" variant="secondary">
-              Explore industries
-            </MarketingButtonLink>
-          </div>
-        </MarketingCard>
-
-        <div className="space-y-4">
-          {workflowSteps.map((item) => (
-            <MarketingCard
-              key={item.step}
-              className="rounded-[1.75rem] p-5 sm:p-6"
-              tone="default"
-            >
-              <div className="flex items-start gap-4">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text)]">
-                  <MarketingIcon icon={item.icon as MarketingIconName} className="h-5 w-5" />
-                </span>
-                <div className="min-w-0">
-                  <p
-                    className="text-xs font-semibold uppercase tracking-[0.24em]"
-                    style={{ color: "var(--muted)" }}
-                  >
-                    Step {item.step}
-                  </p>
-                  <h3
-                    className="mt-2 text-xl font-semibold tracking-[-0.03em]"
-                    style={{ color: "var(--text)" }}
-                  >
-                    {item.title}
-                  </h3>
-                  <p
-                    className="mt-2 text-sm leading-7"
-                    style={{ color: "var(--muted)" }}
-                  >
-                    {item.description}
-                  </p>
-                </div>
-              </div>
-            </MarketingCard>
-          ))}
-        </div>
-      </section>
-
-      <section className="grid gap-6 lg:grid-cols-[1fr_0.95fr] lg:items-start">
-        <MarketingCard className="rounded-[2rem] p-7 sm:p-8" tone="default">
-          <MarketingSectionIntro
-            eyebrow="Capability preview"
-            title="The product story becomes easier to trust when the sections stop looking identical."
-            description="This page uses a mix of cards, split layouts, timeline rows, and proof bands so the site feels intentional instead of templated."
-          />
-
-          <div className="mt-8 grid gap-4 sm:grid-cols-2">
-            {capabilityHighlights.map((item) => (
-              <div
-                key={item.title}
-                className="rounded-[1.4rem] border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-5"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] text-[color:var(--text)]">
-                    <MarketingIcon icon={item.icon as MarketingIconName} className="h-4 w-4" />
-                  </span>
-                  <h3 className="text-base font-semibold" style={{ color: "var(--text)" }}>
-                    {item.title}
-                  </h3>
-                </div>
-                <p className="mt-3 text-sm leading-7" style={{ color: "var(--muted)" }}>
-                  {item.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </MarketingCard>
-
-        <MarketingCard className="rounded-[2rem] p-7 sm:p-8" tone="muted">
+      {/* ── Module tabs showcase ──────────────────────────── */}
+      <ScrollReveal>
+        <section>
           <p
-            className="text-xs font-semibold uppercase tracking-[0.24em]"
+            className="text-xs font-semibold uppercase tracking-[0.28em]"
+            style={{ color: "var(--accent)" }}
+          >
+            The platform
+          </p>
+          <h2
+            className="mt-4 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl"
+            style={{ color: "var(--text)" }}
+          >
+            Every module your business needs, in one place.
+          </h2>
+          <p
+            className="mt-4 max-w-2xl text-base leading-7"
             style={{ color: "var(--muted)" }}
           >
-            Trust signals
+            LenERP covers the entire business — from CRM to accounting,
+            procurement to manufacturing, projects to support — all sharing one
+            dataset, no integrations required.
           </p>
-          <div className="mt-5 space-y-4">
-            {trustSignals.map((item) => (
-              <div
-                key={item}
-                className="flex items-center gap-3 rounded-[1.25rem] border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-4"
-              >
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text)]">
-                  <MarketingIcon icon="shield" className="h-4 w-4" />
-                </span>
-                <p className="text-sm font-medium" style={{ color: "var(--text)" }}>
-                  {item}
-                </p>
-              </div>
-            ))}
+          <div className="mt-10">
+            <ModuleTabs />
           </div>
+        </section>
+      </ScrollReveal>
 
-          <div className="mt-6 flex flex-wrap gap-3">
-            <MarketingIconBadge icon="dot" label="Mobile-friendly" />
-            <MarketingIconBadge icon="dot" label="Premium pacing" />
-            <MarketingIconBadge icon="dot" label="Modern CTA flow" />
-          </div>
-        </MarketingCard>
-      </section>
+      <div className="marketing-divider-accent" />
 
-      <section className="grid gap-6 lg:grid-cols-[0.96fr_1.04fr] lg:items-start">
-        <MarketingCard className="rounded-[2rem] p-7 sm:p-8" tone="accent">
-          <MarketingSectionIntro
-            eyebrow="Industry fit"
-            title="Drilling leads because it makes the product feel specific instead of generic."
-            description="The same control model can extend into adjacent operations-heavy work once the flagship vertical proves the story."
-          />
-          <div className="mt-6 flex flex-wrap gap-3">
-            <MarketingButtonLink href="/drilling">See drilling</MarketingButtonLink>
-            <MarketingButtonLink href="/demo" variant="secondary">
-              Book an industry demo
-            </MarketingButtonLink>
-          </div>
-        </MarketingCard>
-
-        <div className="space-y-4">
-          {industrySignals.map((item) => (
-            <MarketingCard
-              key={item.title}
-              className="rounded-[1.75rem] p-5 sm:p-6"
-              tone="default"
-            >
-              <div className="flex items-start gap-4">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text)]">
-                  <MarketingIcon icon={item.icon as MarketingIconName} className="h-5 w-5" />
+      {/* ── Problem band ─────────────────────────────────── */}
+      <ScrollReveal>
+        <section>
+          <p
+            className="text-xs font-semibold uppercase tracking-[0.28em]"
+            style={{ color: "var(--accent)" }}
+          >
+            The problem
+          </p>
+          <h2
+            className="mt-4 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl"
+            style={{ color: "var(--text)" }}
+          >
+            The future of business software is open.
+          </h2>
+          <div className="mt-12 grid gap-10 md:grid-cols-3 marketing-stagger">
+            {problems.map((item) => (
+              <div key={item.title} className="flex items-start gap-4">
+                <span
+                  className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[color:var(--border)] text-[color:var(--text)]"
+                  style={{ background: "var(--surface)" }}
+                >
+                  <MarketingIcon icon={item.icon} className="h-5 w-5" />
                 </span>
                 <div>
-                  <h3
-                    className="text-lg font-semibold tracking-[-0.03em]"
-                    style={{ color: "var(--text)" }}
-                  >
+                  <h3 className="font-semibold" style={{ color: "var(--text)" }}>
                     {item.title}
                   </h3>
                   <p
-                    className="mt-2 text-sm leading-7"
+                    className="mt-2 text-sm leading-6"
                     style={{ color: "var(--muted)" }}
                   >
                     {item.description}
                   </p>
                 </div>
               </div>
-            </MarketingCard>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      </ScrollReveal>
+
+      <div className="marketing-divider-accent" />
+
+      {/* ── How it works — timeline ───────────────────────── */}
+      <ScrollReveal>
+        <section className="grid gap-12 lg:grid-cols-2 lg:items-start">
+          <div>
+            <p
+              className="text-xs font-semibold uppercase tracking-[0.28em]"
+              style={{ color: "var(--accent)" }}
+            >
+              How it works
+            </p>
+            <h2
+              className="mt-4 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl"
+              style={{ color: "var(--text)" }}
+            >
+              One platform for every part of the business.
+            </h2>
+            <p
+              className="mt-4 max-w-md text-base leading-7"
+              style={{ color: "var(--muted)" }}
+            >
+              From first sales call to final invoice — every workflow runs
+              inside a single connected system with no double-entry, no
+              spreadsheets, and no broken handoffs.
+            </p>
+            <div className="mt-8">
+              <MarketingButtonLink href="/modules">
+                See all features
+              </MarketingButtonLink>
+            </div>
+          </div>
+
+          <div className="marketing-timeline space-y-8">
+            {steps.map((item, i) => (
+              <ScrollReveal key={item.num} delay={i * 0.08}>
+                <div className="marketing-timeline-item">
+                  <span className="marketing-step-num shrink-0">{item.num}</span>
+                  <div className="pt-1.5">
+                    <h3 className="font-semibold" style={{ color: "var(--text)" }}>
+                      {item.title}
+                    </h3>
+                    <p
+                      className="mt-1 text-sm leading-6"
+                      style={{ color: "var(--muted)" }}
+                    >
+                      {item.description}
+                    </p>
+                  </div>
+                </div>
+              </ScrollReveal>
+            ))}
+          </div>
+        </section>
+      </ScrollReveal>
+
+      <div className="marketing-divider" />
+
+      {/* ── Capabilities — module grid ────────────────────── */}
+      <ScrollReveal>
+        <section>
+          <p
+            className="text-xs font-semibold uppercase tracking-[0.28em]"
+            style={{ color: "var(--accent)" }}
+          >
+            Capabilities
+          </p>
+          <h2
+            className="mt-4 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl"
+            style={{ color: "var(--text)" }}
+          >
+            Everything your business runs on.
+          </h2>
+          <p
+            className="mt-4 max-w-2xl text-base leading-7"
+            style={{ color: "var(--muted)" }}
+          >
+            Accounts, invoicing, sales, procurement, stock, manufacturing,
+            projects, HR, and more — out of the box for almost any industry,
+            customisable to fit your unique needs.
+          </p>
+
+          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {capabilities.map((item, i) => (
+              <ScrollReveal key={item.title} delay={i * 0.05}>
+                <div className="marketing-panel rounded-[1.5rem] p-6 h-full">
+                  <span
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[color:var(--border)] text-[color:var(--text)]"
+                    style={{ background: "var(--surface-strong)" }}
+                  >
+                    <MarketingIcon icon={item.icon} className="h-5 w-5" />
+                  </span>
+                  <h3
+                    className="mt-4 font-semibold"
+                    style={{ color: "var(--text)" }}
+                  >
+                    {item.title}
+                  </h3>
+                  <p
+                    className="mt-2 text-sm leading-6"
+                    style={{ color: "var(--muted)" }}
+                  >
+                    {item.description}
+                  </p>
+                </div>
+              </ScrollReveal>
+            ))}
+          </div>
+
+          <div className="mt-8">
+            <MarketingButtonLink href="/modules" variant="secondary">
+              View all features
+            </MarketingButtonLink>
+          </div>
+        </section>
+      </ScrollReveal>
+
+      <div className="marketing-divider" />
+
+      {/* ── Why choose LenERP ───────────────────────────── */}
+      <ScrollReveal>
+        <section>
+          <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
+            <div>
+              <p
+                className="text-xs font-semibold uppercase tracking-[0.28em]"
+                style={{ color: "var(--accent)" }}
+              >
+                Why LenERP
+              </p>
+              <h2
+                className="mt-4 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl"
+                style={{ color: "var(--text)" }}
+              >
+                Built for any industry. Works out of the box.
+              </h2>
+              <p
+                className="mt-4 max-w-md text-base leading-7"
+                style={{ color: "var(--muted)" }}
+              >
+                LenERP works for manufacturing, distribution, services, retail,
+                construction, and field operations — including specialist use cases
+                like drilling. Every engagement includes implementation,
+                onboarding, and ongoing support.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <MarketingButtonLink href="/industries">
+                  See industries
+                </MarketingButtonLink>
+                <MarketingButtonLink href="/demo" variant="secondary">
+                  Book a demo
+                </MarketingButtonLink>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {[
+                {
+                  icon: "spark" as MarketingIconName,
+                  title: "No-code / low-code customisation",
+                  description:
+                    "Automate tasks with drag-and-drop simplicity. Customise forms, reports, print formats, and dashboards without writing code.",
+                },
+                {
+                  icon: "shield" as MarketingIconName,
+                  title: "Built for global businesses",
+                  description:
+                    "Multi-subsidiary, multi-currency, multi-language. Tax compliance out of the box for 150+ countries.",
+                },
+                {
+                  icon: "chart" as MarketingIconName,
+                  title: "No per-user pricing",
+                  description:
+                    "Pay only for hosting — not for every seat. Costs don't compound as your team grows.",
+                },
+                {
+                  icon: "link" as MarketingIconName,
+                  title: "API-first integrations",
+                  description:
+                    "Connect to payment gateways, e-commerce platforms, cloud storage, and third-party tools with ease.",
+                },
+              ].map((item, i) => (
+                <ScrollReveal key={item.title} delay={i * 0.08}>
+                  <div className="flex items-start gap-4">
+                    <span
+                      className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[color:var(--border)] text-[color:var(--accent)]"
+                      style={{ background: "var(--surface)" }}
+                    >
+                      <MarketingIcon icon={item.icon} className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <h3 className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+                        {item.title}
+                      </h3>
+                      <p className="mt-1 text-sm leading-6" style={{ color: "var(--muted)" }}>
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+                </ScrollReveal>
+              ))}
+            </div>
+          </div>
+
+          {/* Platform feature images */}
+          <div className="mt-14 grid gap-5 sm:grid-cols-3 marketing-stagger">
+            <ScrollReveal delay={0}>
+              <div className="overflow-hidden rounded-2xl border" style={{ borderColor: "var(--border)" }}>
+                <Image src="/platform-nocode.webp" alt="No-code workflow automation" width={600} height={380} className="w-full object-cover" />
+                <div className="px-4 py-3" style={{ background: "var(--surface)" }}>
+                  <p className="text-xs font-semibold" style={{ color: "var(--text)" }}>No-code workflows</p>
+                  <p className="mt-0.5 text-xs" style={{ color: "var(--muted)" }}>Automate without code</p>
+                </div>
+              </div>
+            </ScrollReveal>
+            <ScrollReveal delay={0.08}>
+              <div className="overflow-hidden rounded-2xl border" style={{ borderColor: "var(--border)" }}>
+                <Image src="/accounting-multicurrency.webp" alt="Multi-currency accounting" width={600} height={380} className="w-full object-cover" />
+                <div className="px-4 py-3" style={{ background: "var(--surface)" }}>
+                  <p className="text-xs font-semibold" style={{ color: "var(--text)" }}>Global compliance</p>
+                  <p className="mt-0.5 text-xs" style={{ color: "var(--muted)" }}>Multi-currency, multi-entity</p>
+                </div>
+              </div>
+            </ScrollReveal>
+            <ScrollReveal delay={0.16}>
+              <div className="overflow-hidden rounded-2xl border" style={{ borderColor: "var(--border)" }}>
+                <Image src="/platform-api.webp" alt="API integrations" width={600} height={380} className="w-full object-cover" />
+                <div className="px-4 py-3" style={{ background: "var(--surface)" }}>
+                  <p className="text-xs font-semibold" style={{ color: "var(--text)" }}>API-first integrations</p>
+                  <p className="mt-0.5 text-xs" style={{ color: "var(--muted)" }}>Connect any third-party tool</p>
+                </div>
+              </div>
+            </ScrollReveal>
+          </div>
+        </section>
+      </ScrollReveal>
 
       <MarketingPageCta />
     </div>

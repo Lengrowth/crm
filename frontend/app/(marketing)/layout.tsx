@@ -6,7 +6,7 @@ import { MarketingBackdrop } from "@/components/MarketingPrimitives";
 
 export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="theme-shell relative min-h-screen text-[color:var(--text)]">
+    <div className="marketing-site theme-shell relative min-h-screen text-[color:var(--text)]">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[32rem] blur-3xl">
         <MarketingBackdrop />
       </div>

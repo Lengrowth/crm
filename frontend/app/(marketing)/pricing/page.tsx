@@ -3,253 +3,205 @@ import {
   MarketingButtonLink,
   MarketingCard,
   MarketingIcon,
-  MarketingIconBadge,
   MarketingPageCta,
-  MarketingSectionIntro,
+  ScrollReveal,
 } from "@/components/MarketingPrimitives";
 
 export const metadata: Metadata = {
-  title: "Pricing",
+  title: "Pricing — LenERP",
   description:
-    "Clear commercial packaging for pilot teams, operational rollouts, and implementation-heavy deployments using the LenQuant control plane.",
+    "LenERP is an enterprise CRM & ERP platform. Pricing is custom and includes implementation, onboarding, and ongoing support. Contact us to get started.",
 };
 
-const plans = [
-  {
-    name: "Pilot",
-    price: "From $99 / month",
-    description:
-      "For a single pilot workspace that needs the product surface, core workflows, and a clean place to manage rollout readiness.",
-    highlights: [
-      "One organization workspace",
-      "Core SaaS control features",
-      "Launch-oriented onboarding support",
-      "Best for early pilots and internal validation",
-    ],
-  },
-  {
-    name: "Operations",
-    price: "From $249 / month",
-    description:
-      "For teams packaging multiple modules, coordinating tenant operations, and needing a stronger control room around delivery.",
-    highlights: [
-      "Multiple modules and tenant records",
-      "Implementation visibility",
-      "Operational readiness tracking",
-      "Best for active rollout conversations",
-    ],
-    featured: true,
-  },
-  {
-    name: "Guided rollout",
-    price: "Custom",
-    description:
-      "For implementation-led engagements where onboarding, data planning, environment preparation, and launch sequencing need direct support.",
-    highlights: [
-      "Commercial and implementation alignment",
-      "Rollout planning and signoff support",
-      "Tenant readiness and launch coordination",
-      "Best for serious pilots and staged go-live work",
-    ],
-  },
-];
-
-const pricingNotes = [
-  "ERPNext runtime cutover is not bundled as an automatic background step.",
-  "Implementation support is scoped deliberately so teams know what is included and what is guided work.",
-  "Pricing can be adapted for vertical depth, pilot scope, or multi-tenant rollout complexity.",
+const included = [
+  "Full CRM & ERP platform (all modules)",
+  "Accounting, sales, procurement, inventory, and manufacturing",
+  "Projects, POS, quality, support, and field operations",
+  "Custom domain and white-label branding",
+  "Dedicated implementation and onboarding",
+  "Data migration and historical import",
+  "Training for your team",
+  "Ongoing support and platform updates",
+  "Reporting and management dashboards",
+  "Multi-currency and global tax compliance",
 ];
 
 export default function PricingPage() {
   return (
-    <div className="space-y-10 lg:space-y-14">
-      <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
-        <MarketingCard
-          className="rounded-[2.25rem] px-7 py-8 sm:px-10 sm:py-10"
-          tone="accent"
+    <div className="space-y-16 lg:space-y-24">
+      {/* Hero */}
+      <div className="max-w-2xl">
+        <p
+          className="marketing-reveal text-xs font-semibold uppercase tracking-[0.28em]"
+          style={{ color: "var(--accent)" }}
         >
-          <MarketingSectionIntro
-            eyebrow="Pricing"
-            title="Commercial structure that matches how rollout work actually happens."
-            description="LenQuant keeps the SaaS product offer clear while leaving implementation-heavy work visible. The buying motion should feel calm, credible, and guided instead of self-serve and noisy."
-          />
-          <div className="mt-6 flex flex-wrap gap-3">
-            <MarketingIconBadge icon="chart" label="Clear scope" />
-            <MarketingIconBadge icon="shield" label="No hidden runtime promise" />
-            <MarketingIconBadge icon="spark" label="Guided rollout available" />
-          </div>
-        </MarketingCard>
-
-        <MarketingCard className="rounded-[2rem] p-7 sm:p-8" tone="default" interactive>
-          <div className="flex items-start gap-4">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text)]">
-              <MarketingIcon icon="grid" className="h-5 w-5" />
-            </span>
-            <div>
-              <p
-                className="text-xs font-semibold uppercase tracking-[0.24em]"
-                style={{ color: "var(--muted)" }}
-              >
-                Buying model
-              </p>
-              <h2
-                className="mt-3 text-3xl font-semibold tracking-[-0.04em]"
-                style={{ color: "var(--text)" }}
-              >
-                Subscription plus guided rollout.
-              </h2>
-            </div>
-          </div>
-
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            {[
-              ["Included", "The control plane, public website, and rollout visibility."],
-              ["Scoped separately", "Implementation planning, cutover work, and deeper rollout support."],
-            ].map(([title, copy]) => (
-              <div
-                key={title}
-                className="rounded-[1.35rem] border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-4"
-              >
-                <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>
-                  {title}
-                </p>
-                <p className="mt-2 text-sm leading-7" style={{ color: "var(--muted)" }}>
-                  {copy}
-                </p>
-              </div>
-            ))}
-          </div>
-        </MarketingCard>
-      </section>
-
-      <div className="grid gap-5 lg:grid-cols-3">
-        {plans.map((plan) => (
-          <MarketingCard
-            key={plan.name}
-            className="rounded-[2rem] p-7"
-            tone={plan.featured ? "accent" : "default"}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p
-                  className="text-xs font-semibold uppercase tracking-[0.24em]"
-                  style={{ color: "var(--muted)" }}
-                >
-                  {plan.featured ? "Recommended" : "Plan"}
-                </p>
-                <h2
-                  className="mt-3 text-3xl font-semibold tracking-[-0.04em]"
-                  style={{ color: "var(--text)" }}
-                >
-                  {plan.name}
-                </h2>
-              </div>
-              <p
-                className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em]"
-                style={{ color: "var(--muted)" }}
-              >
-                {plan.price}
-              </p>
-            </div>
-            <p
-              className="mt-4 text-sm leading-7"
-              style={{ color: "var(--muted)" }}
-            >
-              {plan.description}
-            </p>
-            <ul
-              className="mt-6 space-y-3 text-sm leading-7"
-              style={{ color: "var(--muted)" }}
-            >
-              {plan.highlights.map((item) => (
-                <li key={item}>• {item}</li>
-              ))}
-            </ul>
-            <div className="mt-7">
-              <MarketingButtonLink
-                href="/demo"
-                variant={plan.featured ? "primary" : "secondary"}
-              >
-                Discuss this plan
-              </MarketingButtonLink>
-            </div>
-          </MarketingCard>
-        ))}
+          Pricing
+        </p>
+        <h1
+          className="marketing-reveal mt-4 text-5xl font-semibold tracking-[-0.05em] sm:text-6xl"
+          style={{ color: "var(--text)", animationDelay: "60ms" }}
+        >
+          One plan. Everything included.
+        </h1>
+        <p
+          className="marketing-reveal mt-5 max-w-lg text-lg leading-8"
+          style={{ color: "var(--muted)", animationDelay: "120ms" }}
+        >
+          LenERP is an enterprise product. Every engagement covers the full
+          platform — all modules, all industries — plus implementation,
+          onboarding, and ongoing support scoped to your business.
+        </p>
       </div>
 
-      <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-        <MarketingCard className="rounded-[2rem] p-7 sm:p-8" tone="default">
-          <p
-            className="text-xs font-semibold uppercase tracking-[0.24em]"
-            style={{ color: "var(--muted)" }}
-          >
-            What is included
-          </p>
-          <h2
-            className="mt-4 text-3xl font-semibold tracking-[-0.04em]"
-            style={{ color: "var(--text)" }}
-          >
-            The subscription covers the control plane. Guided work is scoped
-            openly.
-          </h2>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-5">
+      {/* Single enterprise card — full width two-column */}
+      <ScrollReveal>
+        <MarketingCard className="rounded-[2rem] p-8 sm:p-10 lg:p-12" tone="accent">
+          <div className="grid gap-10 lg:grid-cols-[1fr_1.4fr] lg:items-start">
+            {/* Left: identity + CTA */}
+            <div className="flex flex-col">
               <p
-                className="text-sm font-semibold"
+                className="text-xs font-semibold uppercase tracking-[0.24em]"
+                style={{ color: "var(--accent)" }}
+              >
+                Enterprise
+              </p>
+              <h2
+                className="mt-4 text-4xl font-semibold sm:text-5xl"
                 style={{ color: "var(--text)" }}
               >
-                Included in the product
-              </p>
-              <ul
-                className="mt-3 space-y-2 text-sm leading-7"
+                Custom pricing
+              </h2>
+              <p
+                className="mt-2 text-sm"
                 style={{ color: "var(--muted)" }}
               >
-                <li>• Workspace, organization, and tenant administration</li>
-                <li>• Module packaging and readiness visibility</li>
-                <li>• Public-site and demo-led commercial flow</li>
-              </ul>
+                Quoted per engagement
+              </p>
+              <p
+                className="mt-6 text-sm leading-7"
+                style={{ color: "var(--muted)" }}
+              >
+                A single commercial agreement covering the software, a
+                dedicated implementation, and your team&apos;s ongoing support. No
+                hidden extras — what you see in the platform is what you get.
+              </p>
+              <div className="mt-8">
+                <MarketingButtonLink href="/demo" variant="primary">
+                  Talk to us
+                </MarketingButtonLink>
+              </div>
             </div>
-            <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-5">
+
+            {/* Right: feature checklist */}
+            <div
+              className="rounded-2xl p-6 sm:p-8"
+              style={{
+                background: "color-mix(in srgb, var(--accent) 5%, var(--surface-strong))",
+                border: "1px solid color-mix(in srgb, var(--accent) 16%, var(--border))",
+              }}
+            >
               <p
-                className="text-sm font-semibold"
-                style={{ color: "var(--text)" }}
+                className="text-xs font-semibold uppercase tracking-[0.22em] mb-5"
+                style={{ color: "var(--accent)" }}
               >
-                Scoped as guided rollout work
+                Everything included
               </p>
-              <ul
-                className="mt-3 space-y-2 text-sm leading-7"
-                style={{ color: "var(--muted)" }}
-              >
-                <li>• Implementation planning and rollout design</li>
-                <li>• Tenant launch sequencing and coordination</li>
-                <li>• ERPNext cutover work when the runtime path is ready</li>
+              <ul className="grid gap-3 sm:grid-cols-2">
+                {included.map((item) => (
+                  <li key={item} className="flex items-start gap-3">
+                    <span
+                      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded"
+                      style={{
+                        background: "color-mix(in srgb, var(--accent) 16%, var(--surface))",
+                        border: "1px solid color-mix(in srgb, var(--accent) 30%, var(--border))",
+                        color: "var(--accent)",
+                      }}
+                    >
+                      <MarketingIcon icon="check" className="h-3 w-3" />
+                    </span>
+                    <span className="text-sm leading-6" style={{ color: "var(--muted)" }}>
+                      {item}
+                    </span>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
         </MarketingCard>
+      </ScrollReveal>
 
-        <MarketingCard className="rounded-[2rem] p-7 sm:p-8" tone="muted">
-          <p
-            className="text-xs font-semibold uppercase tracking-[0.24em]"
-            style={{ color: "var(--muted)" }}
-          >
-            Pricing notes
-          </p>
-          <ul
-            className="mt-5 space-y-4 text-sm leading-7"
-            style={{ color: "var(--muted)" }}
-          >
-            {pricingNotes.map((item) => (
-              <li
-                key={item}
-                className="rounded-[1.25rem] border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-4"
-              >
-                {item}
-              </li>
+      <div className="marketing-divider-accent" />
+
+      {/* Why enterprise */}
+      <ScrollReveal>
+        <section className="grid gap-10 lg:grid-cols-2 lg:items-center">
+          <div>
+            <p
+              className="text-xs font-semibold uppercase tracking-[0.28em]"
+              style={{ color: "var(--accent)" }}
+            >
+              Why enterprise
+            </p>
+            <h2
+              className="mt-4 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl"
+              style={{ color: "var(--text)" }}
+            >
+              A CRM & ERP is not a subscription. It’s a transformation.
+            </h2>
+            <p
+              className="mt-4 text-base leading-7"
+              style={{ color: "var(--muted)" }}
+            >
+              Getting your business onto a modern CRM and ERP requires real
+              implementation work — data migration, process design, training,
+              and cutover. We include all of that because doing it right is
+              the only way the platform delivers value.
+            </p>
+          </div>
+
+          <div className="space-y-5">
+            {[
+              {
+                icon: "spark" as const,
+                title: "Implementation included",
+                description:
+                  "We scope, plan, and deliver the full rollout — not just a licence key.",
+              },
+              {
+                icon: "shield" as const,
+                title: "No hidden scope",
+                description:
+                  "Everything is agreed upfront. Data migration, training, and go-live support are part of the deal.",
+              },
+              {
+                icon: "chart" as const,
+                title: "Ongoing partnership",
+                description:
+                  "Platform updates, support, and expansion modules are included in your continued engagement.",
+              },
+            ].map((item, i) => (
+              <ScrollReveal key={item.title} delay={i * 0.08}>
+                <div className="flex items-start gap-4">
+                  <span
+                    className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[color:var(--border)] text-[color:var(--accent)]"
+                    style={{ background: "var(--surface)" }}
+                  >
+                    <MarketingIcon icon={item.icon} className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+                      {item.title}
+                    </h3>
+                    <p className="mt-1 text-sm leading-6" style={{ color: "var(--muted)" }}>
+                      {item.description}
+                    </p>
+                  </div>
+                </div>
+              </ScrollReveal>
             ))}
-          </ul>
-        </MarketingCard>
-      </section>
+          </div>
+        </section>
+      </ScrollReveal>
 
       <MarketingPageCta />
     </div>

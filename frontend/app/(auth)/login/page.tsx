@@ -49,7 +49,7 @@ function LoginPageContent() {
 
   const [mode, setMode] = useState<Mode>("login");
   const [fullName, setFullName] = useState("");
-  const [organizationName, setOrganizationName] = useState("LenQuant Workspace");
+  const [organizationName, setOrganizationName] = useState("LenERP Workspace");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState<"idle" | "submitting">("idle");
@@ -106,7 +106,7 @@ function LoginPageContent() {
           className="mt-4 max-w-xl text-4xl font-semibold tracking-tight"
           style={{ color: "var(--text)" }}
         >
-          Sign in to the LenQuant control plane.
+          Sign in to the LenERP control plane.
         </h1>
         <p
           className="mt-4 max-w-2xl text-sm leading-7"

@@ -1,5 +1,9 @@
+"use client";
+
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { motion, useInView } from "framer-motion";
+import { useRef } from "react";
 
 type ButtonVariant = "primary" | "secondary" | "ghost";
 type CardTone = "default" | "muted" | "accent";
@@ -32,7 +36,21 @@ type StatProps = {
   description?: string;
 };
 
-export type MarketingIconName = "spark" | "shield" | "grid" | "chart" | "arrow" | "dot";
+export type MarketingIconName =
+  | "spark"
+  | "shield"
+  | "grid"
+  | "chart"
+  | "arrow"
+  | "dot"
+  | "check"
+  | "layers"
+  | "eye"
+  | "bolt"
+  | "building"
+  | "flag"
+  | "link"
+  | "clock";
 
 type IconBadgeProps = {
   icon: MarketingIconName;
@@ -100,6 +118,62 @@ export function MarketingIcon({
           <path d="m13 6 5 6-5 6" />
         </svg>
       );
+    case "check":
+      return (
+        <svg viewBox="0 0 24 24" {...common}>
+          <path d="M5 12.5l4.5 4.5 9.5-9.5" />
+        </svg>
+      );
+    case "layers":
+      return (
+        <svg viewBox="0 0 24 24" {...common}>
+          <path d="M12 2.5 20.5 7 12 11.5 3.5 7 12 2.5Z" />
+          <path d="M3.5 12 12 16.5 20.5 12" />
+          <path d="M3.5 17 12 21.5 20.5 17" />
+        </svg>
+      );
+    case "eye":
+      return (
+        <svg viewBox="0 0 24 24" {...common}>
+          <path d="M2.5 12C4.5 7.5 7.8 5 12 5s7.5 2.5 9.5 7c-2 4.5-5.3 7-9.5 7s-7.5-2.5-9.5-7Z" />
+          <circle cx="12" cy="12" r="2.75" />
+        </svg>
+      );
+    case "bolt":
+      return (
+        <svg viewBox="0 0 24 24" {...common}>
+          <path d="M13.5 3 6 13.5h6L10.5 21 18 10.5h-6L13.5 3Z" />
+        </svg>
+      );
+    case "building":
+      return (
+        <svg viewBox="0 0 24 24" {...common}>
+          <rect x="4" y="3.5" width="16" height="17" rx="1.5" />
+          <path d="M9 20.5V13.5h6v7" />
+          <path d="M8 8h2M14 8h2M8 11.5h2M14 11.5h2" />
+        </svg>
+      );
+    case "flag":
+      return (
+        <svg viewBox="0 0 24 24" {...common}>
+          <path d="M6 3.5v17" />
+          <path d="M6 3.5h10.5l-2.5 4.5 2.5 4.5H6" />
+        </svg>
+      );
+    case "link":
+      return (
+        <svg viewBox="0 0 24 24" {...common}>
+          <path d="M10 14a4.5 4.5 0 0 0 6.36 0l2.12-2.12a4.5 4.5 0 0 0-6.36-6.36l-1.06 1.06" />
+          <path d="M14 10a4.5 4.5 0 0 0-6.36 0L5.52 12.12a4.5 4.5 0 0 0 6.36 6.36l1.06-1.06" />
+        </svg>
+      );
+    case "clock":
+      return (
+        <svg viewBox="0 0 24 24" {...common}>
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="M12 7.5V12l3 2.5" />
+        </svg>
+      );
     case "dot":
     default:
       return (
@@ -110,11 +184,7 @@ export function MarketingIcon({
   }
 }
 
-export function MarketingIconBadge({
-  icon,
-  label,
-  className,
-}: IconBadgeProps) {
+export function MarketingIconBadge({ icon, label, className }: IconBadgeProps) {
   return (
     <span
       className={cx(
@@ -131,9 +201,8 @@ export function MarketingIconBadge({
 export function MarketingBackdrop() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
-      <div className="marketing-backdrop-orb marketing-backdrop-orb-one absolute left-[7%] top-[8%] h-52 w-52 rounded-full" />
-      <div className="marketing-backdrop-orb marketing-backdrop-orb-two absolute right-[10%] top-[12%] h-72 w-72 rounded-full" />
-      <div className="marketing-backdrop-grid absolute inset-x-0 bottom-0 h-[60%]" />
+      <div className="marketing-backdrop-orb marketing-backdrop-orb-one absolute left-[1%] top-[2%] h-52 w-52 rounded-full" />
+      <div className="marketing-backdrop-orb marketing-backdrop-orb-two absolute right-[35%] top-[40%] h-72 w-72 rounded-full" />
     </div>
   );
 }
@@ -211,7 +280,7 @@ export function MarketingSectionIntro({
     >
       <p
         className="text-xs font-semibold uppercase tracking-[0.28em]"
-        style={{ color: "var(--muted)" }}
+        style={{ color: "var(--accent)" }}
       >
         {eyebrow}
       </p>
@@ -257,40 +326,71 @@ export function MarketingStat({ value, label, description }: StatProps) {
 
 export function MarketingPageCta() {
   return (
-    <MarketingCard
-      className="rounded-[2rem] px-8 py-8 sm:px-10 sm:py-10"
-      tone="accent"
+    <section
+      className="marketing-cta-spotlight marketing-reveal rounded-[2rem] border px-8 py-12 sm:px-12 sm:py-14"
     >
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-        <div className="max-w-2xl">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div className="max-w-xl">
           <p
             className="text-xs font-semibold uppercase tracking-[0.28em]"
-            style={{ color: "var(--muted)" }}
+            style={{ color: "var(--accent)" }}
           >
-            Next step
+            Get started
           </p>
           <h2
             className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl"
             style={{ color: "var(--text)" }}
           >
-            Bring the rollout conversation into one controlled product surface.
+            Ready to see the platform in action?
           </h2>
           <p
-            className="mt-4 text-base leading-7"
+            className="mt-3 text-base leading-7"
             style={{ color: "var(--muted)" }}
           >
-            Book a demo if you want to see the workflow live, or talk to us if
-            you already have a pilot scope, rollout blockers, or a timing
-            question.
+            Book a demo to see the platform running, or get in touch if you
+            want to talk through your business first.
           </p>
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex shrink-0 flex-wrap gap-3">
           <MarketingButtonLink href="/demo">Book a demo</MarketingButtonLink>
           <MarketingButtonLink href="/contact" variant="secondary">
             Talk to us
           </MarketingButtonLink>
         </div>
       </div>
-    </MarketingCard>
+    </section>
+  );
+}
+
+type ScrollRevealProps = {
+  children: ReactNode;
+  className?: string;
+  delay?: number;
+  stagger?: boolean;
+};
+
+export function ScrollReveal({
+  children,
+  className,
+  delay = 0,
+  stagger = false,
+}: ScrollRevealProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "0px 0px -60px 0px" });
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 22 }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 22 }}
+      transition={{
+        duration: 0.56,
+        delay,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+      className={cx(stagger ? "marketing-stagger" : "", className)}
+    >
+      {children}
+    </motion.div>
   );
 }

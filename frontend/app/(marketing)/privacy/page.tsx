@@ -9,7 +9,7 @@ import {
 export const metadata: Metadata = {
   title: "Privacy policy",
   description:
-    "Privacy commitments for LenQuant website visitors, demo requests, pilot users, and authenticated workspace access.",
+    "Privacy commitments for LenERP website visitors, demo requests, pilot users, and authenticated workspace access.",
 };
 
 const privacyPoints = [
@@ -21,7 +21,7 @@ const privacyPoints = [
   {
     title: "How we use it",
     description:
-      "We use this information to operate the website, support pilot and implementation conversations, maintain account access, and improve the LenQuant product experience.",
+      "We use this information to operate the website, support pilot and implementation conversations, maintain account access, and improve the LenERP product experience.",
   },
   {
     title: "What we do not do silently",
@@ -45,7 +45,7 @@ export default function PrivacyPage() {
         <MarketingSectionIntro
           eyebrow="Privacy policy"
           title="Privacy commitments for website visitors, leads, and pilot users."
-          description="LenQuant keeps the public website, contact flows, and pilot access aligned with the same principle as the product itself: collect what is necessary, keep access controlled, and avoid blurring the runtime boundary."
+          description="LenERP keeps the public website, contact flows, and pilot access aligned with the same principle as the product itself: collect what is necessary, keep access controlled, and avoid blurring the runtime boundary."
         />
       </MarketingCard>
 

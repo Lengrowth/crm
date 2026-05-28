@@ -9,14 +9,14 @@ import {
 export const metadata: Metadata = {
   title: "Terms of service",
   description:
-    "Website and pilot-use terms for LenQuant demos, public access, and authenticated workspace usage.",
+    "Website and pilot-use terms for LenERP demos, public access, and authenticated workspace usage.",
 };
 
 const termPoints = [
   {
     title: "Evaluation and pilot use",
     description:
-      "The LenQuant website and pilot application are provided for evaluation, onboarding, operational planning, and early customer use. Access may be limited, suspended, or changed as the product matures.",
+      "The LenERP website and pilot application are provided for evaluation, onboarding, operational planning, and early customer use. Access may be limited, suspended, or changed as the product matures.",
   },
   {
     title: "Your responsibilities",

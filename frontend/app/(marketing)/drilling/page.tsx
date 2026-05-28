@@ -3,181 +3,190 @@ import {
   MarketingButtonLink,
   MarketingCard,
   MarketingIcon,
-  MarketingIconBadge,
   MarketingPageCta,
-  MarketingSectionIntro,
+  ScrollReveal,
 } from "@/components/MarketingPrimitives";
 
 export const metadata: Metadata = {
-  title: "Drilling",
+  title: "Drilling — LenERP",
   description:
-    "Explore LenQuant's flagship drilling story: a control plane for onboarding, field execution readiness, tenant preparation, and implementation visibility around ERPNext-backed operations.",
+    "LenERP is purpose-built for drilling companies. Manage daily field reports, rig operations, crew coordination, inventory, and finance in one connected platform.",
 };
 
-const drillingWorkflows = [
-  "Daily field reporting and job progress visibility",
-  "Crew coordination and dispatcher handoff",
-  "Equipment checks, inspections, and readiness status",
-  "Safety-sensitive rollout planning and operator signoff",
+const workflows = [
+  "Daily drilling reports: bit records, mud logs, and footage progress",
+  "Crew coordination, shift handover, and dispatcher visibility",
+  "Equipment checks, rig inspections, and maintenance scheduling",
+  "Real-time cost tracking against AFE and job budgets",
 ];
 
-const drillingOutcomes = [
+const outcomes = [
   {
-    title: "More credible pilot conversations",
+    icon: "flag" as const,
+    title: "Real-time field visibility",
     description:
-      "The product feels tailored to drilling operations instead of sounding like generic ERP language with a new logo.",
+      "Office and management see live job progress, crew status, and equipment location without chasing daily reports.",
   },
   {
-    title: "Stronger implementation discipline",
+    icon: "eye" as const,
+    title: "Cost control from spud to TD",
     description:
-      "Teams can map the rollout, the tenant setup, and the operational model before runtime cutover becomes a risk.",
+      "Track drilling costs against AFE in real time. Catch overruns early and close jobs with accurate financials.",
   },
   {
-    title: "Clearer customer trust",
+    icon: "shield" as const,
+    title: "Built for how rigs actually operate",
     description:
-      "Operators can see that the platform understands field reality, not just software abstractions.",
+      "Workflows match the daily rhythm of drilling operations — not generic software forced onto field teams.",
   },
 ];
 
 export default function DrillingPage() {
   return (
-    <div className="space-y-10 lg:space-y-14">
-      <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
-        <MarketingCard
-          className="rounded-[2.25rem] px-7 py-8 sm:px-10 sm:py-10"
-          tone="accent"
-        >
-          <MarketingSectionIntro
-            eyebrow="Flagship vertical"
-            title="A drilling-specific rollout story with field-ready structure and a cleaner product boundary."
-            description="LenQuant starts with drilling because the operational reality is demanding: crews, equipment, safety, dispatch pressure, and implementation complexity all need visibility before go-live."
-          />
-          <div className="mt-6 flex flex-wrap gap-3">
-            <MarketingIconBadge icon="shield" label="Industrial credibility" />
-            <MarketingIconBadge icon="spark" label="Field-ready rollout" />
-          </div>
-        </MarketingCard>
-
-        <MarketingCard className="rounded-[2rem] p-7 sm:p-8" tone="default" interactive>
-          <div className="flex items-start gap-4">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text)]">
-              <MarketingIcon icon="chart" className="h-5 w-5" />
-            </span>
-            <div>
-              <p
-                className="text-xs font-semibold uppercase tracking-[0.24em]"
-                style={{ color: "var(--muted)" }}
-              >
-                Why this vertical fits first
-              </p>
-              <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em]" style={{ color: "var(--text)" }}>
-                Drilling forces the product to be operationally honest.
-              </h2>
-            </div>
-          </div>
-          <p className="mt-5 text-base leading-7" style={{ color: "var(--muted)" }}>
-            If a platform can support the planning, visibility, and launch discipline that drilling teams expect, it earns the right to expand into adjacent industries with confidence.
-          </p>
-        </MarketingCard>
-      </section>
-
-      <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-        <MarketingCard className="rounded-[2rem] p-7 sm:p-8" tone="default">
+    <div className="space-y-16 lg:space-y-24">
+      {/* Hero */}
+      <MarketingCard
+        className="relative overflow-hidden rounded-[2.5rem] px-8 py-14 sm:px-12 sm:py-16 lg:px-16 lg:py-20"
+        tone="accent"
+      >
+        <div className="max-w-2xl">
           <p
-            className="text-xs font-semibold uppercase tracking-[0.24em]"
-            style={{ color: "var(--muted)" }}
+            className="marketing-reveal text-xs font-semibold uppercase tracking-[0.28em]"
+            style={{ color: "var(--accent)" }}
           >
-            Field workflows
+            Flagship vertical
           </p>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            {drillingWorkflows.map((workflow) => (
-              <div
-                key={workflow}
-                className="rounded-[1.35rem] border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-4"
-              >
-                <div className="flex items-start gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] text-[color:var(--text)]">
-                    <MarketingIcon icon="dot" className="h-4 w-4" />
-                  </span>
-                  <p className="text-sm font-semibold leading-6" style={{ color: "var(--text)" }}>
-                    {workflow}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </MarketingCard>
-
-        <MarketingCard className="rounded-[2rem] p-7 sm:p-8" tone="muted">
+          <h1
+            className="marketing-reveal mt-5 text-5xl font-semibold tracking-[-0.06em] sm:text-6xl lg:text-7xl marketing-gradient-text"
+            style={{ animationDelay: "60ms" }}
+          >
+            The CRM & ERP built for drilling companies.
+          </h1>
           <p
-            className="text-xs font-semibold uppercase tracking-[0.24em]"
-            style={{ color: "var(--muted)" }}
+            className="marketing-reveal mt-6 max-w-xl text-lg leading-8"
+            style={{ color: "var(--muted)", animationDelay: "120ms" }}
           >
-            Why it matters
+            Run your entire drilling business in one platform — CRM,
+            daily reports, crew coordination, inventory, and finance
+            connected from first job to final invoice.
           </p>
-          <p className="mt-4 text-base leading-7" style={{ color: "var(--muted)" }}>
-            Drilling makes the product story specific enough to feel credible. It also gives the public site a clearer industrial tone without turning the UI into a generic dashboard template.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <MarketingIconBadge icon="chart" label="Visibility first" />
-            <MarketingIconBadge icon="shield" label="Safer launch discipline" />
-          </div>
-        </MarketingCard>
-      </section>
-
-      <div className="grid gap-5 lg:grid-cols-3">
-        {drillingOutcomes.map((item) => (
-          <MarketingCard
-            key={item.title}
-            className="rounded-[1.75rem] p-6"
-            tone="default"
-            interactive
+          <div
+            className="marketing-reveal mt-8 flex flex-wrap gap-3"
+            style={{ animationDelay: "180ms" }}
           >
-            <div className="flex items-start gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text)]">
-                <MarketingIcon icon="spark" className="h-4 w-4" />
-              </span>
-              <h3 className="text-xl font-semibold" style={{ color: "var(--text)" }}>
-                {item.title}
-              </h3>
-            </div>
-            <p
-              className="mt-3 text-sm leading-7"
-              style={{ color: "var(--muted)" }}
-            >
-              {item.description}
-            </p>
-          </MarketingCard>
-        ))}
-      </div>
-
-      <MarketingCard className="rounded-[2rem] p-7 sm:p-8" tone="default">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
-            <p
-              className="text-xs font-semibold uppercase tracking-[0.24em]"
-              style={{ color: "var(--muted)" }}
-            >
-              Operational takeaway
-            </p>
-            <h2
-              className="mt-4 text-3xl font-semibold tracking-[-0.04em]"
-              style={{ color: "var(--text)" }}
-            >
-              The public story, the rollout workflow, and the runtime plan all
-              become easier to trust when drilling is presented intentionally.
-            </h2>
-          </div>
-          <div className="flex flex-wrap gap-3">
             <MarketingButtonLink href="/demo">
               Request a drilling demo
             </MarketingButtonLink>
             <MarketingButtonLink href="/contact" variant="secondary">
-              Discuss rollout fit
+              Get in touch
             </MarketingButtonLink>
           </div>
         </div>
       </MarketingCard>
+
+      {/* Field workflows + why it matters */}
+      <ScrollReveal>
+        <section className="grid gap-10 lg:grid-cols-2 lg:items-start">
+          <div>
+            <p
+              className="text-xs font-semibold uppercase tracking-[0.28em]"
+              style={{ color: "var(--accent)" }}
+            >
+              Field workflows
+            </p>
+            <h2
+              className="mt-4 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl"
+              style={{ color: "var(--text)" }}
+            >
+              Visibility that matches how drilling teams actually work.
+            </h2>
+            <div className="mt-8 space-y-4">
+              {workflows.map((item, i) => (
+                <ScrollReveal key={item} delay={i * 0.07}>
+                  <div className="flex items-start gap-4">
+                    <span
+                      className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-[color:var(--accent)]"
+                      style={{
+                        background: "color-mix(in srgb, var(--accent) 8%, var(--surface))",
+                        borderColor: "color-mix(in srgb, var(--accent) 22%, var(--border))",
+                      }}
+                    >
+                      <MarketingIcon icon="check" className="h-3.5 w-3.5" />
+                    </span>
+                    <p
+                      className="text-sm leading-6"
+                      style={{ color: "var(--text)" }}
+                    >
+                      {item}
+                    </p>
+                  </div>
+                </ScrollReveal>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p
+              className="text-xs font-semibold uppercase tracking-[0.28em]"
+              style={{ color: "var(--accent)" }}
+            >
+              Why it works
+            </p>
+            <h2
+              className="mt-4 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl"
+              style={{ color: "var(--text)" }}
+            >
+              Every part of the operation, connected.
+            </h2>
+            <p
+              className="mt-4 text-base leading-7"
+              style={{ color: "var(--muted)" }}
+            >
+              From the drill floor to the finance team — LenERP connects
+              field data, job progress, inventory, and costs so nothing falls
+              through the gap between operations and the office.
+            </p>
+            <p
+              className="mt-4 text-base leading-7"
+              style={{ color: "var(--muted)" }}
+            >
+              When a drilling report is filed, costs update. When a job closes,
+              the invoice is ready. No spreadsheets, no manual consolidation.
+            </p>
+          </div>
+        </section>
+      </ScrollReveal>
+
+      {/* Outcomes */}
+      <ScrollReveal>
+        <div className="grid gap-5 lg:grid-cols-3 marketing-stagger">
+          {outcomes.map((item) => (
+            <div
+              key={item.title}
+              className="marketing-module-card marketing-panel rounded-[1.75rem] p-6"
+            >
+              <span
+                className="marketing-module-icon flex h-10 w-10 items-center justify-center rounded-xl border border-[color:var(--border)] text-[color:var(--accent)]"
+                style={{ background: "var(--surface-strong)" }}
+              >
+                <MarketingIcon icon={item.icon} className="h-5 w-5" />
+              </span>
+              <h3
+                className="mt-4 text-lg font-semibold tracking-[-0.02em]"
+                style={{ color: "var(--text)" }}
+              >
+                {item.title}
+              </h3>
+              <p
+                className="mt-2 text-sm leading-6"
+                style={{ color: "var(--muted)" }}
+              >
+                {item.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </ScrollReveal>
 
       <MarketingPageCta />
     </div>

@@ -6,11 +6,31 @@ import {
   MarketingButtonLink,
   MarketingCard,
   MarketingIcon,
-  MarketingIconBadge,
   MarketingPageCta,
-  MarketingSectionIntro,
+  ScrollReveal,
 } from "@/components/MarketingPrimitives";
 import { sendContact, trackMarketingEvent } from "@/lib/api";
+
+const reasons = [
+  {
+    icon: "flag" as const,
+    title: "Getting started",
+    description:
+      "Tell us about your business, team size, and what you want the platform to do for you.",
+  },
+  {
+    icon: "eye" as const,
+    title: "Specific requirements",
+    description:
+      "Share what your current software isn't doing, and we'll show you how LenERP addresses it.",
+  },
+  {
+    icon: "building" as const,
+    title: "Pricing and implementation",
+    description:
+      "Get a clear picture of what an engagement looks like — cost, timeline, and what’s included.",
+  },
+];
 
 export default function ContactPage() {
   const [loading, setLoading] = useState(false);
@@ -22,6 +42,7 @@ export default function ContactPage() {
     setError(null);
     setSuccess(null);
     setLoading(true);
+
     const form = event.currentTarget;
     const formData = new FormData(form);
     const payload = {
@@ -32,95 +53,137 @@ export default function ContactPage() {
 
     try {
       const resp = await sendContact(payload);
-      setSuccess(resp.detail ?? "Message captured");
+      setSuccess(resp.detail ?? "Message sent");
       trackMarketingEvent({ type: "contact", path: window.location.pathname });
       form.reset();
     } catch (err: any) {
-      setError(err?.message ?? "Failed to send contact message");
+      setError(err?.message ?? "Failed to send message");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="space-y-10 lg:space-y-14">
-      <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
-        <MarketingCard
-          className="rounded-[2.25rem] px-7 py-8 sm:px-10 sm:py-10"
-          tone="accent"
+    <div className="space-y-16 lg:space-y-24">
+      {/* Hero */}
+      <div className="max-w-2xl">
+        <p
+          className="marketing-reveal text-xs font-semibold uppercase tracking-[0.28em]"
+          style={{ color: "var(--accent)" }}
         >
-          <MarketingSectionIntro
-            eyebrow="Talk to us"
-            title="Start the conversation before rollout complexity becomes a risk."
-            description="Contact us if you are evaluating a pilot, planning implementation work, or trying to structure the boundary between your customer-facing SaaS layer and the runtime behind it."
-          />
+          Talk to us
+        </p>
+        <h1
+          className="marketing-reveal mt-4 text-5xl font-semibold tracking-[-0.05em] sm:text-6xl"
+          style={{ color: "var(--text)", animationDelay: "60ms" }}
+        >
+          Let’s talk about your business.
+        </h1>
+        <p
+          className="marketing-reveal mt-5 max-w-lg text-lg leading-8"
+          style={{ color: "var(--muted)", animationDelay: "120ms" }}
+        >
+          Whether you’re evaluating a CRM & ERP for the first time or
+          replacing an existing system, we’re happy to walk through how
+          LenERP fits your operations.
+        </p>
+      </div>
 
-          <div className="mt-6 flex flex-wrap gap-3">
-            <MarketingIconBadge icon="spark" label="Pilot scope" />
-            <MarketingIconBadge icon="chart" label="Commercial fit" />
-            <MarketingIconBadge icon="shield" label="Rollout blockers" />
-          </div>
-
-          <div className="mt-8 grid gap-4 sm:grid-cols-3">
-            {[
-              ["Pilot scope", "Share your timeline, team shape, and what the first launch needs to prove."],
-              ["Rollout blockers", "Tell us where onboarding, tenants, or implementation visibility are breaking down."],
-              ["Commercial fit", "Use this route if you need help with packaging, pricing, or a guided deployment conversation."],
-            ].map(([title, description]) => (
-              <div
-                key={title}
-                className="rounded-[1.25rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-4"
+      {/* Reasons + Form */}
+      <ScrollReveal>
+      <section className="grid gap-12 lg:grid-cols-2 lg:items-start">
+        {/* Reasons */}
+        <div className="space-y-8">
+          <p
+            className="text-xs font-semibold uppercase tracking-[0.28em]"
+            style={{ color: "var(--accent)" }}
+          >
+            Good reasons to get in touch
+          </p>
+          {reasons.map((item) => (
+            <div key={item.title} className="flex items-start gap-4">
+              <span
+                className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[color:var(--border)] text-[color:var(--text)]"
+                style={{ background: "var(--surface)" }}
               >
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text)]">
-                    <MarketingIcon icon="dot" className="h-4 w-4" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>
-                      {title}
-                    </p>
-                    <p className="mt-2 text-sm leading-6" style={{ color: "var(--muted)" }}>
-                      {description}
-                    </p>
-                  </div>
-                </div>
+                <MarketingIcon icon={item.icon} className="h-5 w-5" />
+              </span>
+              <div>
+                <h3 className="font-semibold" style={{ color: "var(--text)" }}>
+                  {item.title}
+                </h3>
+                <p
+                  className="mt-1 text-sm leading-6"
+                  style={{ color: "var(--muted)" }}
+                >
+                  {item.description}
+                </p>
               </div>
-            ))}
-          </div>
-        </MarketingCard>
+            </div>
+          ))}
 
+          <div className="pt-4">
+            <p className="text-sm leading-6" style={{ color: "var(--muted)" }}>
+              Prefer to see the product first?
+            </p>
+            <div className="mt-3">
+              <MarketingButtonLink href="/demo" variant="secondary">
+                Book a demo instead
+              </MarketingButtonLink>
+            </div>
+          </div>
+        </div>
+
+        {/* Form */}
         <MarketingCard
-          className="rounded-[2.25rem] px-7 py-8 sm:px-10 sm:py-10"
+          className="rounded-[2rem] px-7 py-8 sm:px-8 sm:py-9"
           tone="default"
         >
           <p
             className="text-xs font-semibold uppercase tracking-[0.28em]"
-            style={{ color: "var(--muted)" }}
+            style={{ color: "var(--accent)" }}
           >
-            Contact form
+            Send a message
           </p>
-          <form className="mt-6 grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
+          <form
+            className="mt-6 grid gap-4 md:grid-cols-2"
+            onSubmit={handleSubmit}
+          >
             <label className="block space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--muted)" }}>
+              <span
+                className="text-xs font-semibold uppercase tracking-[0.18em]"
+                style={{ color: "var(--muted)" }}
+              >
                 Name
               </span>
               <input name="name" required className="marketing-input" />
             </label>
             <label className="block space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--muted)" }}>
+              <span
+                className="text-xs font-semibold uppercase tracking-[0.18em]"
+                style={{ color: "var(--muted)" }}
+              >
                 Work email
               </span>
-              <input name="email" required type="email" className="marketing-input" />
+              <input
+                name="email"
+                required
+                type="email"
+                className="marketing-input"
+              />
             </label>
             <label className="block space-y-2 md:col-span-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--muted)" }}>
+              <span
+                className="text-xs font-semibold uppercase tracking-[0.18em]"
+                style={{ color: "var(--muted)" }}
+              >
                 What do you need help with?
               </span>
               <textarea
                 name="message"
-                rows={6}
+                rows={5}
                 className="marketing-textarea"
-                placeholder="Tell us about your timeline, operating model, rollout blockers, or what you want the platform to make easier."
+                placeholder="Your industry, current software, what you’re looking to improve, or any questions about the platform…"
               />
             </label>
             <div className="md:col-span-2">
@@ -129,10 +192,12 @@ export default function ContactPage() {
                 className="marketing-button marketing-button-primary disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={loading}
               >
-                {loading ? "Sending..." : "Send message"}
+                {loading ? "Sending…" : "Send message"}
               </button>
 
-              {error ? <p className="mt-3 text-sm text-red-500">{error}</p> : null}
+              {error ? (
+                <p className="mt-3 text-sm text-red-500">{error}</p>
+              ) : null}
               {success ? (
                 <p className="mt-3 text-sm" style={{ color: "var(--muted)" }}>
                   {success}
@@ -142,48 +207,7 @@ export default function ContactPage() {
           </form>
         </MarketingCard>
       </section>
-
-      <section className="grid gap-5 md:grid-cols-2">
-        <MarketingCard className="rounded-[1.85rem] p-6" tone="default" interactive>
-          <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text)]">
-              <MarketingIcon icon="spark" className="h-4 w-4" />
-            </span>
-            <div>
-              <h2 className="text-2xl font-semibold" style={{ color: "var(--text)" }}>
-                Prefer a walkthrough first?
-              </h2>
-              <p className="mt-3 text-sm leading-7" style={{ color: "var(--muted)" }}>
-                Book a demo if you would rather see the product live before discussing scope.
-              </p>
-              <div className="mt-5">
-                <MarketingButtonLink href="/demo">Book a demo</MarketingButtonLink>
-              </div>
-            </div>
-          </div>
-        </MarketingCard>
-
-        <MarketingCard className="rounded-[1.85rem] p-6" tone="muted" interactive>
-          <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text)]">
-              <MarketingIcon icon="shield" className="h-4 w-4" />
-            </span>
-            <div>
-              <h2 className="text-2xl font-semibold" style={{ color: "var(--text)" }}>
-                Existing client or operator?
-              </h2>
-              <p className="mt-3 text-sm leading-7" style={{ color: "var(--muted)" }}>
-                Sign in if you are returning to the dashboard for tenant, organization, or implementation work.
-              </p>
-              <div className="mt-5">
-                <MarketingButtonLink href="/login" variant="secondary">
-                  Sign in
-                </MarketingButtonLink>
-              </div>
-            </div>
-          </div>
-        </MarketingCard>
-      </section>
+      </ScrollReveal>
 
       <MarketingPageCta />
     </div>

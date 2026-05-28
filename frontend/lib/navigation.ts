@@ -1,11 +1,9 @@
 export const marketingNav = [
   { href: "/", label: "Product" },
-  { href: "/modules", label: "Modules" },
+  { href: "/modules", label: "Features" },
   { href: "/industries", label: "Industries" },
   { href: "/pricing", label: "Pricing" },
-  { href: "/demo", label: "Demo" },
   { href: "/contact", label: "Contact" },
-  { href: "/login", label: "Login" },
 ];
 
 export const marketingUtilityNav = [
@@ -19,7 +17,7 @@ export const marketingFooterSections = [
     title: "Product",
     links: [
       { href: "/", label: "Overview" },
-      { href: "/modules", label: "Modules" },
+      { href: "/modules", label: "Features" },
       { href: "/pricing", label: "Pricing" },
       { href: "/demo", label: "Book a demo" },
     ],
@@ -27,9 +25,10 @@ export const marketingFooterSections = [
   {
     title: "Industries",
     links: [
-      { href: "/industries", label: "Industry overview" },
-      { href: "/drilling", label: "Drilling" },
-      { href: "/contact", label: "Implementation fit" },
+      { href: "/industries", label: "All industries" },
+      { href: "/industries", label: "Manufacturing" },
+      { href: "/industries", label: "Field operations" },
+      { href: "/contact", label: "Talk to us" },
     ],
   },
   {
