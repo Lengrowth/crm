@@ -3,6 +3,7 @@ import {
   MarketingButtonLink,
   MarketingCard,
   MarketingIcon,
+  MarketingPageCta,
   ScrollReveal,
 } from "@/components/MarketingPrimitives";
 
@@ -40,6 +41,18 @@ const modules = [
       "Turn every drilling or service request into a scheduled job with crew assignments, notes, checklists, and completion status.",
   },
   {
+    icon: "eye" as const,
+    title: "GPS Field Tracking",
+    description:
+      "Real-time location of crews, rigs, and vehicles. Automatic job site check-in and check-out so dispatch always has an accurate picture of who is where.",
+  },
+  {
+    icon: "grid" as const,
+    title: "QR Product Ordering",
+    description:
+      "Field workers scan a product QR code on site, submit an order from their phone, and Champion routes it to the right supplier at the right price.",
+  },
+  {
     icon: "layers" as const,
     title: "Inventory & Stock",
     description:
@@ -58,7 +71,7 @@ const modules = [
       "Connect job costing, invoicing, deposits, and accounts receivable so completed work turns into accurate financials faster.",
   },
   {
-    icon: "grid" as const,
+    icon: "spark" as const,
     title: "Reporting & Dashboards",
     description:
       "See job margin, open quotes, service response times, inventory movement, and crew productivity in real time.",
@@ -162,7 +175,7 @@ export default function ChampionWellDrillingPage() {
               Book a discovery call
             </MarketingButtonLink>
             <MarketingButtonLink href="/contact" variant="secondary">
-              Talk through the rollout
+              Get in touch
             </MarketingButtonLink>
           </div>
         </div>
@@ -181,17 +194,16 @@ export default function ChampionWellDrillingPage() {
               className="mt-4 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl"
               style={{ color: "var(--text)" }}
             >
-              We mapped the page around your real service lines.
+              One operation. Many moving parts.
             </h2>
             <p
               className="mt-4 text-base leading-7"
               style={{ color: "var(--muted)" }}
             >
-              Champion Well Drilling is not just a drilling company. Your site
-              shows a full water-service operation with drilling, pump systems,
-              water testing, treatment, maintenance, emergency work, and
-              directional drilling. This page is structured to support that full
-              workflow.
+              Champion runs a full water service operation — new well drilling,
+              pump systems, water testing, treatment, scheduled maintenance,
+              emergency response, and directional drilling. Each service line
+              has its own scheduling, parts, and billing needs.
             </p>
             <div className="mt-8 space-y-4">
               {services.map((item, i) => (
@@ -299,7 +311,7 @@ export default function ChampionWellDrillingPage() {
             financial control.
           </p>
 
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 marketing-stagger">
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 marketing-stagger">
             {modules.map((item, i) => (
               <ScrollReveal key={item.title} delay={i * 0.05}>
                 <div className="marketing-module-card marketing-panel rounded-[1.75rem] p-6 h-full">
@@ -324,6 +336,89 @@ export default function ChampionWellDrillingPage() {
                 </div>
               </ScrollReveal>
             ))}
+          </div>
+        </section>
+      </ScrollReveal>
+
+      <ScrollReveal>
+        <section className="grid gap-6 lg:grid-cols-2">
+          <div className="marketing-panel rounded-[1.75rem] p-6 sm:p-8">
+            <span
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[color:var(--border)] text-[color:var(--accent)]"
+              style={{ background: "var(--surface-strong)" }}
+            >
+              <MarketingIcon icon="eye" className="h-5 w-5" />
+            </span>
+            <h3
+              className="mt-4 text-xl font-semibold tracking-[-0.02em]"
+              style={{ color: "var(--text)" }}
+            >
+              GPS field tracking
+            </h3>
+            <p className="mt-3 text-sm leading-6" style={{ color: "var(--muted)" }}>
+              The office can see where every crew and rig is without making a
+              phone call. Job site arrivals and departures are logged
+              automatically, so dispatch knows who is available and how long
+              each visit takes.
+            </p>
+            <ul className="mt-6 space-y-2.5">
+              {[
+                "Live map of all crews and vehicles",
+                "Automatic check-in and check-out at job sites",
+                "Route history for every service call",
+                "Idle time and mileage visible to office and management",
+              ].map((f) => (
+                <li key={f} className="flex items-center gap-2.5">
+                  <span
+                    className="h-1.5 w-1.5 shrink-0 rounded-full"
+                    style={{ background: "var(--accent)" }}
+                  />
+                  <span className="text-sm" style={{ color: "var(--muted)" }}>
+                    {f}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="marketing-panel rounded-[1.75rem] p-6 sm:p-8">
+            <span
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[color:var(--border)] text-[color:var(--accent)]"
+              style={{ background: "var(--surface-strong)" }}
+            >
+              <MarketingIcon icon="grid" className="h-5 w-5" />
+            </span>
+            <h3
+              className="mt-4 text-xl font-semibold tracking-[-0.02em]"
+              style={{ color: "var(--text)" }}
+            >
+              QR code product ordering
+            </h3>
+            <p className="mt-3 text-sm leading-6" style={{ color: "var(--muted)" }}>
+              Every product in the catalogue has a QR code. A field worker scans
+              it on site, a lightweight mobile page opens, and they submit a
+              parts or supply order directly from the field. Champion's team
+              reviews the request, applies the right price for that customer or
+              job, and routes the order to the correct supplier or partner.
+            </p>
+            <ul className="mt-6 space-y-2.5">
+              {[
+                "Mobile-first order page — scan, tap, done",
+                "Variable pricing per customer, job type, or partner agreement",
+                "Orders route automatically to the right supplier",
+                "Full order status visible to office from request to delivery",
+              ].map((f) => (
+                <li key={f} className="flex items-center gap-2.5">
+                  <span
+                    className="h-1.5 w-1.5 shrink-0 rounded-full"
+                    style={{ background: "var(--accent)" }}
+                  />
+                  <span className="text-sm" style={{ color: "var(--muted)" }}>
+                    {f}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
       </ScrollReveal>
@@ -356,7 +451,7 @@ export default function ChampionWellDrillingPage() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <MarketingButtonLink href="/contact">
-                Start the implementation plan
+                Get in touch
               </MarketingButtonLink>
               <MarketingButtonLink href="/demo" variant="secondary">
                 See the platform in action
@@ -390,43 +485,7 @@ export default function ChampionWellDrillingPage() {
         </section>
       </ScrollReveal>
 
-      <MarketingCard
-        className="rounded-[2rem] px-8 py-12 sm:px-12 sm:py-14"
-        tone="muted"
-      >
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="max-w-2xl">
-            <p
-              className="text-xs font-semibold uppercase tracking-[0.28em]"
-              style={{ color: "var(--accent)" }}
-            >
-              Next step
-            </p>
-            <h2
-              className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl"
-              style={{ color: "var(--text)" }}
-            >
-              Ready to turn Champion's field work into one connected system?
-            </h2>
-            <p
-              className="mt-3 text-base leading-7"
-              style={{ color: "var(--muted)" }}
-            >
-              If you want, we can turn this into a proper rollout plan with the
-              exact forms, dashboards, and workflows Champion Well Drilling
-              needs.
-            </p>
-          </div>
-          <div className="flex shrink-0 flex-wrap gap-3">
-            <MarketingButtonLink href="/contact">
-              Talk to us
-            </MarketingButtonLink>
-            <MarketingButtonLink href="/demo" variant="secondary">
-              Book a demo
-            </MarketingButtonLink>
-          </div>
-        </div>
-      </MarketingCard>
+      <MarketingPageCta />
     </div>
   );
 }
