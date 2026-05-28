@@ -129,9 +129,9 @@ The GitHub Actions runner will need to restart services and reload Nginx. That m
 
 This document assumes the runner will run as user:
 
-- `fern2gue`
+- the Linux account that owns the runner on your VM
 
-If you use another Linux user, replace it below.
+Use your actual login user consistently in the steps below.
 
 ### Step 1 — Check command paths
 
@@ -158,7 +158,7 @@ sudo visudo -f /etc/sudoers.d/saas-control-deploy
 Paste this line:
 
 ```text
-fern2gue ALL=(root) NOPASSWD:/usr/bin/systemctl,/usr/sbin/nginx
+YOUR_LINUX_USER ALL=(root) NOPASSWD:/usr/bin/systemctl,/usr/sbin/nginx
 ```
 
 Save and exit.
@@ -199,7 +199,7 @@ Run on the VM:
 
 ```bash
 sudo mkdir -p /opt/actions-runner
-sudo chown -R fern2gue:fern2gue /opt/actions-runner
+sudo chown -R YOUR_LINUX_USER:YOUR_LINUX_USER /opt/actions-runner
 cd /opt/actions-runner
 ```
 
@@ -238,7 +238,7 @@ When prompted:
 Run:
 
 ```bash
-sudo ./svc.sh install fern2gue
+sudo ./svc.sh install YOUR_LINUX_USER
 sudo ./svc.sh start
 ```
 
@@ -417,6 +417,26 @@ Check on the VM:
 cd /opt/actions-runner
 sudo ./svc.sh status
 ```
+
+### Workflow stays waiting for a runner
+
+If GitHub shows `Waiting for a runner to pick up this job...`, the runner is either offline or missing the `saas-control` label.
+
+Check all of these:
+
+- **GitHub > Settings > Actions > Runners** shows `saas-control-01` as online
+- the runner has labels including `self-hosted`, `linux`, and `saas-control`
+- the runner service is started on the VM
+
+On the VM, run:
+
+```bash
+cd /opt/actions-runner
+sudo ./svc.sh status
+sudo ./svc.sh start
+```
+
+If you configured the runner without the `saas-control` label, reconfigure it so the workflow can match it.
 
 ### Workflow starts but fails to restart services
 

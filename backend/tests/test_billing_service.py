@@ -123,6 +123,23 @@ class BillingServiceTestCase(unittest.TestCase):
             settings.billing_provider = previous_provider
             settings.billing_allow_mock_in_non_local = previous_allow_mock
 
+    def test_service_can_be_constructed_without_billing_provider_in_production_like_env(self) -> None:
+        previous_environment = settings.environment
+        previous_provider = settings.billing_provider
+        previous_allow_mock = settings.billing_allow_mock_in_non_local
+
+        settings.environment = "production"
+        settings.billing_provider = None
+        settings.billing_allow_mock_in_non_local = False
+
+        try:
+            service = BillingService(provider=None)
+            self.assertIsNone(service._provider)
+        finally:
+            settings.environment = previous_environment
+            settings.billing_provider = previous_provider
+            settings.billing_allow_mock_in_non_local = previous_allow_mock
+
 
 if __name__ == "__main__":
     unittest.main()

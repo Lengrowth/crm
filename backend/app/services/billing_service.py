@@ -46,7 +46,13 @@ class BillingService:
     """
 
     def __init__(self, provider: Optional[BillingProvider] = None) -> None:
-        self.provider = provider or get_billing_provider()
+        self._provider = provider
+
+    @property
+    def provider(self) -> BillingProvider:
+        if self._provider is None:
+            self._provider = get_billing_provider()
+        return self._provider
 
     def list_plans(self, session: Session) -> List[BillingPlan]:
         statement = select(BillingPlan).order_by(BillingPlan.created_at)
