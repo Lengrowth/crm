@@ -1,37 +1,37 @@
 :root {
     color-scheme: light;
-    --bg: #f3f6fb;
-    --bg-soft: #e9eef8;
-    --surface: rgba(255, 255, 255, 0.8);
-    --surface-strong: rgba(255, 255, 255, 0.96);
-    --surface-muted: rgba(232, 238, 248, 0.92);
-    --surface-overlay: rgba(255, 255, 255, 0.68);
-    --text: #0f1728;
-    --muted: #5d6b83;
-    --accent: #2450e6;
-    --accent-strong: #1230ab;
-    --accent-soft: rgba(36, 80, 230, 0.12);
-    --accent-foreground: #f8fbff;
-    --border: rgba(15, 23, 40, 0.1);
-    --border-strong: rgba(15, 23, 40, 0.18);
-    --shadow: rgba(15, 23, 40, 0.1);
-    --shadow-strong: rgba(15, 23, 40, 0.18);
-    --hero-start: #f8fbff;
-    --hero-end: #eef4ff;
-    --grid-line: rgba(36, 80, 230, 0.08);
-    --glow: rgba(98, 126, 255, 0.24);
+    --bg: #f4f4f0;
+    --bg-soft: #e9e9e4;
+    --surface: rgba(255, 255, 252, 0.84);
+    --surface-strong: rgba(255, 255, 252, 0.97);
+    --surface-muted: rgba(232, 232, 226, 0.92);
+    --surface-overlay: rgba(244, 244, 240, 0.76);
+    --text: #141414;
+    --muted: #6c6c68;
+    --accent: #b8f500;
+    --accent-strong: #6c9400;
+    --accent-soft: rgba(184, 245, 0, 0.2);
+    --accent-foreground: #141414;
+    --border: rgba(20, 20, 20, 0.13);
+    --border-strong: rgba(20, 20, 20, 0.25);
+    --shadow: rgba(20, 20, 20, 0.08);
+    --shadow-strong: rgba(20, 20, 20, 0.14);
+    --hero-start: #f8f8f4;
+    --hero-end: #e6e6df;
+    --grid-line: rgba(20, 20, 20, 0.07);
+    --glow: rgba(184, 245, 0, 0.24);
     --app-gradient:
         radial-gradient(
             circle at top left,
-            rgba(142, 169, 255, 0.18) 0%,
+            rgba(184, 245, 0, 0.11) 0%,
             transparent 38%
         ),
         radial-gradient(
             circle at top right,
-            rgba(100, 190, 255, 0.12) 0%,
+            rgba(20, 20, 20, 0.05) 0%,
             transparent 26%
         ),
-        linear-gradient(180deg, #fbfcff 0%, var(--bg) 48%, #eef3fb 100%);
+        linear-gradient(180deg, #fafaf7 0%, var(--bg) 48%, #e9e9e3 100%);
 }
 
 :root.dark,
@@ -45,18 +45,18 @@
     --surface-overlay: rgba(17, 17, 19, 0.74);
     --text: #fafafa;
     --muted: #a1a1aa;
-    --accent: #4f8cff;
-    --accent-strong: #9bc2ff;
-    --accent-soft: rgba(79, 140, 255, 0.16);
-    --accent-foreground: #050505;
+    --accent: #b8f500;
+    --accent-strong: #d5ff66;
+    --accent-soft: rgba(184, 245, 0, 0.14);
+    --accent-foreground: #141414;
     --border: rgba(255, 255, 255, 0.08);
     --border-strong: rgba(255, 255, 255, 0.14);
     --shadow: rgba(0, 0, 0, 0.34);
     --shadow-strong: rgba(0, 0, 0, 0.52);
-    --hero-start: #18181b;
-    --hero-end: #09090b;
+    --hero-start: #1d1d1b;
+    --hero-end: #0d0d0c;
     --grid-line: rgba(255, 255, 255, 0.06);
-    --glow: rgba(79, 140, 255, 0.18);
+    --glow: rgba(184, 245, 0, 0.14);
     --app-gradient:
         radial-gradient(
             circle at top left,
@@ -65,7 +65,7 @@
         ),
         radial-gradient(
             circle at top right,
-            rgba(79, 140, 255, 0.12) 0%,
+            rgba(184, 245, 0, 0.1) 0%,
             transparent 24%
         ),
         linear-gradient(180deg, #111113 0%, var(--bg) 48%, #030303 100%);

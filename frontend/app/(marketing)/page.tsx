@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import ModuleTabs from "@/components/ModuleTabs";
-import HeroGridSvg from "@/components/HeroGridSvg";
 import {
   MarketingBackdrop,
   MarketingButtonLink,
-  MarketingCard,
   MarketingIcon,
   MarketingPageCta,
   ScrollReveal,
@@ -122,58 +120,48 @@ export default function HomePage() {
   return (
     <div className="space-y-20 lg:space-y-32">
       {/* ── Hero ───────────────────────────────────────────── */}
-      <MarketingCard
-        className="relative overflow-hidden rounded-[2.5rem] px-8 py-16 sm:px-12 sm:py-20 lg:px-16 lg:py-24"
-        tone="accent"
-      >
-        <MarketingBackdrop />
-        <HeroGridSvg />
+      <section className="marketing-hero relative min-h-[620px] overflow-hidden rounded-[2rem] border border-[color:var(--border-strong)] px-6 py-8 sm:min-h-[760px] sm:px-10 sm:py-10 lg:px-14 lg:py-12">
+        <div aria-hidden="true" className="marketing-hero-grid pointer-events-none absolute inset-0 opacity-70" />
+        <div className="relative flex h-full min-h-[540px] flex-col justify-between sm:min-h-[680px]">
+          <div className="flex items-center justify-between border-b border-[color:var(--border)] pb-5 text-[10px] font-semibold uppercase tracking-[0.25em]" style={{ color: "var(--muted)" }}>
+            <span className="marketing-kicker-line">Business OS / 01</span>
+            <span className="hidden sm:block">Connected by design</span>
+          </div>
 
-        {/* Full-bleed product screenshot — right half, bleeds to card edge */}
-        <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[50%] translate-x-20 lg:block">
-          <Image
-            src="/dashboard.png"
-            alt="LenERP — business dashboard overview"
-            fill
-            sizes="58vw"
-            className="object-cover object-left-top opacity-75"
-            priority
-          />
-        </div>
+          <div className="relative flex flex-1 flex-col items-center justify-center py-12 text-center sm:py-20 lg:py-24">
+            <p className="marketing-reveal text-xs font-semibold uppercase tracking-[0.28em]" style={{ color: "var(--accent-strong)" }}>A calmer way to run a business</p>
+            <div className="relative mt-9 flex h-36 w-36 items-center justify-center rounded-full border border-[color:var(--border-strong)]" style={{ background: "color-mix(in srgb, var(--accent) 12%, transparent)" }}>
+              <div className="absolute inset-3 rounded-full border border-dashed border-[color:var(--border-strong)]" />
+              <span className="relative h-4 w-4 rounded-full shadow-[0_0_0_10px_var(--accent-soft),0_0_40px_var(--glow)]" style={{ background: "var(--accent)" }} />
+            </div>
+            <h1 className="marketing-reveal marketing-hero-wordmark marketing-brand mt-10 max-w-6xl font-semibold" style={{ color: "var(--text)", animationDelay: "60ms" }}>len<span style={{ color: "var(--accent-strong)" }}>ERP</span></h1>
+            <p className="marketing-reveal mt-8 max-w-2xl text-lg leading-8 sm:text-xl" style={{ color: "var(--muted)", animationDelay: "120ms" }}>
+              The operating system for teams that have outgrown a pile of disconnected tools.
+            </p>
+            <div className="mt-8 flex flex-wrap justify-center gap-x-8 gap-y-2 text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>
+              <span>Finance</span><span>Sales</span><span>Operations</span><span>Production</span>
+            </div>
+          </div>
 
-        {/* Left: text content */}
-        <div className="relative max-w-xl">
-          <p
-            className="marketing-reveal text-xs font-semibold uppercase tracking-[0.28em]"
-            style={{ color: "var(--accent)" }}
-          >
-            LenERP
-          </p>
-          <h1
-            className="marketing-reveal mt-5 text-6xl font-semibold sm:text-7xl lg:text-8xl marketing-gradient-text"
-            style={{ animationDelay: "60ms" }}
-          >
-            The only ERP you'll ever need.
-          </h1>
-          <p
-            className="marketing-reveal mt-6 max-w-lg text-lg leading-8"
-            style={{ color: "var(--muted)", animationDelay: "120ms" }}
-          >
-            Accounts, CRM, sales, procurement, inventory, manufacturing,
-            projects, and more — in one modern platform built for any
-            business, any industry.
-          </p>
-          <div
-            className="marketing-reveal mt-8 flex flex-wrap gap-3"
-            style={{ animationDelay: "180ms" }}
-          >
-            <MarketingButtonLink href="/demo">Book a demo</MarketingButtonLink>
-            <MarketingButtonLink href="/modules" variant="secondary">
-              Explore features
-            </MarketingButtonLink>
+          <div className="flex flex-col gap-6 border-t border-[color:var(--border)] pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 text-xs" style={{ color: "var(--muted)" }}><span className="h-2 w-2 rounded-full" style={{ background: "var(--accent)" }} />Live system / ready to explore</div>
+            <div className="flex flex-wrap gap-3">
+              <MarketingButtonLink href="/demo">Book a demo <span aria-hidden="true">↗</span></MarketingButtonLink>
+              <MarketingButtonLink href="/modules" variant="secondary">Explore modules</MarketingButtonLink>
+            </div>
           </div>
         </div>
-      </MarketingCard>
+      </section>
+
+      <section className="relative mx-auto -mt-12 max-w-5xl px-4 sm:px-10">
+        <div className="marketing-panel overflow-hidden rounded-[1.5rem] border border-[color:var(--border-strong)] p-2 shadow-2xl">
+          <div className="flex items-center gap-2 border-b border-[color:var(--border)] px-4 py-3">
+            <span className="h-2 w-2 rounded-full bg-[#ff5f57]" /><span className="h-2 w-2 rounded-full bg-[#febc2e]" /><span className="h-2 w-2 rounded-full bg-[#28c840]" />
+            <span className="ml-3 text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--muted)" }}>lenERP / overview</span>
+          </div>
+          <Image src="/dashboard.png" alt="LenERP business dashboard overview" width={1600} height={950} className="block w-full rounded-b-xl" priority />
+        </div>
+      </section>
 
       {/* ── Module tabs showcase ──────────────────────────── */}
       <ScrollReveal>
