@@ -102,7 +102,7 @@ PYTHONPATH="$BACKEND_DIR" "$BACKEND_VENV/bin/python" -m app.db.seed
 log "Installing frontend dependencies"
 cd "$FRONTEND_DIR"
 load_env_file "$FRONTEND_ENV_FILE"
-npm install
+npm install --include=dev
 
 log "Building frontend production bundle"
 npm run build
