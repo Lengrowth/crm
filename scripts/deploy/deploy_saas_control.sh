@@ -120,11 +120,11 @@ log "Reloading nginx"
 sudo "$SYSTEMCTL_BIN" reload nginx
 
 log "Waiting for backend health endpoint"
-retry 10 3 curl -fsS http://127.0.0.1:8000/health >/tmp/saas-backend-health.json
+retry 10 3 curl -fsS http://127.0.0.1:8001/health >/tmp/saas-backend-health.json
 cat /tmp/saas-backend-health.json
 
 log "Waiting for ERPNext runtime endpoint"
-retry 10 3 curl -fsS http://127.0.0.1:8000/integrations/erpnext/runtime >/tmp/saas-erpnext-runtime.json
+retry 10 3 curl -fsS http://127.0.0.1:8001/integrations/erpnext/runtime >/tmp/saas-erpnext-runtime.json
 cat /tmp/saas-erpnext-runtime.json
 
 log "Waiting for frontend root route"
