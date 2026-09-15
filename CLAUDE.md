@@ -202,8 +202,17 @@ independent restore operator still need explicit operational confirmation.
 1. **Cloudflare API edge TLS:** `https://api.lenerp.lengrowth.com/health`
    fails at the Cloudflare edge while the EC2 origin is healthy. The connected
    Wrangler identity had only zone-read scope and could not inspect or change
-   DNS/SSL settings. Grant the approved connection the minimum zone DNS/SSL
-   permissions, reconnect it, and inspect/fix the edge certificate/TLS mode.
+   DNS/SSL settings. Wrangler has no DNS-record command for this zone. In the
+   Cloudflare dashboard select account `Lengrowth` → zone `lengrowth.com`:
+   verify `api.lenerp` is an `A` record for `100.62.163.246` with Proxy status
+   enabled; under **SSL/TLS → Overview** use **Full (strict)**; under
+   **SSL/TLS → Edge Certificates** verify Universal SSL is active and covers
+   `*.lengrowth.com`, then use the certificate retry/refresh action if the
+   certificate is pending or errored. If using a token instead of the
+   dashboard, grant only zone-scoped `DNS:Edit`, `Zone Settings:Edit`, and
+   `SSL/TLS Certificates:Edit` permissions for `lengrowth.com`. Verify from a
+   terminal with `curl.exe -Iv https://api.lenerp.lengrowth.com/health` and
+   expect HTTP 200 before repeating public authenticated smoke.
 2. **Credential rotation:** intentionally not performed. It is mandatory before
    Champion confidential data; do not silently mark this complete.
 3. **Production source ownership:** production Frappe/ERPNext drift was
