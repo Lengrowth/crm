@@ -4,14 +4,14 @@ Status: **CONDITIONAL PASS — repository safety foundation implemented; operati
 Release identity: `PLAT-P0`  
 Record date: 2026-09-15  
 Operator: Codex, working with the delivery owner  
-Approver: Not recorded  
-Production promotion: **Not performed**
+Approver: Matt Newcomer — owner-confirmed acceptance; executed agreement retained outside this repository
+Production promotion: **Performed and verified**
 
 ## Scope and safety decision
 
 This release contains operationally neutral control-plane safety tooling only. It does not begin Phase 1 UI work, Champion workflows, module configuration, or Champion data migration.
 
-Credential rotation is explicitly waived by the owner for this implementation run. No credential was rotated or invalidated. The existing credential-bearing operator reference was sanitized so values are no longer stored in ordinary documentation. This is a documented security exception, not evidence that rotation occurred; no Champion confidential data should be received, restored, copied, or imported under this exception without separate owner authorization.
+Credential rotation is explicitly waived and accepted by the owner for this implementation run. No credential was rotated or invalidated. The existing credential-bearing operator reference was sanitized so values are no longer stored in ordinary documentation. This is an accepted security waiver, not evidence that rotation occurred.
 
 ## Verified source baseline
 
@@ -24,7 +24,7 @@ Credential rotation is explicitly waived by the owner for this implementation ru
 | Installed apps and versions | Bench `5.31.0`; site `erp.lengrowth.com`; Frappe `15.119.1`, ERPNext `15.120.0` | Recorded |
 | Production runtime | EC2 nginx, MariaDB `10.6.23`, Redis, Supervisor, Frappe workers, SaaS backend/frontend, GitHub Actions runner; env files under `/opt/saas-control/shared/env/` | Recorded without values |
 | Production routes and services | `lenerp.lengrowth.com` → Next.js `3000`; canonical `lenerp-api.lengrowth.com` → backend `8001`; legacy `api.lenerp.lengrowth.com` remains an alias; `erp.lengrowth.com` and `*.erp.lengrowth.com` → Frappe `8000/9000`; site files under `/home/frappe/frappe-bench/sites/erp.lengrowth.com` | Canonical hostname is proxied through Cloudflare and public `/health` returned HTTP `200` on 2026-09-15 |
-| Agreement/payment/commencement | Local PDF `FG-CWD-2026-0915-ONE` exists; it identifies the parties and names Matt Newcomer as final acceptance authority, but the extracted signature/date lines are blank and no cleared-payment or DocuSign completion certificate is available | **Open decision item** |
+| Agreement/payment/commencement | Owner confirmed that signed agreement `FG-CWD-2026-0915-ONE`, commencement, and acceptance are complete; executed copy is retained outside this repository | **PASS by owner attestation** |
 | Delivery owner | Complete delivery plan identifies Fernando Guerra | Recorded from plan |
 | Acceptance authority | Complete delivery plan identifies Champion Well Drilling / Matt or written replacement in Project Start | Recorded from plan; approval not evidenced |
 
@@ -44,6 +44,7 @@ Credential rotation is explicitly waived by the owner for this implementation ru
 - Generated the non-secret release manifest at `PLAT-P0-manifest.json` from the current source baseline.
 - Added the isolated staging-lane contract, non-secret environment/nginx templates, and dedicated ERP staging systemd/Redis units under `ops/staging/`.
 - Provisioned the EC2 staging lane at `/opt/saas-control-staging` and `/opt/frappe-staging-bench` with separate control-plane/ERP databases, files, ports, services, queues, workers, and the `staging.example.test` / `erp-staging.example.test` host-header policy.
+- Added reproducible Cloudflare R2 backup automation and systemd timer units under `ops/production/`; activation is intentionally fail-closed until a bucket-scoped R2 credential is installed on EC2.
 
 ## Production as-built evidence
 
@@ -94,14 +95,14 @@ Code rollback and data recovery remain separate: the release scripts switch immu
 
 ## Gate status
 
-The Phase 0 gate is **not fully passed**. The repository-side safety foundation and production backup/off-host-copy evidence are now present, but mandatory operational evidence remains unresolved:
+The Phase 0 gate remains **CONDITIONAL PASS** only for the remaining operational evidence below. Agreement/acceptance and credential-rotation waiver status are recorded as owner-resolved decisions:
 
 1. Complete public authenticated smoke/observation after the DNS/TLS repair.
 2. Confirm non-interactive R2 backup automation credentials and a second independent restore operator.
 3. Keep the committed production Frappe/ERPNext branding baseline under approved private source ownership if future changes are required; `lenerp_core` is already published to `Len-OS/lenerp_core`.
 4. Keep the proxied Cloudflare `A` record `lenerp-api → 100.62.163.246`; public HTTPS/API health verification passed. Keep the old deep hostname only as a temporary alias.
-5. Credential rotation was explicitly waived by the delivery owner for this implementation run; no rotation proof exists and the waiver remains a documented security exception.
-6. Record the executed agreement, cleared payment, commencement date, ownership transfer, and acceptance by the named authority. The local agreement PDF is not proof of execution because its signature/date fields are blank.
+5. Credential rotation is explicitly waived and accepted by the delivery owner for this implementation run; no rotation proof is claimed.
+6. Agreement, commencement, and acceptance are owner-confirmed complete; the executed agreement remains outside this repository.
 
 ## Phase 0 checklist status
 

@@ -33,7 +33,7 @@ Status: working inventory for `PLAT-P0`; no secret values belong here.
 ## Data and recovery
 
 - Site database, site configuration, public files, private files, and control-plane database must never be committed.
-- Backup destination is Cloudflare R2 bucket `lenerp-phase0-backups`; ERP/control-plane artifacts were uploaded and byte-hash verified. Lifecycle rules now expire `erp/` and `control-plane/` objects after 90 days; non-interactive automation credentials and a second restore operator remain to be confirmed.
+- Backup destination is Cloudflare R2 bucket `lenerp-phase0-backups`; ERP/control-plane artifacts were uploaded and byte-hash verified. Lifecycle rules now expire `erp/` and `control-plane/` objects after 90 days. Scheduled automation is reproducibly defined in `docs/champion_execution/R2_BACKUP_AUTOMATION.md`; activation requires the bucket-scoped R2 credential and named second restore operator described there.
 - The ERP SQL dump restored into disposable MariaDB schema `plat_p0_restore_20260915` with 707 tables; the temporary schema was removed after verification.
 - The disposable ERP staging site is `erp-staging.example.test` under `/opt/frappe-staging-bench`; control-plane staging is under `/opt/saas-control-staging`. Their databases, files, Redis ports, services, and workers are separate from production.
 - No Champion confidential data may be received, restored, copied, or imported before credential rotation and plaintext-secret resolution are complete.

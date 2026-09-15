@@ -1,0 +1,9 @@
+[Unit]
+Description=LenERP production backup to Cloudflare R2
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/local/sbin/saas-control-r2-backup
