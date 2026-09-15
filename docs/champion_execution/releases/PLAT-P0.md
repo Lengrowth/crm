@@ -23,7 +23,7 @@ Credential rotation is explicitly waived by the owner for this implementation ru
 | Frappe/ERPNext production revisions | Base Frappe `edae775dd36b6c4ad7acab10230262bd74040765` plus local LenERP commits `bd4a4e849a018f2822827f91b27cd24fa796e691` / cleanup `a5524bdb8c4df252bf0a76bcfdcdc9715c9c389b`; base ERPNext `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3` plus local LenERP commit `0fd1992505bd680432363134063d01b0c755008c` | Intentional white-label changes committed locally; harmful functionality removals and `.bak` artifacts removed; worktrees clean |
 | Installed apps and versions | Bench `5.31.0`; site `erp.lengrowth.com`; Frappe `15.119.1`, ERPNext `15.120.0` | Recorded |
 | Production runtime | EC2 nginx, MariaDB `10.6.23`, Redis, Supervisor, Frappe workers, SaaS backend/frontend, GitHub Actions runner; env files under `/opt/saas-control/shared/env/` | Recorded without values |
-| Production routes and services | `lenerp.lengrowth.com` → Next.js `3000`; `api.lenerp.lengrowth.com` → backend `8001`; `erp.lengrowth.com` and `*.erp.lengrowth.com` → Frappe `8000/9000`; site files under `/home/frappe/frappe-bench/sites/erp.lengrowth.com` | Recorded; public API TLS is an open Cloudflare edge issue |
+| Production routes and services | `lenerp.lengrowth.com` → Next.js `3000`; canonical `lenerp-api.lengrowth.com` → backend `8001`; legacy `api.lenerp.lengrowth.com` remains an alias; `erp.lengrowth.com` and `*.erp.lengrowth.com` → Frappe `8000/9000`; site files under `/home/frappe/frappe-bench/sites/erp.lengrowth.com` | New canonical hostname is ready at the origin; Cloudflare DNS record and public verification remain |
 | Agreement/payment/commencement | Local PDF `FG-CWD-2026-0915-ONE` exists; it identifies the parties and names Matt Newcomer as final acceptance authority, but the extracted signature/date lines are blank and no cleared-payment or DocuSign completion certificate is available | **Open decision item** |
 | Delivery owner | Complete delivery plan identifies Fernando Guerra | Recorded from plan |
 | Acceptance authority | Complete delivery plan identifies Champion Well Drilling / Matt or written replacement in Project Start | Recorded from plan; approval not evidenced |
@@ -50,7 +50,7 @@ Credential rotation is explicitly waived by the owner for this implementation ru
 - Read-only SSH inventory completed against the EC2 after the temporary port-22 allow rule was opened. The ERP and control plane are co-hosted on the same EC2, as the nginx routes, Supervisor groups, listeners, systemd units, and application directories show.
 - The Frappe and ERPNext worktrees were reviewed: intentional LenERP white-label changes were committed locally, help/video/payment functionality was restored, and accidental backup artifacts were removed. Both production worktrees are clean; official upstream remotes remain fetch/push targets and client-specific changes were not pushed there.
 - Production ERP commits are Frappe `a5524bdb8c4df252bf0a76bcfdcdc9715c9c389b` (branding parent `bd4a4e849a018f2822827f91b27cd24fa796e691`) and ERPNext `0fd1992505bd680432363134063d01b0c755008c`, based on the pinned upstream revisions recorded above.
-- Cloudflare DNS is active and proxied for the three temporary hostnames. `lenerp` and `erp` return successfully through the edge. `api.lenerp.lengrowth.com` fails TLS at the Cloudflare edge while the EC2 backend is healthy locally; the connected Wrangler identity lacks the zone DNS/SSL permissions required to correct that setting.
+- Cloudflare DNS is active and proxied for the existing hostnames. The EC2 origin now accepts `lenerp-api.lengrowth.com` and returns API HTTP `200` locally; add the proxied Cloudflare record and verify the new public HTTPS hostname.
 
 ## Tests and evidence
 
@@ -99,7 +99,7 @@ The Phase 0 gate is **not fully passed**. The repository-side safety foundation 
 1. Confirm the public API TLS repair and complete public authenticated smoke/observation.
 2. Confirm non-interactive R2 backup automation credentials and a second independent restore operator.
 3. Keep the committed production Frappe/ERPNext branding baseline under approved private source ownership if future changes are required; `lenerp_core` is already published to `Len-OS/lenerp_core`.
-4. Correct the Cloudflare edge TLS configuration for `api.lenerp.lengrowth.com` with a user/session that has the required zone DNS/SSL permissions.
+4. Add the proxied Cloudflare `A` record `lenerp-api → 100.62.163.246` and verify public HTTPS/API smoke. Keep the old deep hostname only as a temporary alias.
 5. Credential rotation was explicitly waived by the delivery owner for this implementation run; no rotation proof exists and the waiver remains a documented security exception.
 6. Record the executed agreement, cleared payment, commencement date, ownership transfer, and acceptance by the named authority. The local agreement PDF is not proof of execution because its signature/date fields are blank.
 

@@ -23,7 +23,7 @@ Deploy two systems on a single AWS EC2 instance fronted by Cloudflare:
 | Domain | Routing |
 |--------|---------|
 | `lenerp.lengrowth.com` | EC2 → nginx → Next.js :3000 |
-| `api.lenerp.lengrowth.com` | EC2 → nginx → FastAPI :8000 |
+| `lenerp-api.lengrowth.com` | EC2 → nginx → FastAPI :8000 |
 | `*.erp.lengrowth.com` | EC2 → bench-managed nginx (per-tenant ERPNext sites) |
 
 `*.erp.lengrowth.com` is more specific than the existing `*.lengrowth.com` wildcard — no conflict in Cloudflare DNS.
@@ -207,7 +207,7 @@ sudo apt install -y nodejs npm
 
 cd /opt/lenerp/frontend
 npm ci
-NEXT_PUBLIC_API_URL=https://api.lenerp.lengrowth.com npm run build
+NEXT_PUBLIC_API_URL=https://lenerp-api.lengrowth.com npm run build
 ```
 
 Create systemd service:
@@ -222,7 +222,7 @@ After=network.target
 User=ubuntu
 WorkingDirectory=/opt/lenerp/frontend
 Environment=PORT=3000
-Environment=NEXT_PUBLIC_API_URL=https://api.lenerp.lengrowth.com
+Environment=NEXT_PUBLIC_API_URL=https://lenerp-api.lengrowth.com
 ExecStart=/usr/bin/npm run start
 Restart=always
 RestartSec=5
@@ -258,7 +258,7 @@ server {
 
 server {
     listen 443 ssl;
-    server_name api.lenerp.lengrowth.com;
+    server_name lenerp-api.lengrowth.com;
 
     ssl_certificate     /etc/nginx/ssl/cf-origin.pem;
     ssl_certificate_key /etc/nginx/ssl/cf-origin.key;

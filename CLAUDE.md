@@ -199,19 +199,19 @@ independent restore operator still need explicit operational confirmation.
 
 ## Known blockers and handoff actions
 
-1. **Cloudflare API edge TLS:** `https://api.lenerp.lengrowth.com/health`
+1. **Cloudflare API edge TLS:** `https://lenerp-api.lengrowth.com/health`
    fails at the Cloudflare edge while the EC2 origin is healthy. The connected
    Wrangler identity had only zone-read scope and could not inspect or change
    DNS/SSL settings. Wrangler has no DNS-record command for this zone. In the
    Cloudflare dashboard select account `Lengrowth` → zone `lengrowth.com`:
-   verify `api.lenerp` is an `A` record for `100.62.163.246` with Proxy status
+   create/verify `lenerp-api` is an `A` record for `100.62.163.246` with Proxy status
    enabled; under **SSL/TLS → Overview** use **Full (strict)**; under
    **SSL/TLS → Edge Certificates** verify Universal SSL is active and covers
    `*.lengrowth.com`, then use the certificate retry/refresh action if the
    certificate is pending or errored. If using a token instead of the
    dashboard, grant only zone-scoped `DNS:Edit`, `Zone Settings:Edit`, and
    `SSL/TLS Certificates:Edit` permissions for `lengrowth.com`. Verify from a
-   terminal with `curl.exe -Iv https://api.lenerp.lengrowth.com/health` and
+   terminal with `curl.exe -Iv https://lenerp-api.lengrowth.com/health` and
    expect HTTP 200 before repeating public authenticated smoke.
 2. **Credential rotation:** intentionally not performed. It is mandatory before
    Champion confidential data; do not silently mark this complete.
@@ -375,8 +375,10 @@ Dashboard → Caching → Configuration → Development Mode → Enable (3 hours
 **DNS:**
 - `erp.lengrowth.com` → `100.62.163.246` (proxied)
 - `lenerp.lengrowth.com` → `100.62.163.246` (proxied)
-- `api.lenerp.lengrowth.com` → proxied to the same EC2 origin; public TLS is
-  currently failing at the Cloudflare edge and requires DNS/SSL-capable access.
+- `lenerp-api.lengrowth.com` → proxied to the same EC2 origin; this is the
+  canonical API hostname because Cloudflare Universal SSL covers it as a
+  first-level subdomain. `api.lenerp.lengrowth.com` remains only as a temporary
+  compatibility alias.
 
 **Purge specific URL:**
 Dashboard → Caching → Cache Rules → Purge Cache → Custom Purge
