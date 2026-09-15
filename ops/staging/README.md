@@ -12,7 +12,7 @@ does not require public DNS.
 | Control-plane releases | `/opt/saas-control-staging/releases` | `/opt/saas-control/releases` |
 | Active pointer | `/opt/saas-control-staging/current` | `/opt/saas-control/current` |
 | Backend port | `18001` | `8001` |
-| Frontend port | `13000` | `3000` |
+| Frontend port | `13001` | `3000` |
 | Control-plane DB | separate staging PostgreSQL/SQLite URL | production-only URL |
 | ERP site/database/files | separate staging bench/site and backup set | production bench/site and backup set |
 | Environment files | `/opt/saas-control-staging/shared/env/*` | `/opt/saas-control/shared/env/*` |
@@ -43,9 +43,9 @@ separate disposable Frappe site; the production site must never be reused.
 ## Verification commands
 
 ```bash
-ss -ltnp | grep -E ':13000|:18001'
+ss -ltnp | grep -E ':13001|:18001'
 systemctl status saas-control-staging-backend saas-control-staging-frontend
-curl -fsS -H 'Host: staging.example.test' http://127.0.0.1:13000/
+curl -fsS -H 'Host: staging.example.test' http://127.0.0.1:13001/
 curl -fsS -H 'Host: staging.example.test' http://127.0.0.1:18001/health
 ```
 

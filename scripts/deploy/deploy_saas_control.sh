@@ -48,7 +48,7 @@ restart_services() {
   sudo "$SYSTEMCTL_BIN" restart "$BACKEND_SERVICE" "$FRONTEND_SERVICE"
   for _ in {1..30}; do
     if curl -fsS -o /dev/null --max-time 3 "${STAGING_BACKEND_URL:-http://127.0.0.1:18001}/health" \
-      && curl -fsS -o /dev/null --max-time 3 "${STAGING_BASE_URL:-http://127.0.0.1:13000}/"; then
+      && curl -fsS -o /dev/null --max-time 3 "${STAGING_BASE_URL:-http://127.0.0.1:13001}/"; then
       return 0
     fi
     sleep 2
@@ -118,7 +118,7 @@ if ! restart_services; then
 fi
 validate_nginx
 
-if ! BASE_URL="${STAGING_BASE_URL:-http://127.0.0.1:13000}" \
+if ! BASE_URL="${STAGING_BASE_URL:-http://127.0.0.1:13001}" \
   BACKEND_URL="${STAGING_BACKEND_URL:-http://127.0.0.1:18001}" \
   EXPECTED_RELEASE="$RELEASE_ID" bash "$CANDIDATE_DIR/scripts/release/smoke.sh"; then
   rollback "$OLD_TARGET" "$OLD_PREVIOUS"

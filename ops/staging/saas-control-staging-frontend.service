@@ -10,7 +10,7 @@ Group=saas-staging
 WorkingDirectory=/opt/saas-control-staging/current/frontend
 EnvironmentFile=/opt/saas-control-staging/shared/env/staging-frontend.env
 Environment=NEXT_TELEMETRY_DISABLED=1
-ExecStart=/usr/bin/npm run start -- --hostname 127.0.0.1 --port 13000
+ExecStart=/usr/bin/npm run start -- --hostname 127.0.0.1 --port 13001
 Restart=on-failure
 RestartSec=5
 NoNewPrivileges=true
