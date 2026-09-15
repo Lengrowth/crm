@@ -17,10 +17,9 @@ class CommunicationService:
     Expects RESEND_API_KEY and RESEND_FROM_EMAIL to be set in environment/settings.
     """
 
-    API_URL = "https://api.resend.com/emails"
-
     def __init__(self) -> None:
         self.api_key = settings.resend_api_key
+        self.api_url = settings.resend_api_url
         self.from_email = settings.resend_from_email
         self.contact_recipient = settings.marketing_contact_recipient
 
@@ -55,7 +54,7 @@ class CommunicationService:
         headers = self._auth_headers()
         with httpx.Client() as client:
             resp = client.post(
-                self.API_URL, json=payload, headers=headers, timeout=15.0
+                self.api_url, json=payload, headers=headers, timeout=15.0
             )
         if resp.status_code >= 400:
             raise CommunicationError(

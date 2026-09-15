@@ -5,6 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.db.session import SessionLocal
 from app.integrations.erpnext_runtime import get_erpnext_runtime_summary
 from app.models.domain import Module
+from app.services.release_metadata import get_release_metadata
 
 router = APIRouter(tags=["health"])
 
@@ -31,3 +32,9 @@ def health() -> dict[str, str]:
         "erpnext_mode": erpnext_runtime["mode"],
         "erpnext_policy": erpnext_runtime["policy"],
     }
+
+
+@router.get("/runtime/release")
+def runtime_release() -> dict[str, object]:
+    """Return safe release identity and server-controlled flags only."""
+    return get_release_metadata()

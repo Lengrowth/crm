@@ -39,6 +39,9 @@ from app.workers.provisioning_worker import ProvisioningWorker
 
 router = APIRouter(tags=["integrations"])
 control_plane_service = ControlPlaneService()
+# Deprecated import compatibility for older callers. Request handlers resolve a
+# runtime-appropriate client through `_get_erp_service`; this sentinel is not used.
+erp_service: ERPNextService | None = None
 
 
 def _integration_unavailable(detail: str) -> HTTPException:

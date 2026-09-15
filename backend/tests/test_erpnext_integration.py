@@ -1,10 +1,19 @@
 from __future__ import annotations
 
-from fastapi.testclient import TestClient
+import tempfile
+from pathlib import Path
 
-from app.api.integrations import erp_service
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from app.api.dependencies import get_current_user
 from app.api.router import api_router
+from app.db.base import Base
+from app.db.session import get_db_session
 from app.integrations.mock_erpnext import MockERPNextClient
+from app.models.domain import Organization, OrganizationMembership, SaaSUser, Tenant
 from app.services.erpnext_service import ERPNextService
 
 
@@ -36,22 +45,74 @@ def test_service_handles_failures():
 
 
 def test_api_provision_and_poll():
-    # use TestClient with our api_router; the integration router uses a default mock service
-    client = TestClient(api_router)
+    # Use a disposable authenticated tenant so this test covers the protected route.
+    temp_dir = tempfile.TemporaryDirectory()
+    db_path = Path(temp_dir.name) / "erpnext-integration.db"
+    engine = create_engine(
+        f"sqlite:///{db_path}",
+        connect_args={"check_same_thread": False},
+        future=True,
+    )
+    Base.metadata.create_all(bind=engine)
+    session_factory = sessionmaker(
+        bind=engine, autocommit=False, autoflush=False, future=True
+    )
+    session = session_factory()
 
-    payload = {"custom_app": None, "domain": None, "options": {}}
-    r = client.post("/organizations/org1/tenants/tenant-api/provision", json=payload)
-    assert r.status_code == 202
-    body = r.json()
-    # should contain a provision record structure
-    assert body["organization_id"] == "org1"
-    provision_id = body["id"]
+    organization = Organization(name="Integration Org", status="active")
+    session.add(organization)
+    session.flush()
+    user = SaaSUser(
+        email="integration-owner@example.test",
+        full_name="Integration Owner",
+        status="active",
+        is_platform_admin=True,
+    )
+    session.add(user)
+    session.flush()
+    session.add(
+        OrganizationMembership(
+            organization_id=organization.id, user_id=user.id, role="owner"
+        )
+    )
+    tenant = Tenant(
+        organization_id=organization.id,
+        tenant_slug="tenant-api",
+        environment="staging",
+        status="planned",
+        provisioning_status="pending",
+    )
+    session.add(tenant)
+    session.commit()
 
-    # poll
-    r2 = client.get(f"/provisioning/{provision_id}")
-    assert r2.status_code == 200
-    r2b = r2.json()
-    assert r2b["status"] in ("running", "success")
+    def override_get_db_session():
+        yield session
+
+    def override_get_current_user():
+        return user
+
+    test_app = FastAPI()
+    test_app.include_router(api_router)
+    test_app.dependency_overrides[get_db_session] = override_get_db_session
+    test_app.dependency_overrides[get_current_user] = override_get_current_user
+    try:
+        with TestClient(test_app) as client:
+            payload = {"custom_app": None, "domain": None, "options": {}}
+            r = client.post(
+                f"/organizations/{organization.id}/tenants/{tenant.id}/provision",
+                json=payload,
+            )
+            assert r.status_code == 202
+            provision_id = r.json()["id"]
+
+            r2 = client.get(f"/provisioning/{provision_id}")
+            assert r2.status_code == 200
+            assert r2.json()["status"] in ("running", "success")
+    finally:
+        test_app.dependency_overrides.clear()
+        session.close()
+        engine.dispose()
+        temp_dir.cleanup()
 
 
 def test_api_backup_restore_bind_domain():

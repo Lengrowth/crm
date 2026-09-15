@@ -8,7 +8,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_name: str = "SaaS Control Backend"
+    product_name: str = "LenERP"
     environment: str = "local"
+    release_id: str = "local"
+    release_commit: str = "unknown"
+    release_manifest_path: Optional[str] = None
+    feature_flags: str = ""
     api_host: str = "127.0.0.1"
     api_port: int = 8000
     frontend_base_url: str = "http://localhost:3000"
@@ -44,6 +49,7 @@ class Settings(BaseSettings):
 
     # Resend (marketing email) configuration
     resend_api_key: Optional[str] = None
+    resend_api_url: str = "https://api.resend.com/emails"
     resend_from_email: str = "hello@local-saas.test"
     # Recipient for marketing intake emails (contact/demo)
     marketing_contact_recipient: str = "hello@local-saas.test"
@@ -73,6 +79,24 @@ class Settings(BaseSettings):
     @property
     def rate_limit_effective_enabled(self) -> bool:
         return bool(self.rate_limit_enabled and not self.is_local_environment)
+
+    @property
+    def feature_flag_map(self) -> dict[str, bool]:
+        """Parse server-controlled flags without exposing environment secrets."""
+        flags: dict[str, bool] = {}
+        for item in self.feature_flags.split(","):
+            name, separator, value = item.partition("=")
+            if not separator:
+                continue
+            normalized_name = name.strip()
+            if not normalized_name:
+                continue
+            normalized_value = value.strip().lower()
+            if normalized_value in {"1", "true", "on", "yes", "enabled"}:
+                flags[normalized_name] = True
+            elif normalized_value in {"0", "false", "off", "no", "disabled"}:
+                flags[normalized_name] = False
+        return flags
 
 
 @lru_cache(maxsize=1)

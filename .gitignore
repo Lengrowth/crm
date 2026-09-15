@@ -25,6 +25,12 @@ build/
 .env.local
 .env.*.local
 .envrc
+ops/staging/*.env
+!ops/staging/*.env.example
+!ops/staging/ec2-staging-*.env
+
+# Local Wrangler state (may contain account metadata/auth cache)
+.wrangler/
 
 # Local logs
 *.log

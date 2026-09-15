@@ -148,14 +148,31 @@ class PersistentERPNextService(ERPNextService):
     def create_provision_record(
         self, session: Session, organization_id: str, tenant_id: str
     ) -> TenantProvisioningRecord:
-        rec = TenantProvisioningRecord(
-            organization_id=organization_id,
-            tenant_id=tenant_id,
-            status="running",
-            started_at=utcnow(),
-            details={},
+        rec = (
+            session.query(TenantProvisioningRecord)
+            .filter_by(organization_id=organization_id, tenant_id=tenant_id)
+            .one_or_none()
         )
-        session.add(rec)
+        if rec is None:
+            rec = TenantProvisioningRecord(
+                organization_id=organization_id,
+                tenant_id=tenant_id,
+                status="running",
+                started_at=utcnow(),
+                details={},
+            )
+            session.add(rec)
+        elif rec.status == "success":
+            return rec
+        else:
+            # Reuse the unique per-tenant record for safe retries instead of
+            # inserting a duplicate after a failed or interrupted attempt.
+            rec.status = "running"
+            rec.started_at = utcnow()
+            rec.finished_at = None
+            rec.details = {}
+            rec.error_message = None
+            session.add(rec)
 
         tenant = session.get(Tenant, tenant_id)
         if tenant is not None:

@@ -1,4 +1,6 @@
-export const AUTH_TOKEN_COOKIE = "crm-auth-token";
+import { env } from "@/lib/env";
+
+export const AUTH_TOKEN_COOKIE = env.authCookieName;
 
 export function getAuthTokenCookie(): string | null {
   if (typeof document === "undefined") {
@@ -9,17 +11,27 @@ export function getAuthTokenCookie(): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-export function setAuthTokenCookie(token: string, maxAgeSeconds = 60 * 60 * 24 * 30): void {
+function cookieAttributes(maxAgeSeconds: number): string[] {
+  const attributes = [
+    `Path=${env.authCookiePath}`,
+    `Max-Age=${maxAgeSeconds}`,
+    `SameSite=${env.authCookieSameSite}`,
+  ];
+  if (env.authCookieDomain) {
+    attributes.push(`Domain=${env.authCookieDomain}`);
+  }
+  if (env.authCookieSecure) {
+    attributes.push("Secure");
+  }
+  return attributes;
+}
+
+export function setAuthTokenCookie(token: string, maxAgeSeconds = env.authCookieMaxAgeSeconds): void {
   if (typeof document === "undefined") {
     return;
   }
 
-  document.cookie = [
-    `${AUTH_TOKEN_COOKIE}=${encodeURIComponent(token)}`,
-    "Path=/",
-    `Max-Age=${maxAgeSeconds}`,
-    "SameSite=Lax",
-  ].join("; ");
+  document.cookie = [`${AUTH_TOKEN_COOKIE}=${encodeURIComponent(token)}`, ...cookieAttributes(maxAgeSeconds)].join("; ");
 }
 
 export function clearAuthTokenCookie(): void {
@@ -27,5 +39,5 @@ export function clearAuthTokenCookie(): void {
     return;
   }
 
-  document.cookie = `${AUTH_TOKEN_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+  document.cookie = `${AUTH_TOKEN_COOKIE}=; ${cookieAttributes(0).join("; ")}`;
 }

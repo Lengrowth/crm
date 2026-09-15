@@ -41,3 +41,19 @@ Every phase must end with a short summary under `/docs/phase_summaries` so the b
 ## Decision 10: Minimal Dependencies
 
 Only add dependencies when they are needed by the current phase. Prefer a small, production-oriented stack over premature tooling.
+
+## Decision 11: AWS And Cloudflare Are The Current Runtime Baseline
+
+The existing AWS EC2, nginx, and Cloudflare deployment is the current as-built runtime. Earlier GCP documents remain historical references and must not be treated as an instruction to migrate the active pilot.
+
+## Decision 12: LenERP Extends Upstream Through A Custom App
+
+Permanent LenERP business behavior, drilling records, roles, workspaces, reports, fixtures, styling, and migrations belong in a version-controlled custom Frappe app. Upstream framework and ERP source trees remain pinned and unmodified so community updates can be evaluated and applied through development and staging first.
+
+## Decision 13: LenERP Is The Customer-Facing Brand
+
+Client-facing UI, domains, print formats, messages, and ordinary product documentation use LenERP branding. Private technical handover material retains accurate dependency versions and required third-party license/copyright notices. Upstream code is not represented as authored by LenERP.
+
+## Decision 14: Champion Execution Is Deliverable-Driven
+
+Internal execution planning is organized by promised outcomes and acceptance gates rather than hour allocations. The executed agreement remains the commercial authority, while the complete cross-repository plan and promise traceability matrix live in `../champion-forecast/docs/COMPLETE_LENERP_DELIVERY_PLAN.md`. Reusable module administration, provisioning, reseller onboarding, UX, security, handover, and warranty work are included in that single traceable program wherever required by the active promises.

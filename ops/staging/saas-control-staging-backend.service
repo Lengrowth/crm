@@ -1,0 +1,19 @@
+[Unit]
+Description=LenERP SaaS staging backend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=saas-staging
+Group=saas-staging
+WorkingDirectory=/opt/saas-control-staging/current/backend
+EnvironmentFile=/opt/saas-control-staging/shared/env/staging-backend.env
+ExecStart=/opt/saas-control-staging/shared/backend-venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 18001
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

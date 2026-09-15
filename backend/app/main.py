@@ -8,7 +8,7 @@ from app.core.logging import configure_logging
 
 configure_logging()
 
-app = FastAPI(title=settings.app_name, version="0.1.0")
+app = FastAPI(title=settings.product_name, version=settings.release_id)
 
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware)
@@ -28,7 +28,7 @@ app.include_router(api_router)
 @app.get("/")
 def root() -> dict[str, str]:
     return {
-        "service": settings.app_name,
+        "service": settings.product_name,
         "status": "ok",
-        "phase": "19",
+        "release_id": settings.release_id,
     }

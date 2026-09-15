@@ -78,6 +78,11 @@ def run_next_job(
         )
         service.provision_tenant_persistent(session, record, site_options)
 
+        if record.status != "success":
+            raise RuntimeError(
+                record.error_message or "ERPNext provisioning did not complete successfully."
+            )
+
         provisioning_service.append_job_log(
             session, job, {"event": "provision_success", "provision_id": record.id}
         )
@@ -96,6 +101,7 @@ def run_next_job(
         except Exception:
             pass
     except Exception as exc:
+        session.rollback()
         message = str(exc)
         provisioning_service.append_job_log(
             session, job, {"event": "provision_error", "message": message}

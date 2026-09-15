@@ -1,139 +1,111 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BRANCH="${1:-main}"
-TARGET_REF="${2:-}"
-APP_ROOT="${APP_ROOT:-/opt/saas-control}"
-REPO_DIR="${REPO_DIR:-$APP_ROOT/repo}"
-BACKEND_DIR="$REPO_DIR/backend"
-FRONTEND_DIR="$REPO_DIR/frontend"
+# main is staging-only. Production uses promote_saas_control.sh with explicit approval.
+DEPLOY_TARGET="${DEPLOY_TARGET:-staging}"
+if [[ "$DEPLOY_TARGET" != "staging" ]]; then
+  echo "This workflow only deploys staging. Use scripts/deploy/promote_saas_control.sh for production." >&2
+  exit 1
+fi
+
+SOURCE_REPO="${SOURCE_REPO:-${GITHUB_WORKSPACE:-$PWD}}"
+APP_ROOT="${APP_ROOT:-/opt/saas-control-staging}"
+RELEASE_ROOT="${RELEASE_ROOT:-$APP_ROOT/releases}"
+CURRENT_LINK="${CURRENT_LINK:-$APP_ROOT/current}"
+PREVIOUS_LINK="${PREVIOUS_LINK:-$APP_ROOT/previous}"
 BACKEND_VENV="${BACKEND_VENV:-$APP_ROOT/shared/backend-venv}"
-BACKEND_ENV_FILE="${BACKEND_ENV_FILE:-$APP_ROOT/shared/env/backend.env}"
-FRONTEND_ENV_FILE="${FRONTEND_ENV_FILE:-$APP_ROOT/shared/env/frontend.env}"
+BACKEND_ENV_FILE="${BACKEND_ENV_FILE:-$APP_ROOT/shared/env/staging-backend.env}"
+FRONTEND_ENV_FILE="${FRONTEND_ENV_FILE:-$APP_ROOT/shared/env/staging-frontend.env}"
+STAGING_SERVICE_USER="${STAGING_SERVICE_USER:-saas-staging}"
+BACKEND_SERVICE="${BACKEND_SERVICE:-saas-control-staging-backend}"
+FRONTEND_SERVICE="${FRONTEND_SERVICE:-saas-control-staging-frontend}"
 SYSTEMCTL_BIN="${SYSTEMCTL_BIN:-/usr/bin/systemctl}"
 NGINX_BIN="${NGINX_BIN:-/usr/sbin/nginx}"
-LOCK_FILE="${LOCK_FILE:-/tmp/saas-control-deploy.lock}"
+LOCK_FILE="${LOCK_FILE:-/tmp/saas-control-staging-deploy.lock}"
+TARGET_REF="${TARGET_REF:-${GITHUB_SHA:-$(git -C "$SOURCE_REPO" rev-parse HEAD)}}"
+RELEASE_ID="${RELEASE_ID:-$(git -C "$SOURCE_REPO" rev-parse "$TARGET_REF")}"
 
-log() {
-  printf '\n[%s] %s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "$*"
-}
-
-require_file() {
-  local path="$1"
-  if [[ ! -f "$path" ]]; then
-    echo "Required file not found: $path" >&2
-    exit 1
-  fi
-}
-
-require_dir() {
-  local path="$1"
-  if [[ ! -d "$path" ]]; then
-    echo "Required directory not found: $path" >&2
-    exit 1
-  fi
-}
-
+log() { printf '\n[%s] %s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "$*"; }
 load_env_file() {
   local env_file="$1"
+  [[ -f "$env_file" ]] || { printf 'Required environment file is missing: %s\n' "$env_file" >&2; exit 1; }
   set -a
   # shellcheck disable=SC1090
   source "$env_file"
   set +a
 }
-
-retry() {
-  local attempts="$1"
-  local delay_seconds="$2"
-  shift 2
-
-  local try=1
-  until "$@"; do
-    if (( try >= attempts )); then
-      echo "Command failed after ${attempts} attempts: $*" >&2
-      return 1
-    fi
-    log "Attempt ${try}/${attempts} failed. Retrying in ${delay_seconds}s: $*"
-    sleep "$delay_seconds"
-    try=$((try + 1))
-  done
+atomic_link() {
+  local target="$1" link="$2" tmp="${link}.next.$$"
+  ln -s "$target" "$tmp"
+  mv -Tf "$tmp" "$link"
+}
+restart_services() {
+  [[ "${SKIP_SERVICE_RESTART:-false}" == "true" ]] && return 0
+  sudo "$SYSTEMCTL_BIN" restart "$BACKEND_SERVICE" "$FRONTEND_SERVICE"
+}
+validate_nginx() {
+  [[ "${VALIDATE_NGINX:-false}" != "true" ]] && return 0
+  sudo "$NGINX_BIN" -t
+  sudo "$SYSTEMCTL_BIN" reload nginx
+}
+rollback() {
+  local old_target="$1" old_previous="$2"
+  log "Smoke failed; restoring previous release"
+  if [[ -n "$old_target" ]]; then
+    atomic_link "$old_target" "$CURRENT_LINK"
+  else
+    rm -f "$CURRENT_LINK"
+  fi
+  if [[ -n "$old_previous" ]]; then
+    atomic_link "$old_previous" "$PREVIOUS_LINK"
+  else
+    rm -f "$PREVIOUS_LINK"
+  fi
+  restart_services
+  validate_nginx
 }
 
 exec 9>"$LOCK_FILE"
-if ! flock -n 9; then
-  echo "Another deployment is already running. Lock file: $LOCK_FILE" >&2
+flock -n 9 || { echo "Another staging deployment is already running." >&2; exit 1; }
+
+mkdir -p "$APP_ROOT" "$RELEASE_ROOT"
+load_env_file "$BACKEND_ENV_FILE"
+load_env_file "$FRONTEND_ENV_FILE"
+
+log "Building candidate $RELEASE_ID from immutable ref $TARGET_REF"
+CANDIDATE_DIR="$(SOURCE_REPO="$SOURCE_REPO" RELEASE_ROOT="$RELEASE_ROOT" TARGET_REF="$TARGET_REF" RELEASE_ID="$RELEASE_ID" DEPLOY_TARGET=staging BACKEND_VENV="$BACKEND_VENV" bash "$SOURCE_REPO/scripts/release/build_candidate.sh" | tail -n 1)"
+bash "$CANDIDATE_DIR/scripts/release/preflight.sh" "$CANDIDATE_DIR"
+
+if id "$STAGING_SERVICE_USER" >/dev/null 2>&1; then
+  sudo chown -R "$STAGING_SERVICE_USER:$STAGING_SERVICE_USER" "$CANDIDATE_DIR"
+  sudo chmod -R a+rX "$CANDIDATE_DIR"
+fi
+
+if [[ "${RUN_DB_MIGRATION:-true}" == "true" ]]; then
+  log "Applying compatible staging migrations"
+  if id "$STAGING_SERVICE_USER" >/dev/null 2>&1; then
+    sudo -n -E -u "$STAGING_SERVICE_USER" "$BACKEND_VENV/bin/alembic" -c "$CANDIDATE_DIR/backend/alembic.ini" upgrade head
+  else
+    "$BACKEND_VENV/bin/alembic" -c "$CANDIDATE_DIR/backend/alembic.ini" upgrade head
+  fi
+fi
+
+OLD_TARGET="$(readlink -f "$CURRENT_LINK" 2>/dev/null || true)"
+OLD_PREVIOUS="$(readlink -f "$PREVIOUS_LINK" 2>/dev/null || true)"
+atomic_link "$CANDIDATE_DIR" "$CURRENT_LINK"
+restart_services
+validate_nginx
+
+if ! BASE_URL="${STAGING_BASE_URL:-http://127.0.0.1:13000}" \
+  BACKEND_URL="${STAGING_BACKEND_URL:-http://127.0.0.1:18001}" \
+  EXPECTED_RELEASE="$RELEASE_ID" bash "$CANDIDATE_DIR/scripts/release/smoke.sh"; then
+  rollback "$OLD_TARGET" "$OLD_PREVIOUS"
   exit 1
 fi
+printf '%s\n' "$RELEASE_ID" > "$CANDIDATE_DIR/.staging-smoke-passed"
 
-require_dir "$REPO_DIR"
-require_dir "$BACKEND_DIR"
-require_dir "$FRONTEND_DIR"
-require_dir "$BACKEND_VENV"
-require_file "$BACKEND_ENV_FILE"
-require_file "$FRONTEND_ENV_FILE"
-
-log "Starting SaaS deploy from $REPO_DIR"
-cd "$REPO_DIR"
-
-log "Fetching latest git refs"
-git fetch --prune origin
-
-git checkout "$BRANCH"
-
-if [[ -n "$TARGET_REF" ]]; then
-  log "Resetting repository to target ref $TARGET_REF"
-  git reset --hard "$TARGET_REF"
-else
-  log "Resetting repository to origin/$BRANCH"
-  git reset --hard "origin/$BRANCH"
+if [[ -n "$OLD_TARGET" && "$OLD_TARGET" != "$CANDIDATE_DIR" ]]; then
+  atomic_link "$OLD_TARGET" "$PREVIOUS_LINK"
 fi
 
-log "Installing backend package into shared virtual environment"
-cd "$BACKEND_DIR"
-"$BACKEND_VENV/bin/pip" install .
-
-log "Running backend database migrations"
-load_env_file "$BACKEND_ENV_FILE"
-"$BACKEND_VENV/bin/alembic" upgrade head
-
-log "Seeding reference data"
-PYTHONPATH="$BACKEND_DIR" "$BACKEND_VENV/bin/python" -m app.db.seed
-
-log "Installing frontend dependencies"
-cd "$FRONTEND_DIR"
-load_env_file "$FRONTEND_ENV_FILE"
-npm install --include=dev
-
-log "Building frontend production bundle"
-npm run build
-
-log "Restarting backend service"
-sudo "$SYSTEMCTL_BIN" restart saas-backend
-
-log "Restarting frontend service"
-sudo "$SYSTEMCTL_BIN" restart saas-frontend
-
-log "Validating nginx config"
-sudo "$NGINX_BIN" -t
-
-log "Reloading nginx"
-sudo "$SYSTEMCTL_BIN" reload nginx
-
-log "Waiting for backend health endpoint"
-retry 10 3 curl -fsS http://127.0.0.1:8001/health >/tmp/saas-backend-health.json
-cat /tmp/saas-backend-health.json
-
-log "Waiting for ERPNext runtime endpoint"
-retry 10 3 curl -fsS http://127.0.0.1:8001/integrations/erpnext/runtime >/tmp/saas-erpnext-runtime.json
-cat /tmp/saas-erpnext-runtime.json
-
-log "Waiting for frontend root route"
-retry 10 3 curl -IfsS http://127.0.0.1:3000/ >/tmp/saas-frontend-head.txt
-cat /tmp/saas-frontend-head.txt
-
-log "Checking service status"
-sudo "$SYSTEMCTL_BIN" --no-pager --full status saas-backend
-sudo "$SYSTEMCTL_BIN" --no-pager --full status saas-frontend
-sudo "$SYSTEMCTL_BIN" --no-pager --full status nginx
-
-log "Deployment completed successfully"
+log "Staging deployment completed for $RELEASE_ID"
