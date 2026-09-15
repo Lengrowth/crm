@@ -10,7 +10,7 @@ Status: working inventory for `PLAT-P0`; no secret values belong here.
 | Champion forecast / commercial plan | `https://github.com/guerra2fernando/champion-forecast.git` | local checkout has unrelated dirty changes; preserve them |
 | Frappe upstream | `https://github.com/frappe/frappe.git` | production `edae775dd36b6c4ad7acab10230262bd74040765`; clean detached clone at `C:\Users\smikl\Desktop\Work\phase0-upstreams\frappe` |
 | ERPNext upstream | `https://github.com/frappe/erpnext.git` | production `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`; clean detached clone at `C:\Users\smikl\Desktop\Work\phase0-upstreams\erpnext` |
-| `lenerp_core` | Local private repository at `C:\Users\smikl\Desktop\Work\lenerp_core`; scaffold commit `728de29` | Installed/migrated/listed/uninstalled/reinstalled on disposable EC2 ERP staging; remote ownership remains open |
+| `lenerp_core` | Private `https://github.com/Len-OS/lenerp_core.git`; `main` at `728de29176ddb9c05c78d734318406d57f10f205` | Installed/migrated/listed/uninstalled/reinstalled on disposable EC2 ERP staging; remote now recorded |
 
 ## Runtime and ownership
 
@@ -33,7 +33,7 @@ Status: working inventory for `PLAT-P0`; no secret values belong here.
 ## Data and recovery
 
 - Site database, site configuration, public files, private files, and control-plane database must never be committed.
-- Backup destination is Cloudflare R2 bucket `lenerp-phase0-backups`; ERP/control-plane artifacts were uploaded and byte-hash verified. Retention, automation credential owner, and second restore operator remain open.
+- Backup destination is Cloudflare R2 bucket `lenerp-phase0-backups`; ERP/control-plane artifacts were uploaded and byte-hash verified. Lifecycle rules now expire `erp/` and `control-plane/` objects after 90 days; non-interactive automation credentials and a second restore operator remain to be confirmed.
 - The ERP SQL dump restored into disposable MariaDB schema `plat_p0_restore_20260915` with 707 tables; the temporary schema was removed after verification.
 - The disposable ERP staging site is `erp-staging.example.test` under `/opt/frappe-staging-bench`; control-plane staging is under `/opt/saas-control-staging`. Their databases, files, Redis ports, services, and workers are separate from production.
 - No Champion confidential data may be received, restored, copied, or imported before credential rotation and plaintext-secret resolution are complete.

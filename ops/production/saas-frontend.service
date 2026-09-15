@@ -1,0 +1,14 @@
+[Unit]
+Description=LenERP SaaS Frontend (Next.js)
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/opt/saas-control/current/frontend
+EnvironmentFile=/opt/saas-control/shared/env/frontend.env
+ExecStart=/usr/bin/npm run start
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

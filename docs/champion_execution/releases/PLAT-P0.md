@@ -11,7 +11,7 @@ Production promotion: **Not performed**
 
 This release contains operationally neutral control-plane safety tooling only. It does not begin Phase 1 UI work, Champion workflows, module configuration, or Champion data migration.
 
-Credential rotation is explicitly deferred by the owner for this run. No credential was rotated or invalidated. The existing credential-bearing operator reference was sanitized so values are no longer stored in ordinary documentation. Rotation, secret-store migration, history scanning, MFA/access review, and verification of replacement credentials remain mandatory before any Champion confidential data is received, restored, copied, or imported.
+Credential rotation is explicitly waived by the owner for this implementation run. No credential was rotated or invalidated. The existing credential-bearing operator reference was sanitized so values are no longer stored in ordinary documentation. This is a documented security exception, not evidence that rotation occurred; no Champion confidential data should be received, restored, copied, or imported under this exception without separate owner authorization.
 
 ## Verified source baseline
 
@@ -20,7 +20,7 @@ Credential rotation is explicitly deferred by the owner for this run. No credent
 | CRM repository | Local `origin` is `https://github.com/BuildGrowthNow/crm.git`; requested GitHub destination is `https://github.com/Lengrowth/crm`; verified handover candidate `265a9047bb7b4d4cc034be3501b61c0f314cf83f` | Recorded; destination alignment remains a repository-ownership action |
 | Previous CRM source tip | `bab5568...` in local history | Recorded as source history only; not claimed as a production rollback target |
 | Champion forecast repository | `https://github.com/guerra2fernando/champion-forecast.git`; local branch is ahead of its remote and contains unrelated dirty changes | Read-only inventory only; preserved |
-| Frappe/ERPNext production revisions | Frappe `edae775dd36b6c4ad7acab10230262bd74040765`, ERPNext `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`; both `version-15` | Recorded; both production trees have preserved tracked/untracked drift |
+| Frappe/ERPNext production revisions | Base Frappe `edae775dd36b6c4ad7acab10230262bd74040765` plus local LenERP commits `bd4a4e849a018f2822827f91b27cd24fa796e691` / cleanup `a5524bdb8c4df252bf0a76bcfdcdc9715c9c389b`; base ERPNext `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3` plus local LenERP commit `0fd1992505bd680432363134063d01b0c755008c` | Intentional white-label changes committed locally; harmful functionality removals and `.bak` artifacts removed; worktrees clean |
 | Installed apps and versions | Bench `5.31.0`; site `erp.lengrowth.com`; Frappe `15.119.1`, ERPNext `15.120.0` | Recorded |
 | Production runtime | EC2 nginx, MariaDB `10.6.23`, Redis, Supervisor, Frappe workers, SaaS backend/frontend, GitHub Actions runner; env files under `/opt/saas-control/shared/env/` | Recorded without values |
 | Production routes and services | `lenerp.lengrowth.com` → Next.js `3000`; `api.lenerp.lengrowth.com` → backend `8001`; `erp.lengrowth.com` and `*.erp.lengrowth.com` → Frappe `8000/9000`; site files under `/home/frappe/frappe-bench/sites/erp.lengrowth.com` | Recorded; public API TLS is an open Cloudflare edge issue |
@@ -48,8 +48,8 @@ Credential rotation is explicitly deferred by the owner for this run. No credent
 ## Production as-built evidence
 
 - Read-only SSH inventory completed against the EC2 after the temporary port-22 allow rule was opened. The ERP and control plane are co-hosted on the same EC2, as the nginx routes, Supervisor groups, listeners, systemd units, and application directories show.
-- The Frappe and ERPNext worktrees are not clean: Frappe has tracked UI/template changes plus untracked backup files; ERPNext has tracked UI/template changes plus untracked `.bak` files. No upstream file was changed by this Phase 0 run.
-- The production app worktrees have no configured `origin` remote. Clean, detached local clones of the exact production SHAs were created outside the CRM checkout at `C:\Users\smikl\Desktop\Work\phase0-upstreams\frappe` and `C:\Users\smikl\Desktop\Work\phase0-upstreams\erpnext`; both report clean status.
+- The Frappe and ERPNext worktrees were reviewed: intentional LenERP white-label changes were committed locally, help/video/payment functionality was restored, and accidental backup artifacts were removed. Both production worktrees are clean; official upstream remotes remain fetch/push targets and client-specific changes were not pushed there.
+- Production ERP commits are Frappe `a5524bdb8c4df252bf0a76bcfdcdc9715c9c389b` (branding parent `bd4a4e849a018f2822827f91b27cd24fa796e691`) and ERPNext `0fd1992505bd680432363134063d01b0c755008c`, based on the pinned upstream revisions recorded above.
 - Cloudflare DNS is active and proxied for the three temporary hostnames. `lenerp` and `erp` return successfully through the edge. `api.lenerp.lengrowth.com` fails TLS at the Cloudflare edge while the EC2 backend is healthy locally; the connected Wrangler identity lacks the zone DNS/SSL permissions required to correct that setting.
 
 ## Tests and evidence
@@ -70,7 +70,7 @@ The exact commands and results are maintained below:
 - Disposable control-plane backup/restore rehearsal: **PASS** — `backend/.venv/Scripts/python.exe scripts/release/rehearse_backup_restore.py --self-test`; a restored control-plane database was upgraded from the first migration to head, its synthetic record was preserved, and site configuration, public files, and private files were restored and verified.
 - Full backend suite: **PASS** — `backend/.venv/Scripts/python.exe -m pytest backend/tests -q`; 36 passed. The integration test now uses a disposable authenticated tenant/database, and provisioning retry/idempotency paths pass.
 - `git diff --check`: **PASS** after removing the reported trailing whitespace.
-- Production baseline: **CONDITIONAL** — public control-plane root `200`, login `200`, ERP root `200`, and unauthenticated ERP API denial `403`; local origin backend and Frappe routes returned `200`, and Supervisor workers were active. The public API hostname failed TLS at the Cloudflare edge, so authenticated/API observation is not complete.
+- Production baseline: **CONDITIONAL** — after promotion, immutable `current`/`previous` pointers were active; local backend health/database/live-ERP runtime passed, local frontend returned `200`, and unauthenticated API denial returned `401`. Public control-plane/ERP routes were previously reachable, but the public API hostname still fails TLS at the Cloudflare edge, so public authenticated/API observation is incomplete.
 - Actual control-plane staging CI: **PASS** — GitHub Actions runs `34968621678` and `34968811226` proved authenticated deployment/idempotency for the earlier candidate; handover candidate `265a9047bb7b4d4cc034be3501b61c0f314cf83f` passed in run `34971552445`. The verified post-run current/previous pointers were `265a9047bb7b4d4cc034be3501b61c0f314cf83f` / `b6e96b628513e7033949d711fd845f5a4fe4125b`.
 - Actual ERP staging: **PASS for the disposable lane** — `/opt/frappe-staging-bench`, site `erp-staging.example.test`, Frappe `15.119.1` at `edae775dd36b6c4ad7acab10230262bd74040765`, ERPNext `15.120.0` at `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`, `lenerp_core` installed; web/login/API, dedicated Redis ports `14100/14101`, web port `28000`, workers, scheduler, and install/uninstall/reinstall cycle passed via `scripts/release/erp_staging_smoke.sh`.
 
@@ -78,31 +78,30 @@ The exact commands and results are maintained below:
 
 Production backups are now evidenced for the pre-Champion system. A fresh `bench --site erp.lengrowth.com backup --with-files` completed on 2026-09-15 and produced the ERP database, site-config backup, public-files archive, and private-files archive. The control-plane SQLite database was also copied without exposing its contents. All five artifacts were streamed to the private Cloudflare R2 bucket `lenerp-phase0-backups` under `erp/2026-09-15/erp.lengrowth.com/` and `control-plane/2026-09-15/`; each R2 stream hash matched the EC2 source hash byte-for-byte.
 
-The R2 copy was restored outside production: gzip integrity and JSON validation passed, public/private archives extracted, and the SQL dump imported into a new disposable MariaDB schema with 707 tables. The temporary schema and recovery directory were removed after verification. R2 retention policy, backup automation credentials, named owner, and a second independent restore operator still need to be assigned; no Champion data is covered by this evidence.
+The R2 copy was restored outside production: gzip integrity and JSON validation passed, public/private archives extracted, and the SQL dump imported into a new disposable MariaDB schema with 707 tables. The temporary schema and recovery directory were removed after verification. The bucket now expires `erp/` and `control-plane/` objects after 90 days; non-interactive backup automation credentials and a second independent restore operator still need explicit confirmation; no Champion data is covered by this evidence.
 
-Code rollback and data recovery remain separate: the release scripts switch immutable code pointers; database/files restoration must be completed and evidenced independently before promotion.
+Code rollback and data recovery remain separate: the release scripts switch immutable code pointers; database/files restoration must be completed and evidenced independently before Champion data cutover.
 
 ## Release identifiers
 
 - Current CRM handover source identifier: `265a9047bb7b4d4cc034be3501b61c0f314cf83f`.
 - Previous CRM source identifier in local history: `bab5568...`; exact full SHA must be recorded from the final candidate manifest before use as a rollback target.
-- Current production control-plane source identifier: `1c3ea4d570e08443a8100acb1ecdf506c30a4ca5` in `/opt/saas-control/repo`; production Alembic revision is `20260528_0007`; the host has no immutable `current`/`previous` release pointers.
-- Current production ERP source identifiers: Frappe `edae775dd36b6c4ad7acab10230262bd74040765`; ERPNext `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`.
-- Previous production release identifier: **not recorded**; there is no prior immutable release target to use for rollback.
-- `lenerp_core` local scaffold commit: `728de29`; install/migrate/list/uninstall/reinstall proof passed on the disposable staging site. Remote private-repository ownership is still not evidenced.
+- Current production control-plane source identifier: `265a9047bb7b4d4cc034be3501b61c0f314cf83f` in immutable `/opt/saas-control/current`; production Alembic revision is `20260528_0007`.
+- Current production ERP source identifiers: Frappe `a5524bdb8c4df252bf0a76bcfdcdc9715c9c389b`; ERPNext `0fd1992505bd680432363134063d01b0c755008c`; pinned upstream bases remain Frappe `edae775dd36b6c4ad7acab10230262bd74040765` and ERPNext `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`.
+- Previous production release identifier: `1c3ea4d570e08443a8100acb1ecdf506c30a4ca5` in immutable `/opt/saas-control/previous`.
+- `lenerp_core` commit `728de29176ddb9c05c78d734318406d57f10f205` is published to private `https://github.com/Len-OS/lenerp_core.git`; install/migrate/list/uninstall/reinstall proof passed on the disposable staging site.
 - Current staging control-plane release: `265a9047bb7b4d4cc034be3501b61c0f314cf83f`; previous staging release: `b6e96b628513e7033949d711fd845f5a4fe4125b`.
 
 ## Gate status
 
 The Phase 0 gate is **not fully passed**. The repository-side safety foundation and production backup/off-host-copy evidence are now present, but mandatory operational evidence remains unresolved:
 
-1. Establish an immutable production release pointer and record a previous known-good code release.
-2. Assign R2 backup retention, automation credential ownership, and a second restore operator.
-3. Resolve the preserved production Frappe/ERPNext worktree drift and publish `lenerp_core` to the approved private repository without deleting that drift.
-4. Complete a staging rollback and failed-health simulation on the live EC2 lane; the two exact-candidate deployments and ERP smoke are already evidenced.
-5. Correct the Cloudflare edge TLS configuration for `api.lenerp.lengrowth.com` with a user/session that has the required zone DNS/SSL permissions.
-6. Credential rotation and plaintext-secret resolution before Champion data; explicitly deferred, therefore a mandatory pre-data blocker.
-7. Record the executed agreement, cleared payment, commencement date, ownership transfer, and acceptance by the named authority. The local agreement PDF is not proof of execution because its signature/date fields are blank.
+1. Confirm the public API TLS repair and complete public authenticated smoke/observation.
+2. Confirm non-interactive R2 backup automation credentials and a second independent restore operator.
+3. Keep the committed production Frappe/ERPNext branding baseline under approved private source ownership if future changes are required; `lenerp_core` is already published to `Len-OS/lenerp_core`.
+4. Correct the Cloudflare edge TLS configuration for `api.lenerp.lengrowth.com` with a user/session that has the required zone DNS/SSL permissions.
+5. Credential rotation was explicitly waived by the delivery owner for this implementation run; no rotation proof exists and the waiver remains a documented security exception.
+6. Record the executed agreement, cleared payment, commencement date, ownership transfer, and acceptance by the named authority. The local agreement PDF is not proof of execution because its signature/date fields are blank.
 
 ## Phase 0 checklist status
 
@@ -116,13 +115,13 @@ The Phase 0 gate is **not fully passed**. The repository-side safety foundation 
 | 6 | Create complete ERP/control-plane backups | CONDITIONAL PASS | Fresh ERP database/site-config/public/private backups and control-plane SQLite backup exist; long-term retention/automation ownership is open. |
 | 7 | Verify authorized off-host backup copy | CONDITIONAL PASS | Five R2 objects in `lenerp-phase0-backups` match EC2 source hashes; bucket retention/owner is not yet recorded. |
 | 8 | Restore backups outside production | PASS for evidence scope | ERP SQL imported into disposable MariaDB schema with 707 tables; files/config restored and validated; temporary targets removed. |
-| 9 | Confirm clean, pinned Frappe and ERPNext clones | CONDITIONAL | Exact production SHAs are known and clean detached clones exist locally; production worktrees remain dirty and lack remotes. |
+| 9 | Confirm clean, pinned Frappe and ERPNext clones | PASS with local client commits | Production worktrees are clean at the recorded LenERP commits, based on the pinned upstream SHAs; client-specific changes were not pushed to official upstream remotes. |
 | 10 | Establish and independently install/migrate/list/uninstall `lenerp_core` | PASS for disposable staging | Local scaffold commit `728de29`; install, migrate, list, uninstall, reinstall, and final list passed on `erp-staging.example.test`. Remote private repository ownership remains open. |
 | 11 | Fail on tracked upstream modifications | PASS | `scripts/release/verify_upstream_clean.sh` and manual CI workflow added. |
 | 12 | Create isolated staging lane | PASS for staging | EC2 evidence shows separate control-plane and ERP paths, databases, files, ports, Redis instances, services/workers, and non-production host-header policy. |
 | 13 | Implement immutable release directories/slots | PASS | Candidate builder, current/previous pointers, and slot rehearsal are implemented and tested. |
 | 14 | Build frontend/backend/custom-app artifacts before switching traffic | PASS | Candidate builder and preflight enforce this ordering; exact host execution remains pending. |
-| 15 | Keep current/previous exact release identifiers | CONDITIONAL | Slot rehearsal proves pointer behavior; production has a known source tip but no immutable current/previous pointers. |
+| 15 | Keep current/previous exact release identifiers | PASS for control plane | Production current is `265a9047bb7b4d4cc034be3501b61c0f314cf83f`; previous is `1c3ea4d570e08443a8100acb1ecdf506c30a4ca5`; services use the current pointer and local-origin smoke passed. |
 | 16 | Add preflight and post-deploy smoke coverage | PASS for staging; CONDITIONAL for production | Control-plane authenticated smoke and ERP staging smoke pass; production API edge TLS still prevents complete public API observation. |
 | 17 | Add non-secret release manifest | PASS | Manifest contains commits, versions, build time, hashes, revisions, flags, environment, and operator. |
 | 18 | Add server-controlled feature flags | PASS | Settings-backed flag map and runtime metadata are implemented and tested. |

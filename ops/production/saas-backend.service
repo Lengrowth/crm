@@ -1,0 +1,15 @@
+[Unit]
+Description=LenERP SaaS Backend (FastAPI)
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/opt/saas-control/current/backend
+EnvironmentFile=/opt/saas-control/shared/env/backend.env
+Environment=RELEASE_MANIFEST_PATH=/opt/saas-control/current/release-manifest.json
+ExecStart=/opt/saas-control/shared/backend-venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8001
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

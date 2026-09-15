@@ -192,8 +192,10 @@ npx --yes wrangler@latest r2 bucket list
 npx --yes wrangler@latest r2 object list lenerp-phase0-backups
 ```
 
-R2 retention/lifecycle ownership, backup automation ownership, and a second
-independent restore operator still need to be assigned by a human.
+R2 lifecycle retention is configured for 90 days on both `erp/` and
+`control-plane/` prefixes. Matt Newcomer approved that policy per the delivery
+owner's instruction. Non-interactive backup automation credentials and a second
+independent restore operator still need explicit operational confirmation.
 
 ## Known blockers and handoff actions
 
@@ -204,15 +206,20 @@ independent restore operator still need to be assigned by a human.
    permissions, reconnect it, and inspect/fix the edge certificate/TLS mode.
 2. **Credential rotation:** intentionally not performed. It is mandatory before
    Champion confidential data; do not silently mark this complete.
-3. **Production source ownership:** production Frappe/ERPNext trees have
-   preserved drift and no remotes. An owner must decide which drift is
-   intentional and publish/reconcile it without deleting changes.
-4. **`lenerp_core` ownership:** local repository is
-   `C:\Users\smikl\Desktop\Work\lenerp_core`, commit `728de29`; it passed the
-   disposable staging install cycle but has no approved private remote yet.
-5. **Production release rollback:** production has no immutable
-   `current`/`previous` release pointers. Do not promote until a known-good
-   production candidate and rollback target are explicitly established.
+3. **Production source ownership:** production Frappe/ERPNext drift was
+   reviewed. White-label branding and removal of vendor-promotional banners
+   were retained and committed locally; help/video/payment functionality and
+   accidental backup artifacts were restored/deleted. Production trees are
+   clean at Frappe `a5524bdb8c4df252bf0a76bcfdcdc9715c9c389b` and ERPNext
+   `0fd1992505bd680432363134063d01b0c755008c`; do not push client changes to
+   the official upstream remotes.
+4. **`lenerp_core` ownership:** private remote is now
+   `https://github.com/Len-OS/lenerp_core.git`, with clean `main` at
+   `728de29176ddb9c05c78d734318406d57f10f205`.
+5. **Production release rollback:** resolved for the control plane. Production
+   `current` is `265a9047bb7b4d4cc034be3501b61c0f314cf83f` and `previous` is
+   `1c3ea4d570e08443a8100acb1ecdf506c30a4ca5`; both are immutable release
+   directories and services use the `current` pointer.
 6. **Acceptance records:** the local six-page agreement PDF `FG-CWD-2026-0915-ONE`
    exists and names Matt Newcomer as final acceptance authority, but its extracted
    signature/date lines are blank and no cleared-payment or DocuSign completion
