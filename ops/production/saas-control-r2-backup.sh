@@ -25,7 +25,7 @@ WORK_ROOT="${R2_BACKUP_WORK_ROOT:-/var/lib/saas-control/r2-backups}"
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 RUN_DIR="$WORK_ROOT/$RUN_ID"
 ERP_BACKUP_DIR="$FRAPPE_BENCH_DIR/sites/$ERP_SITE/private/backups"
-R2_ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+R2_ENDPOINT="${R2_ENDPOINT_URL:-https://${R2_ACCOUNT_ID}.eu.r2.cloudflarestorage.com}"
 OBJECT_PREFIX="${R2_PREFIX%/}/$RUN_ID"
 
 for command in aws sha256sum sqlite3 runuser; do

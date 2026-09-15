@@ -25,8 +25,9 @@ Create a Cloudflare R2 S3 credential in the Cloudflare dashboard:
    GitHub, chat, this repository, or ordinary documentation.
 5. Open temporary SSH access to the EC2 and install them in
    `/etc/saas-control/r2-backup.env` with owner `root`, group `root`, and mode
-   `0600`. The endpoint is
-   `https://96e76c10fcf1d0d5970e17cf5c7008c8.r2.cloudflarestorage.com`.
+   `0600`. This bucket reports the EU jurisdiction (`EEUR`), so use the
+   endpoint
+   `https://96e76c10fcf1d0d5970e17cf5c7008c8.eu.r2.cloudflarestorage.com`.
 
 Cloudflare documents that R2 S3 credentials can be bucket-scoped and that the
 S3 endpoint uses the account ID: <https://developers.cloudflare.com/r2/api/tokens/>
