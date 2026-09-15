@@ -35,7 +35,8 @@ load_env_file() {
   set +a
 }
 atomic_link() {
-  local target="$1" link="$2" tmp="${link}.next.$$"
+  local target="$1" link="$2"
+  local tmp="${link}.next.$$"
   ln -s "$target" "$tmp"
   mv -Tf "$tmp" "$link"
 }
