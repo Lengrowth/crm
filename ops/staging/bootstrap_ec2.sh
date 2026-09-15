@@ -21,15 +21,17 @@ if ! id "$STAGING_USER" >/dev/null 2>&1; then
   useradd --system --home-dir "$APP_ROOT" --shell /usr/sbin/nologin --gid "$STAGING_GROUP" "$STAGING_USER"
 fi
 
+install -d -o ubuntu -g "$STAGING_GROUP" -m 0775 \
+  "$APP_ROOT" "$APP_ROOT/releases" "$APP_ROOT/shared" "$APP_ROOT/shared/env"
 install -d -o "$STAGING_USER" -g "$STAGING_GROUP" -m 0750 \
-  "$APP_ROOT" "$APP_ROOT/releases" "$APP_ROOT/shared" "$APP_ROOT/shared/data" \
-  "$APP_ROOT/shared/env" "$APP_ROOT/shared/logs" /run/saas-control-staging/smoke
+  "$APP_ROOT/shared/data" "$APP_ROOT/shared/logs" /run/saas-control-staging/smoke
 
 if [[ ! -x "$VENV/bin/python" ]]; then
   "$PYTHON_BIN" -m venv "$VENV"
 fi
 "$VENV/bin/pip" install "$SOURCE_REPO/backend" >/dev/null
 chmod -R a+rX "$VENV"
+chown -R ubuntu:"$STAGING_GROUP" "$VENV"
 
 install -m 0644 "$SCRIPT_DIR/ec2-staging-backend.env" "$APP_ROOT/shared/env/staging-backend.env"
 install -m 0644 "$SCRIPT_DIR/ec2-staging-frontend.env" "$APP_ROOT/shared/env/staging-frontend.env"
