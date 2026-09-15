@@ -84,9 +84,9 @@ fi
 if [[ "${RUN_DB_MIGRATION:-true}" == "true" ]]; then
   log "Applying compatible staging migrations"
   if id "$STAGING_SERVICE_USER" >/dev/null 2>&1; then
-    sudo -n -E -u "$STAGING_SERVICE_USER" "$BACKEND_VENV/bin/alembic" -c "$CANDIDATE_DIR/backend/alembic.ini" upgrade head
+    (cd "$CANDIDATE_DIR/backend" && sudo -n -E -u "$STAGING_SERVICE_USER" "$BACKEND_VENV/bin/alembic" -c alembic.ini upgrade head)
   else
-    "$BACKEND_VENV/bin/alembic" -c "$CANDIDATE_DIR/backend/alembic.ini" upgrade head
+    (cd "$CANDIDATE_DIR/backend" && "$BACKEND_VENV/bin/alembic" -c alembic.ini upgrade head)
   fi
 fi
 
