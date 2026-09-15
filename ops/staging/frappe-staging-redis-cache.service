@@ -1,0 +1,17 @@
+[Unit]
+Description=LenERP staging Redis cache
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+User=frappe
+Group=frappe
+ExecStart=/usr/bin/redis-server /opt/frappe-staging-bench/config/redis-cache-staging.conf
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

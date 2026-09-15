@@ -14,10 +14,20 @@ does not require public DNS.
 | Backend port | `18001` | `8001` |
 | Frontend port | `13001` | `3000` |
 | Control-plane DB | separate staging PostgreSQL/SQLite URL | production-only URL |
-| ERP site/database/files | separate staging bench/site and backup set | production bench/site and backup set |
+| ERP site/database/files | `/opt/frappe-staging-bench`, site `erp-staging.example.test`, separate MariaDB schema and files | production bench/site and backup set |
 | Environment files | `/opt/saas-control-staging/shared/env/*` | `/opt/saas-control/shared/env/*` |
 | Host policy | private access or `staging.example.test` host-header allowlist | approved production hostnames |
 | Services/workers | `saas-control-staging-*` units and queues | production units and queues |
+
+The EC2 ERP staging lane uses the following private-only endpoints and units:
+
+- web: `127.0.0.1:28000`, `frappe-staging-web.service`;
+- Redis cache/queue: `127.0.0.1:14100/14101`, dedicated staging units;
+- worker/scheduler: `frappe-staging-worker-short.service` and
+  `frappe-staging-schedule.service`.
+
+The production Frappe bench remains at `/home/frappe/frappe-bench` and is not
+used by staging.
 
 Do not copy production secrets or Champion data into this lane. Use synthetic
 records until the credential exception is closed and secure data receipt is

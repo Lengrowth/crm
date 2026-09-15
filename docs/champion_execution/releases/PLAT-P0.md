@@ -17,7 +17,7 @@ Credential rotation is explicitly deferred by the owner for this run. No credent
 
 | Item | Evidence | Result |
 |---|---|---|
-| CRM repository | Local `origin` is `https://github.com/BuildGrowthNow/crm.git`; requested GitHub destination is `https://github.com/Lengrowth/crm`; current source tip `1c3ea4d570e08443a8100acb1ecdf506c30a4ca5` | Recorded; destination alignment remains a repository-ownership action |
+| CRM repository | Local `origin` is `https://github.com/BuildGrowthNow/crm.git`; requested GitHub destination is `https://github.com/Lengrowth/crm`; verified staging candidate `807edc4ec4bc3ffc4f11540051f1470898d8eb13` | Recorded; destination alignment remains a repository-ownership action |
 | Previous CRM source tip | `bab5568...` in local history | Recorded as source history only; not claimed as a production rollback target |
 | Champion forecast repository | `https://github.com/guerra2fernando/champion-forecast.git`; local branch is ahead of its remote and contains unrelated dirty changes | Read-only inventory only; preserved |
 | Frappe/ERPNext production revisions | Frappe `edae775dd36b6c4ad7acab10230262bd74040765`, ERPNext `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`; both `version-15` | Recorded; both production trees have preserved tracked/untracked drift |
@@ -42,7 +42,8 @@ Credential rotation is explicitly deferred by the owner for this run. No credent
 - Changed CI so `main` builds/deploys staging; production promotion is a separate manual workflow with a protected production environment.
 - Removed credential values from `CLAUDE.md` and replaced them with secret-store handling instructions. This is sanitization, not rotation.
 - Generated the non-secret release manifest at `PLAT-P0-manifest.json` from the current source baseline.
-- Added the isolated staging-lane contract and non-secret environment/nginx templates under `ops/staging/`; target-host isolation evidence remains open.
+- Added the isolated staging-lane contract, non-secret environment/nginx templates, and dedicated ERP staging systemd/Redis units under `ops/staging/`.
+- Provisioned the EC2 staging lane at `/opt/saas-control-staging` and `/opt/frappe-staging-bench` with separate control-plane/ERP databases, files, ports, services, queues, workers, and the `staging.example.test` / `erp-staging.example.test` host-header policy.
 
 ## Production as-built evidence
 
@@ -70,7 +71,8 @@ The exact commands and results are maintained below:
 - Full backend suite: **PASS** — `backend/.venv/Scripts/python.exe -m pytest backend/tests -q`; 36 passed. The integration test now uses a disposable authenticated tenant/database, and provisioning retry/idempotency paths pass.
 - `git diff --check`: **PASS** after removing the reported trailing whitespace.
 - Production baseline: **CONDITIONAL** — public control-plane root `200`, login `200`, ERP root `200`, and unauthenticated ERP API denial `403`; local origin backend and Frappe routes returned `200`, and Supervisor workers were active. The public API hostname failed TLS at the Cloudflare edge, so authenticated/API observation is not complete.
-- Actual staging-host two-deployment, staging rollback, and exact-candidate CI proof: **not run; the EC2 staging lane is documented but not yet provisioned as separate services/data/configuration**.
+- Actual control-plane staging CI: **PASS** — GitHub Actions run `34968621678` deployed candidate `807edc4ec4bc3ffc4f11540051f1470898d8eb13` with authenticated smoke; repeat run `34968811226` passed in 9 seconds and proved idempotency. Current/previous pointers are `807edc4ec4bc3ffc4f11540051f1470898d8eb13` / `6976559d8ec76c9ffea711ec9d0c199d22bd2f1c`.
+- Actual ERP staging: **PASS for the disposable lane** — `/opt/frappe-staging-bench`, site `erp-staging.example.test`, Frappe `15.119.1` at `edae775dd36b6c4ad7acab10230262bd74040765`, ERPNext `15.120.0` at `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`, `lenerp_core` installed; web/login/API, dedicated Redis ports `14100/14101`, web port `28000`, workers, scheduler, and install/uninstall/reinstall cycle passed via `scripts/release/erp_staging_smoke.sh`.
 
 ## Backup and recovery evidence
 
@@ -87,7 +89,8 @@ Code rollback and data recovery remain separate: the release scripts switch immu
 - Current production control-plane source identifier: `1c3ea4d570e08443a8100acb1ecdf506c30a4ca5` in `/opt/saas-control/repo`; the host has no immutable `current`/`previous` release pointers.
 - Current production ERP source identifiers: Frappe `edae775dd36b6c4ad7acab10230262bd74040765`; ERPNext `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`.
 - Previous production release identifier: **not recorded**; there is no prior immutable release target to use for rollback.
-- `lenerp_core` local scaffold commit: `d8cb884`; install/migrate/list/uninstall proof is **blocked on an approved Frappe v15 bench and repository ownership decision**.
+- `lenerp_core` local scaffold commit: `728de29`; install/migrate/list/uninstall/reinstall proof passed on the disposable staging site. Remote private-repository ownership is still not evidenced.
+- Current staging control-plane release: `807edc4ec4bc3ffc4f11540051f1470898d8eb13`; previous staging release: `6976559d8ec76c9ffea711ec9d0c199d22bd2f1c`.
 
 ## Gate status
 
@@ -95,12 +98,11 @@ The Phase 0 gate is **not fully passed**. The repository-side safety foundation 
 
 1. Establish an immutable production release pointer and record a previous known-good code release.
 2. Assign R2 backup retention, automation credential ownership, and a second restore operator.
-3. Clean/pin the production Frappe/ERPNext source boundary without deleting the preserved drift, and independently prove `lenerp_core` install/migrate/list/uninstall on a disposable bench.
-4. Provision the documented isolated staging services, databases, files, queues, and host policy on the EC2.
-5. Run two exact-candidate staging deployments, rollback, failed-health simulation, and CI proof.
-6. Correct the Cloudflare edge TLS configuration for `api.lenerp.lengrowth.com` with a user/session that has the required zone DNS/SSL permissions.
-7. Credential rotation and plaintext-secret resolution before Champion data; explicitly deferred, therefore a mandatory pre-data blocker.
-8. Record agreement/commencement/ownership records and a named approver.
+3. Resolve the preserved production Frappe/ERPNext worktree drift and publish `lenerp_core` to the approved private repository without deleting that drift.
+4. Complete a staging rollback and failed-health simulation on the live EC2 lane; the two exact-candidate deployments and ERP smoke are already evidenced.
+5. Correct the Cloudflare edge TLS configuration for `api.lenerp.lengrowth.com` with a user/session that has the required zone DNS/SSL permissions.
+6. Credential rotation and plaintext-secret resolution before Champion data; explicitly deferred, therefore a mandatory pre-data blocker.
+7. Record agreement/commencement/ownership records and a named approver.
 
 ## Phase 0 checklist status
 
@@ -115,20 +117,20 @@ The Phase 0 gate is **not fully passed**. The repository-side safety foundation 
 | 7 | Verify authorized off-host backup copy | CONDITIONAL PASS | Five R2 objects in `lenerp-phase0-backups` match EC2 source hashes; bucket retention/owner is not yet recorded. |
 | 8 | Restore backups outside production | PASS for evidence scope | ERP SQL imported into disposable MariaDB schema with 707 tables; files/config restored and validated; temporary targets removed. |
 | 9 | Confirm clean, pinned Frappe and ERPNext clones | CONDITIONAL | Exact production SHAs are known and clean detached clones exist locally; production worktrees remain dirty and lack remotes. |
-| 10 | Establish and independently install/migrate/list/uninstall `lenerp_core` | CONDITIONAL | Local scaffold repository and commit `d8cb884` exist; disposable Frappe bench proof is blocked. |
+| 10 | Establish and independently install/migrate/list/uninstall `lenerp_core` | PASS for disposable staging | Local scaffold commit `728de29`; install, migrate, list, uninstall, reinstall, and final list passed on `erp-staging.example.test`. Remote private repository ownership remains open. |
 | 11 | Fail on tracked upstream modifications | PASS | `scripts/release/verify_upstream_clean.sh` and manual CI workflow added. |
-| 12 | Create isolated staging lane | CONDITIONAL | Separate paths, ports, files, database, configuration, services, and host policy are documented; actual EC2 staging services/data are not yet provisioned. |
+| 12 | Create isolated staging lane | PASS for staging | EC2 evidence shows separate control-plane and ERP paths, databases, files, ports, Redis instances, services/workers, and non-production host-header policy. |
 | 13 | Implement immutable release directories/slots | PASS | Candidate builder, current/previous pointers, and slot rehearsal are implemented and tested. |
 | 14 | Build frontend/backend/custom-app artifacts before switching traffic | PASS | Candidate builder and preflight enforce this ordering; exact host execution remains pending. |
 | 15 | Keep current/previous exact release identifiers | CONDITIONAL | Slot rehearsal proves pointer behavior; production has a known source tip but no immutable current/previous pointers. |
-| 16 | Add preflight and post-deploy smoke coverage | CONDITIONAL | Public/auth/API/health/ERP/release/manifest-installed-app/worker checks pass locally; live installed-app/version and production-worker evidence remain open. |
+| 16 | Add preflight and post-deploy smoke coverage | PASS for staging; CONDITIONAL for production | Control-plane authenticated smoke and ERP staging smoke pass; production API edge TLS still prevents complete public API observation. |
 | 17 | Add non-secret release manifest | PASS | Manifest contains commits, versions, build time, hashes, revisions, flags, environment, and operator. |
 | 18 | Add server-controlled feature flags | PASS | Settings-backed flag map and runtime metadata are implemented and tested. |
 | 19 | Make deployment/provisioning idempotent | PASS | Provisioning retry/idempotency tests and immutable-slot idempotency rehearsal pass. |
 | 20 | Prevent failed candidates from receiving traffic and restore after failed health | PASS | Preflight gate, atomic pointers, failed-health rollback, first-deploy pointer removal, and pointer-isolation rehearsal pass. |
-| 21 | Configure staging CI and separate explicit production promotion | CONDITIONAL | Workflows and gates are implemented; the configured EC2 runner/repository destination and an actual exact-candidate run remain to be verified. |
+| 21 | Configure staging CI and separate explicit production promotion | PASS for staging path | Exact-candidate CI runs `34968621678` and `34968811226` passed; production promotion remains a separate explicit workflow. |
 | 22 | Make hostnames/configuration independent and document final-domain cutover | PASS | Environment-driven URLs/cookies/provider endpoint and domain cutover checklist added; external validation remains open. |
-| 23 | Test a non-`lengrowth.com` staging hostname | PASS | `staging.example.test` host-header smoke passed without DNS changes. |
+| 23 | Test a non-`lengrowth.com` staging hostname | PASS | `staging.example.test` and `erp-staging.example.test` host-header smoke passed without DNS changes. |
 | 24 | Deploy only operationally neutral Phase 0 changes | CONDITIONAL | Repository changes are safety/configuration tooling only; production promotion was deliberately not performed. |
 | 25 | Run production smoke and observation window | CONDITIONAL | Public/unauthenticated and local-origin checks passed, but API edge TLS and authenticated observation remain unresolved. |
 | 26 | Update release, blocker/risk, handover, deployment/rollback, and checklist records | PASS | Release record, registers, handover inventory, rollback tooling, and this checklist are updated; actual production evidence remains open. |

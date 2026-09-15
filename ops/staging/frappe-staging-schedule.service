@@ -1,0 +1,19 @@
+[Unit]
+Description=LenERP staging ERP scheduler
+After=network-online.target frappe-staging-redis-queue.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=frappe
+Group=frappe
+WorkingDirectory=/opt/frappe-staging-bench
+Environment=PATH=/opt/frappe-staging-bench/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+ExecStart=/usr/local/bin/bench schedule
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
