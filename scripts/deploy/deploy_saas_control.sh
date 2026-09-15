@@ -153,7 +153,11 @@ if ! "${smoke_command[@]}"; then
   rollback "$OLD_TARGET" "$OLD_PREVIOUS"
   exit 1
 fi
-printf '%s\n' "$RELEASE_ID" > "$CANDIDATE_DIR/.staging-smoke-passed"
+if id "$STAGING_SERVICE_USER" >/dev/null 2>&1; then
+  printf '%s\n' "$RELEASE_ID" | sudo -n -u "$STAGING_SERVICE_USER" tee "$CANDIDATE_DIR/.staging-smoke-passed" >/dev/null
+else
+  printf '%s\n' "$RELEASE_ID" > "$CANDIDATE_DIR/.staging-smoke-passed"
+fi
 
 if [[ -n "$OLD_TARGET" && "$OLD_TARGET" != "$CANDIDATE_DIR" ]]; then
   atomic_link "$OLD_TARGET" "$PREVIOUS_LINK"
