@@ -2,7 +2,7 @@
 
 | ID | Type | Status | Owner | Required action |
 |---|---|---|---|---|
-| P0-D01 | Decision | Open | Delivery owner / acceptance authority | Record agreement, payment, commencement, and acceptance authority. |
+| P0-D01 | Decision | Open | Delivery owner / acceptance authority | Agreement `FG-CWD-2026-0915-ONE` is present locally and names Matt Newcomer as final acceptance authority, but signature/date lines and cleared-payment/DocuSign evidence are not available; record executed agreement, commencement, and acceptance. |
 | P0-B01 | Resolved | Codex / infrastructure owner | Read-only SSH access opened temporarily; EC2 as-built inventory completed and the temporary rule can be removed after review. |
 | P0-B02 | Conditional | Infrastructure owner | ERP/control-plane backups are in private R2, byte-hash verified, and restored to disposable targets; assign retention/automation ownership and a second restore operator. |
 | P0-B03 | Conditional | Platform owner | Production Frappe/ERPNext worktrees contain preserved drift and no remotes; clean pinned clones exist locally and `lenerp_core` passed install/migrate/list/uninstall/reinstall on the disposable EC2 staging bench. Publish it to the approved private destination and resolve production source ownership/drift before promotion. |

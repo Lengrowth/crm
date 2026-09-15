@@ -24,7 +24,7 @@ Credential rotation is explicitly deferred by the owner for this run. No credent
 | Installed apps and versions | Bench `5.31.0`; site `erp.lengrowth.com`; Frappe `15.119.1`, ERPNext `15.120.0` | Recorded |
 | Production runtime | EC2 nginx, MariaDB `10.6.23`, Redis, Supervisor, Frappe workers, SaaS backend/frontend, GitHub Actions runner; env files under `/opt/saas-control/shared/env/` | Recorded without values |
 | Production routes and services | `lenerp.lengrowth.com` → Next.js `3000`; `api.lenerp.lengrowth.com` → backend `8001`; `erp.lengrowth.com` and `*.erp.lengrowth.com` → Frappe `8000/9000`; site files under `/home/frappe/frappe-bench/sites/erp.lengrowth.com` | Recorded; public API TLS is an open Cloudflare edge issue |
-| Agreement/payment/commencement | Not present in the accessible repository evidence | **Open decision item** |
+| Agreement/payment/commencement | Local PDF `FG-CWD-2026-0915-ONE` exists; it identifies the parties and names Matt Newcomer as final acceptance authority, but the extracted signature/date lines are blank and no cleared-payment or DocuSign completion certificate is available | **Open decision item** |
 | Delivery owner | Complete delivery plan identifies Fernando Guerra | Recorded from plan |
 | Acceptance authority | Complete delivery plan identifies Champion Well Drilling / Matt or written replacement in Project Start | Recorded from plan; approval not evidenced |
 
@@ -102,7 +102,7 @@ The Phase 0 gate is **not fully passed**. The repository-side safety foundation 
 4. Complete a staging rollback and failed-health simulation on the live EC2 lane; the two exact-candidate deployments and ERP smoke are already evidenced.
 5. Correct the Cloudflare edge TLS configuration for `api.lenerp.lengrowth.com` with a user/session that has the required zone DNS/SSL permissions.
 6. Credential rotation and plaintext-secret resolution before Champion data; explicitly deferred, therefore a mandatory pre-data blocker.
-7. Record agreement/commencement/ownership records and a named approver.
+7. Record the executed agreement, cleared payment, commencement date, ownership transfer, and acceptance by the named authority. The local agreement PDF is not proof of execution because its signature/date fields are blank.
 
 ## Phase 0 checklist status
 

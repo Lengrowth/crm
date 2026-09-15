@@ -213,8 +213,10 @@ independent restore operator still need to be assigned by a human.
 5. **Production release rollback:** production has no immutable
    `current`/`previous` release pointers. Do not promote until a known-good
    production candidate and rollback target are explicitly established.
-6. **Acceptance records:** agreement/commencement/payment evidence and a named
-   acceptance approver are not present in accessible repository evidence.
+6. **Acceptance records:** the local six-page agreement PDF `FG-CWD-2026-0915-ONE`
+   exists and names Matt Newcomer as final acceptance authority, but its extracted
+   signature/date lines are blank and no cleared-payment or DocuSign completion
+   certificate is available. Commencement and acceptance therefore remain open.
 
 Primary records:
 
