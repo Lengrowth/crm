@@ -37,6 +37,9 @@ load_env_file() {
 atomic_link() {
   local target="$1" link="$2"
   local tmp="${link}.next.$$"
+  [[ "$target" != "$link" ]] || { echo "Refusing self-referential release link: $link" >&2; return 1; }
+  [[ -d "$target" ]] || { echo "Release target is not a directory: $target" >&2; return 1; }
+  rm -f "$tmp"
   ln -s "$target" "$tmp"
   mv -Tf "$tmp" "$link"
 }
@@ -93,6 +96,8 @@ fi
 
 OLD_TARGET="$(readlink -f "$CURRENT_LINK" 2>/dev/null || true)"
 OLD_PREVIOUS="$(readlink -f "$PREVIOUS_LINK" 2>/dev/null || true)"
+[[ "$OLD_TARGET" == "$CURRENT_LINK" || ! -d "$OLD_TARGET" ]] && OLD_TARGET=""
+[[ "$OLD_PREVIOUS" == "$PREVIOUS_LINK" || ! -d "$OLD_PREVIOUS" ]] && OLD_PREVIOUS=""
 atomic_link "$CANDIDATE_DIR" "$CURRENT_LINK"
 restart_services
 validate_nginx
