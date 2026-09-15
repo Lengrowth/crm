@@ -46,6 +46,15 @@ atomic_link() {
 restart_services() {
   [[ "${SKIP_SERVICE_RESTART:-false}" == "true" ]] && return 0
   sudo "$SYSTEMCTL_BIN" restart "$BACKEND_SERVICE" "$FRONTEND_SERVICE"
+  for _ in {1..30}; do
+    if curl -fsS -o /dev/null --max-time 3 "${STAGING_BACKEND_URL:-http://127.0.0.1:18001}/health" \
+      && curl -fsS -o /dev/null --max-time 3 "${STAGING_BASE_URL:-http://127.0.0.1:13000}/"; then
+      return 0
+    fi
+    sleep 2
+  done
+  echo "Staging services did not become ready in time." >&2
+  return 1
 }
 validate_nginx() {
   [[ "${VALIDATE_NGINX:-false}" != "true" ]] && return 0
@@ -65,7 +74,11 @@ rollback() {
   else
     rm -f "$PREVIOUS_LINK"
   fi
-  restart_services
+  if [[ -n "$old_target" ]]; then
+    restart_services || true
+  else
+    sudo "$SYSTEMCTL_BIN" stop "$BACKEND_SERVICE" "$FRONTEND_SERVICE" || true
+  fi
   validate_nginx
 }
 
@@ -99,7 +112,10 @@ OLD_PREVIOUS="$(readlink -f "$PREVIOUS_LINK" 2>/dev/null || true)"
 [[ "$OLD_TARGET" == "$CURRENT_LINK" || ! -d "$OLD_TARGET" ]] && OLD_TARGET=""
 [[ "$OLD_PREVIOUS" == "$PREVIOUS_LINK" || ! -d "$OLD_PREVIOUS" ]] && OLD_PREVIOUS=""
 atomic_link "$CANDIDATE_DIR" "$CURRENT_LINK"
-restart_services
+if ! restart_services; then
+  rollback "$OLD_TARGET" "$OLD_PREVIOUS"
+  exit 1
+fi
 validate_nginx
 
 if ! BASE_URL="${STAGING_BASE_URL:-http://127.0.0.1:13000}" \
