@@ -36,9 +36,9 @@ separate disposable Frappe site; the production site must never be reused.
 - Keep the public staging hostname in configuration, not application source.
 - Use a separate ERP site and database name; never point staging at the
   production site.
-- Configure `AUTH_TOKEN_FILE` from a synthetic staging operator account when
-  the smoke script is run with `REQUIRE_AUTH_SMOKE=true`; never put that token
-  in Git, logs, or this repository.
+- The deployment creates or refreshes a synthetic staging operator session when
+  `REQUIRE_AUTH_SMOKE=true`; its bearer value is written only to the runtime
+  `AUTH_TOKEN_FILE` path and is never put in Git, logs, or this repository.
 
 ## Verification commands
 

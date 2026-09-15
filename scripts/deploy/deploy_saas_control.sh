@@ -118,9 +118,38 @@ if ! restart_services; then
 fi
 validate_nginx
 
-if ! BASE_URL="${STAGING_BASE_URL:-http://127.0.0.1:13001}" \
-  BACKEND_URL="${STAGING_BACKEND_URL:-http://127.0.0.1:18001}" \
-  EXPECTED_RELEASE="$RELEASE_ID" bash "$CANDIDATE_DIR/scripts/release/smoke.sh"; then
+if [[ "${REQUIRE_AUTH_SMOKE:-false}" == "true" ]]; then
+  if id "$STAGING_SERVICE_USER" >/dev/null 2>&1; then
+    if ! sudo -n -E -u "$STAGING_SERVICE_USER" env \
+      PYTHONPATH="$CANDIDATE_DIR/backend" \
+      "$BACKEND_VENV/bin/python" \
+      "$CANDIDATE_DIR/scripts/release/prepare_staging_smoke_auth.py" \
+      --token-file "${AUTH_TOKEN_FILE:-/run/saas-control-staging/smoke/auth-token}"; then
+      rollback "$OLD_TARGET" "$OLD_PREVIOUS"
+      exit 1
+    fi
+  else
+    if ! PYTHONPATH="$CANDIDATE_DIR/backend" "$BACKEND_VENV/bin/python" \
+      "$CANDIDATE_DIR/scripts/release/prepare_staging_smoke_auth.py" \
+      --token-file "${AUTH_TOKEN_FILE:-/run/saas-control-staging/smoke/auth-token}"; then
+      rollback "$OLD_TARGET" "$OLD_PREVIOUS"
+      exit 1
+    fi
+  fi
+fi
+
+smoke_command=(
+  env
+  BASE_URL="${STAGING_BASE_URL:-http://127.0.0.1:13001}"
+  BACKEND_URL="${STAGING_BACKEND_URL:-http://127.0.0.1:18001}"
+  EXPECTED_RELEASE="$RELEASE_ID"
+  HOST_HEADER="staging.example.test"
+  bash "$CANDIDATE_DIR/scripts/release/smoke.sh"
+)
+if id "$STAGING_SERVICE_USER" >/dev/null 2>&1; then
+  smoke_command=(sudo -n -E -u "$STAGING_SERVICE_USER" "${smoke_command[@]}")
+fi
+if ! "${smoke_command[@]}"; then
   rollback "$OLD_TARGET" "$OLD_PREVIOUS"
   exit 1
 fi
