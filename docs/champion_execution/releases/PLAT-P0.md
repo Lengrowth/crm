@@ -23,7 +23,7 @@ Credential rotation is explicitly waived by the owner for this implementation ru
 | Frappe/ERPNext production revisions | Base Frappe `edae775dd36b6c4ad7acab10230262bd74040765` plus local LenERP commits `bd4a4e849a018f2822827f91b27cd24fa796e691` / cleanup `a5524bdb8c4df252bf0a76bcfdcdc9715c9c389b`; base ERPNext `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3` plus local LenERP commit `0fd1992505bd680432363134063d01b0c755008c` | Intentional white-label changes committed locally; harmful functionality removals and `.bak` artifacts removed; worktrees clean |
 | Installed apps and versions | Bench `5.31.0`; site `erp.lengrowth.com`; Frappe `15.119.1`, ERPNext `15.120.0` | Recorded |
 | Production runtime | EC2 nginx, MariaDB `10.6.23`, Redis, Supervisor, Frappe workers, SaaS backend/frontend, GitHub Actions runner; env files under `/opt/saas-control/shared/env/` | Recorded without values |
-| Production routes and services | `lenerp.lengrowth.com` → Next.js `3000`; canonical `lenerp-api.lengrowth.com` → backend `8001`; legacy `api.lenerp.lengrowth.com` remains an alias; `erp.lengrowth.com` and `*.erp.lengrowth.com` → Frappe `8000/9000`; site files under `/home/frappe/frappe-bench/sites/erp.lengrowth.com` | New canonical hostname is ready at the origin; Cloudflare DNS record and public verification remain |
+| Production routes and services | `lenerp.lengrowth.com` → Next.js `3000`; canonical `lenerp-api.lengrowth.com` → backend `8001`; legacy `api.lenerp.lengrowth.com` remains an alias; `erp.lengrowth.com` and `*.erp.lengrowth.com` → Frappe `8000/9000`; site files under `/home/frappe/frappe-bench/sites/erp.lengrowth.com` | Canonical hostname is proxied through Cloudflare and public `/health` returned HTTP `200` on 2026-09-15 |
 | Agreement/payment/commencement | Local PDF `FG-CWD-2026-0915-ONE` exists; it identifies the parties and names Matt Newcomer as final acceptance authority, but the extracted signature/date lines are blank and no cleared-payment or DocuSign completion certificate is available | **Open decision item** |
 | Delivery owner | Complete delivery plan identifies Fernando Guerra | Recorded from plan |
 | Acceptance authority | Complete delivery plan identifies Champion Well Drilling / Matt or written replacement in Project Start | Recorded from plan; approval not evidenced |
@@ -50,7 +50,7 @@ Credential rotation is explicitly waived by the owner for this implementation ru
 - Read-only SSH inventory completed against the EC2 after the temporary port-22 allow rule was opened. The ERP and control plane are co-hosted on the same EC2, as the nginx routes, Supervisor groups, listeners, systemd units, and application directories show.
 - The Frappe and ERPNext worktrees were reviewed: intentional LenERP white-label changes were committed locally, help/video/payment functionality was restored, and accidental backup artifacts were removed. Both production worktrees are clean; official upstream remotes remain fetch/push targets and client-specific changes were not pushed there.
 - Production ERP commits are Frappe `a5524bdb8c4df252bf0a76bcfdcdc9715c9c389b` (branding parent `bd4a4e849a018f2822827f91b27cd24fa796e691`) and ERPNext `0fd1992505bd680432363134063d01b0c755008c`, based on the pinned upstream revisions recorded above.
-- Cloudflare DNS is active and proxied for the existing hostnames. The EC2 origin now accepts `lenerp-api.lengrowth.com` and returns API HTTP `200` locally; add the proxied Cloudflare record and verify the new public HTTPS hostname.
+- Cloudflare DNS is active and proxied for the existing hostnames. The EC2 origin accepts `lenerp-api.lengrowth.com`, and public `https://lenerp-api.lengrowth.com/health` returned HTTP `200` with the expected live ERP integration status on 2026-09-15. The shared zone-wide SSL mode was not changed.
 
 ## Tests and evidence
 
@@ -70,7 +70,7 @@ The exact commands and results are maintained below:
 - Disposable control-plane backup/restore rehearsal: **PASS** — `backend/.venv/Scripts/python.exe scripts/release/rehearse_backup_restore.py --self-test`; a restored control-plane database was upgraded from the first migration to head, its synthetic record was preserved, and site configuration, public files, and private files were restored and verified.
 - Full backend suite: **PASS** — `backend/.venv/Scripts/python.exe -m pytest backend/tests -q`; 36 passed. The integration test now uses a disposable authenticated tenant/database, and provisioning retry/idempotency paths pass.
 - `git diff --check`: **PASS** after removing the reported trailing whitespace.
-- Production baseline: **CONDITIONAL** — after promotion, immutable `current`/`previous` pointers were active; local backend health/database/live-ERP runtime passed, local frontend returned `200`, and unauthenticated API denial returned `401`. Public control-plane/ERP routes were previously reachable, but the public API hostname still fails TLS at the Cloudflare edge, so public authenticated/API observation is incomplete.
+- Production baseline: **CONDITIONAL** — after promotion, immutable `current`/`previous` pointers were active; local backend health/database/live-ERP runtime passed, local frontend returned `200`, unauthenticated API denial returned `401`, and public `https://lenerp-api.lengrowth.com/health` returned `200` through Cloudflare. Public authenticated observation and the remaining operational ownership gates are still open.
 - Actual control-plane staging CI: **PASS** — GitHub Actions runs `34968621678` and `34968811226` proved authenticated deployment/idempotency for the earlier candidate; handover candidate `265a9047bb7b4d4cc034be3501b61c0f314cf83f` passed in run `34971552445`. The verified post-run current/previous pointers were `265a9047bb7b4d4cc034be3501b61c0f314cf83f` / `b6e96b628513e7033949d711fd845f5a4fe4125b`.
 - Actual ERP staging: **PASS for the disposable lane** — `/opt/frappe-staging-bench`, site `erp-staging.example.test`, Frappe `15.119.1` at `edae775dd36b6c4ad7acab10230262bd74040765`, ERPNext `15.120.0` at `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`, `lenerp_core` installed; web/login/API, dedicated Redis ports `14100/14101`, web port `28000`, workers, scheduler, and install/uninstall/reinstall cycle passed via `scripts/release/erp_staging_smoke.sh`.
 
@@ -96,10 +96,10 @@ Code rollback and data recovery remain separate: the release scripts switch immu
 
 The Phase 0 gate is **not fully passed**. The repository-side safety foundation and production backup/off-host-copy evidence are now present, but mandatory operational evidence remains unresolved:
 
-1. Confirm the public API TLS repair and complete public authenticated smoke/observation.
+1. Complete public authenticated smoke/observation after the DNS/TLS repair.
 2. Confirm non-interactive R2 backup automation credentials and a second independent restore operator.
 3. Keep the committed production Frappe/ERPNext branding baseline under approved private source ownership if future changes are required; `lenerp_core` is already published to `Len-OS/lenerp_core`.
-4. Add the proxied Cloudflare `A` record `lenerp-api → 100.62.163.246` and verify public HTTPS/API smoke. Keep the old deep hostname only as a temporary alias.
+4. Keep the proxied Cloudflare `A` record `lenerp-api → 100.62.163.246`; public HTTPS/API health verification passed. Keep the old deep hostname only as a temporary alias.
 5. Credential rotation was explicitly waived by the delivery owner for this implementation run; no rotation proof exists and the waiver remains a documented security exception.
 6. Record the executed agreement, cleared payment, commencement date, ownership transfer, and acceptance by the named authority. The local agreement PDF is not proof of execution because its signature/date fields are blank.
 
@@ -122,7 +122,7 @@ The Phase 0 gate is **not fully passed**. The repository-side safety foundation 
 | 13 | Implement immutable release directories/slots | PASS | Candidate builder, current/previous pointers, and slot rehearsal are implemented and tested. |
 | 14 | Build frontend/backend/custom-app artifacts before switching traffic | PASS | Candidate builder and preflight enforce this ordering; exact host execution remains pending. |
 | 15 | Keep current/previous exact release identifiers | PASS for control plane | Production current is `265a9047bb7b4d4cc034be3501b61c0f314cf83f`; previous is `1c3ea4d570e08443a8100acb1ecdf506c30a4ca5`; services use the current pointer and local-origin smoke passed. |
-| 16 | Add preflight and post-deploy smoke coverage | PASS for staging; CONDITIONAL for production | Control-plane authenticated smoke and ERP staging smoke pass; production API edge TLS still prevents complete public API observation. |
+| 16 | Add preflight and post-deploy smoke coverage | PASS for staging; CONDITIONAL for production | Control-plane authenticated smoke and ERP staging smoke pass; public API health now passes, while authenticated production observation remains open. |
 | 17 | Add non-secret release manifest | PASS | Manifest contains commits, versions, build time, hashes, revisions, flags, environment, and operator. |
 | 18 | Add server-controlled feature flags | PASS | Settings-backed flag map and runtime metadata are implemented and tested. |
 | 19 | Make deployment/provisioning idempotent | PASS | Provisioning retry/idempotency tests and immutable-slot idempotency rehearsal pass. |
@@ -131,7 +131,7 @@ The Phase 0 gate is **not fully passed**. The repository-side safety foundation 
 | 22 | Make hostnames/configuration independent and document final-domain cutover | PASS | Environment-driven URLs/cookies/provider endpoint and domain cutover checklist added; external validation remains open. |
 | 23 | Test a non-`lengrowth.com` staging hostname | PASS | `staging.example.test` and `erp-staging.example.test` host-header smoke passed without DNS changes. |
 | 24 | Deploy only operationally neutral Phase 0 changes | CONDITIONAL | Repository changes are safety/configuration tooling only; production promotion was deliberately not performed. |
-| 25 | Run production smoke and observation window | CONDITIONAL | Public/unauthenticated and local-origin checks passed, but API edge TLS and authenticated observation remain unresolved. |
+| 25 | Run production smoke and observation window | CONDITIONAL | Public API health, unauthenticated denial, and local-origin checks passed; authenticated observation and the remaining ownership gates remain unresolved. |
 | 26 | Update release, blocker/risk, handover, deployment/rollback, and checklist records | PASS | Release record, registers, handover inventory, rollback tooling, and this checklist are updated; actual production evidence remains open. |
 
 ## Rollback instructions

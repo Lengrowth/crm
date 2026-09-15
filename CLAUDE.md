@@ -3,9 +3,10 @@
 ## Phase 0 handover — read this first
 
 This repository has a verified Phase 0 release-safety foundation. The current
-result is **CONDITIONAL PASS**: staging is operational, production was not
-promoted, credential rotation is intentionally deferred, and the public API
-hostname still has a Cloudflare edge TLS problem.
+result is **CONDITIONAL PASS**: staging and the promoted production control
+plane are operational, credential rotation is intentionally deferred, and the
+remaining open items are ownership, acceptance, backup automation, and
+authenticated observation gates.
 
 Never print, paste, commit, or place credential values in logs, documentation,
 patches, shell history, or chat. Retrieve secrets only from the approved secret
@@ -199,23 +200,13 @@ independent restore operator still need explicit operational confirmation.
 
 ## Known blockers and handoff actions
 
-1. **Cloudflare API edge TLS:** `https://lenerp-api.lengrowth.com/health`
-   fails at the Cloudflare edge while the EC2 origin is healthy. The connected
-   Wrangler identity had only zone-read scope and could not inspect or change
-   DNS/SSL settings. Wrangler has no DNS-record command for this zone. In the
-   Cloudflare dashboard select account `Lengrowth` → zone `lengrowth.com`:
-   create/verify `lenerp-api` is an `A` record for `100.62.163.246` with Proxy status
-   enabled; do **not** change the zone-wide SSL mode because other projects
-   share this zone. Under **SSL/TLS → Edge Certificates**, verify Universal
-   SSL is active and covers first-level subdomains such as
-   `lenerp-api.lengrowth.com`; use the certificate retry/refresh action only
-   if that certificate is pending or errored. If the origin policy later
-   requires a stricter mode, change it only after auditing every project in
-   the zone. If using a token instead of the dashboard, grant only
-   zone-scoped `DNS:Edit` (and, only if needed, `SSL/TLS Certificates:Edit`)
-   permissions for `lengrowth.com`. Verify from a terminal with
-   `curl.exe -Iv https://lenerp-api.lengrowth.com/health` and expect HTTP 200
-   before repeating public authenticated smoke.
+1. **Cloudflare API edge TLS:** resolved. The exact proxied `A` record
+   `lenerp-api → 100.62.163.246` is present, and
+   `https://lenerp-api.lengrowth.com/health` returned HTTP `200` through
+   Cloudflare on 2026-09-15. The connected Wrangler identity still has only
+   zone-read scope for DNS, so future DNS edits require the dashboard or a
+   narrowly scoped zone `DNS:Edit` token. Do **not** change the shared
+   zone-wide SSL mode.
 2. **Credential rotation:** intentionally not performed. It is mandatory before
    Champion confidential data; do not silently mark this complete.
 3. **Production source ownership:** production Frappe/ERPNext drift was

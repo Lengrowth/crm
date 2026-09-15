@@ -11,5 +11,5 @@
 | P0-R01 | Risk | Open | Delivery owner | Temporary hostname may leak through cookies, callbacks, links, email, webhooks, monitoring, or ERP settings; complete the domain checklist. |
 | P0-R02 | Risk | Open | Release owner | Database migrations and code rollback are different operations; complete restore/correction rehearsals. |
 | P0-R03 | Risk | Open | Repository owner | Client-controlled private repository and infrastructure ownership are not yet evidenced. |
-| P0-B06 | Blocker | Cloudflare/infrastructure owner | `lenerp-api.lengrowth.com` is the canonical replacement for the uncovered multi-level `api.lenerp.lengrowth.com`; add the proxied DNS record and externally verify HTTPS. |
+| P0-B06 | Resolved | Cloudflare/infrastructure owner | `lenerp-api.lengrowth.com` is the canonical replacement for the uncovered multi-level `api.lenerp.lengrowth.com`; the proxied `A` record to `100.62.163.246` is present and public `/health` returned HTTP `200` on 2026-09-15. |
 | P0-R04 | Resolved for control plane | Release owner | Production now uses immutable `current` `265a9047bb7b4d4cc034be3501b61c0f314cf83f` and `previous` `1c3ea4d570e08443a8100acb1ecdf506c30a4ca5` release directories; local-origin smoke passed after the switch. |
