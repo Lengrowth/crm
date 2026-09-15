@@ -17,7 +17,7 @@ Credential rotation is explicitly deferred by the owner for this run. No credent
 
 | Item | Evidence | Result |
 |---|---|---|
-| CRM repository | Local `origin` is `https://github.com/BuildGrowthNow/crm.git`; requested GitHub destination is `https://github.com/Lengrowth/crm`; verified staging candidate `807edc4ec4bc3ffc4f11540051f1470898d8eb13` | Recorded; destination alignment remains a repository-ownership action |
+| CRM repository | Local `origin` is `https://github.com/BuildGrowthNow/crm.git`; requested GitHub destination is `https://github.com/Lengrowth/crm`; verified handover candidate `265a9047bb7b4d4cc034be3501b61c0f314cf83f` | Recorded; destination alignment remains a repository-ownership action |
 | Previous CRM source tip | `bab5568...` in local history | Recorded as source history only; not claimed as a production rollback target |
 | Champion forecast repository | `https://github.com/guerra2fernando/champion-forecast.git`; local branch is ahead of its remote and contains unrelated dirty changes | Read-only inventory only; preserved |
 | Frappe/ERPNext production revisions | Frappe `edae775dd36b6c4ad7acab10230262bd74040765`, ERPNext `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`; both `version-15` | Recorded; both production trees have preserved tracked/untracked drift |
@@ -71,7 +71,7 @@ The exact commands and results are maintained below:
 - Full backend suite: **PASS** — `backend/.venv/Scripts/python.exe -m pytest backend/tests -q`; 36 passed. The integration test now uses a disposable authenticated tenant/database, and provisioning retry/idempotency paths pass.
 - `git diff --check`: **PASS** after removing the reported trailing whitespace.
 - Production baseline: **CONDITIONAL** — public control-plane root `200`, login `200`, ERP root `200`, and unauthenticated ERP API denial `403`; local origin backend and Frappe routes returned `200`, and Supervisor workers were active. The public API hostname failed TLS at the Cloudflare edge, so authenticated/API observation is not complete.
-- Actual control-plane staging CI: **PASS** — GitHub Actions run `34968621678` deployed candidate `807edc4ec4bc3ffc4f11540051f1470898d8eb13` with authenticated smoke; repeat run `34968811226` passed in 9 seconds and proved idempotency. Current/previous pointers are `807edc4ec4bc3ffc4f11540051f1470898d8eb13` / `6976559d8ec76c9ffea711ec9d0c199d22bd2f1c`.
+- Actual control-plane staging CI: **PASS** — GitHub Actions runs `34968621678` and `34968811226` proved authenticated deployment/idempotency for the earlier candidate; handover candidate `265a9047bb7b4d4cc034be3501b61c0f314cf83f` passed in run `34971552445`. The verified post-run current/previous pointers were `265a9047bb7b4d4cc034be3501b61c0f314cf83f` / `b6e96b628513e7033949d711fd845f5a4fe4125b`.
 - Actual ERP staging: **PASS for the disposable lane** — `/opt/frappe-staging-bench`, site `erp-staging.example.test`, Frappe `15.119.1` at `edae775dd36b6c4ad7acab10230262bd74040765`, ERPNext `15.120.0` at `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`, `lenerp_core` installed; web/login/API, dedicated Redis ports `14100/14101`, web port `28000`, workers, scheduler, and install/uninstall/reinstall cycle passed via `scripts/release/erp_staging_smoke.sh`.
 
 ## Backup and recovery evidence
@@ -84,13 +84,13 @@ Code rollback and data recovery remain separate: the release scripts switch immu
 
 ## Release identifiers
 
-- Current CRM source identifier: `1c3ea4d570e08443a8100acb1ecdf506c30a4ca5`.
+- Current CRM handover source identifier: `265a9047bb7b4d4cc034be3501b61c0f314cf83f`.
 - Previous CRM source identifier in local history: `bab5568...`; exact full SHA must be recorded from the final candidate manifest before use as a rollback target.
-- Current production control-plane source identifier: `1c3ea4d570e08443a8100acb1ecdf506c30a4ca5` in `/opt/saas-control/repo`; the host has no immutable `current`/`previous` release pointers.
+- Current production control-plane source identifier: `1c3ea4d570e08443a8100acb1ecdf506c30a4ca5` in `/opt/saas-control/repo`; production Alembic revision is `20260528_0007`; the host has no immutable `current`/`previous` release pointers.
 - Current production ERP source identifiers: Frappe `edae775dd36b6c4ad7acab10230262bd74040765`; ERPNext `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`.
 - Previous production release identifier: **not recorded**; there is no prior immutable release target to use for rollback.
 - `lenerp_core` local scaffold commit: `728de29`; install/migrate/list/uninstall/reinstall proof passed on the disposable staging site. Remote private-repository ownership is still not evidenced.
-- Current staging control-plane release: `807edc4ec4bc3ffc4f11540051f1470898d8eb13`; previous staging release: `6976559d8ec76c9ffea711ec9d0c199d22bd2f1c`.
+- Current staging control-plane release: `265a9047bb7b4d4cc034be3501b61c0f314cf83f`; previous staging release: `b6e96b628513e7033949d711fd845f5a4fe4125b`.
 
 ## Gate status
 

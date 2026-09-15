@@ -1,30 +1,30 @@
 {
-  "build_time_utc": "2026-09-15T10:46:38.256224+00:00",
-  "control_plane_commit": "1c3ea4d570e08443a8100acb1ecdf506c30a4ca5",
-  "custom_app_commit": "d8cb884405d844c50ca8c568ac80572b149f67f3",
+  "build_time_utc": "2026-09-15T16:22:56.135179+00:00",
+  "control_plane_commit": "265a9047bb7b4d4cc034be3501b61c0f314cf83f",
+  "custom_app_commit": "728de29176ddb9c05c78d734318406d57f10f205",
   "custom_app_version": "0.1.0",
-  "database_revision_after": "unknown",
-  "database_revision_before": "unknown",
+  "database_revision_after": "20260528_0007",
+  "database_revision_before": "20260528_0007",
   "dependency_lock_hashes": {
     "backend/pyproject.toml": "11fd66c363bfc5ff7784a2fc52d5e19d1eb995d82a985341fe2ff56d8e758d11",
     "frontend/package-lock.json": "698eda71a3e2401a83504fe78d37c3549854d6d1ab4ee3a6ed412168be69f810"
   },
-  "environment": "repository-only",
+  "environment": "staging",
   "feature_flags": {},
   "installed_apps": {
     "erpnext": {
-      "commit": "unknown"
+      "commit": "945e825bee3d0d645f6cb59bcaab90fcbfb98ce3"
     },
     "frappe": {
-      "commit": "unknown"
+      "commit": "edae775dd36b6c4ad7acab10230262bd74040765"
     },
     "lenerp_core": {
-      "commit": "d8cb884405d844c50ca8c568ac80572b149f67f3",
+      "commit": "728de29176ddb9c05c78d734318406d57f10f205",
       "version": "0.1.0"
     }
   },
   "operator": "Codex",
   "release_id": "PLAT-P0",
-  "upstream_erpnext_commit": "unknown",
-  "upstream_frappe_commit": "unknown"
+  "upstream_erpnext_commit": "945e825bee3d0d645f6cb59bcaab90fcbfb98ce3",
+  "upstream_frappe_commit": "edae775dd36b6c4ad7acab10230262bd74040765"
 }

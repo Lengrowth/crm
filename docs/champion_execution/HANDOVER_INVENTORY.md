@@ -6,7 +6,7 @@ Status: working inventory for `PLAT-P0`; no secret values belong here.
 
 | Component | Repository/remotes | Current evidence |
 |---|---|---|
-| CRM control plane | Local `https://github.com/BuildGrowthNow/crm.git`; requested destination `https://github.com/Lengrowth/crm` | local checkout at `1c3ea4d570e08443a8100acb1ecdf506c30a4ca5` |
+| CRM control plane | Local `https://github.com/BuildGrowthNow/crm.git`; requested destination `https://github.com/Lengrowth/crm` | local checkout at `265a9047bb7b4d4cc034be3501b61c0f314cf83f`; latest verified staging candidate |
 | Champion forecast / commercial plan | `https://github.com/guerra2fernando/champion-forecast.git` | local checkout has unrelated dirty changes; preserve them |
 | Frappe upstream | `https://github.com/frappe/frappe.git` | production `edae775dd36b6c4ad7acab10230262bd74040765`; clean detached clone at `C:\Users\smikl\Desktop\Work\phase0-upstreams\frappe` |
 | ERPNext upstream | `https://github.com/frappe/erpnext.git` | production `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`; clean detached clone at `C:\Users\smikl\Desktop\Work\phase0-upstreams\erpnext` |

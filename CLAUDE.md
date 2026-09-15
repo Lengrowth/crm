@@ -31,8 +31,8 @@ part of Phase 0.
 - Local `lengrowth` remote: `https://github.com/Lengrowth/crm.git`
 - Branch: `main`; pushes to `main` deploy the exact commit to staging only.
 - Production promotion is separate and protected: `.github/workflows/promote-saas-control-production.yml` and `scripts/deploy/promote_saas_control.sh`.
-- Last verified staging candidate: `b6e96b628513e7033949d711fd845f5a4fe4125b`.
-- Verified previous staging candidate: `807edc4ec4bc3ffc4f11540051f1470898d8eb13`.
+- Last verified staging candidate: `265a9047bb7b4d4cc034be3501b61c0f314cf83f`.
+- Verified previous staging candidate: `b6e96b628513e7033949d711fd845f5a4fe4125b`.
 - Successful exact-candidate runs: GitHub Actions `34970823140` (latest),
   `34968621678`, and repeat/idempotency run `34968811226`.
 
