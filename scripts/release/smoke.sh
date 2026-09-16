@@ -56,6 +56,18 @@ if not isinstance(installed_apps, dict):
 for app_name in ("frappe", "erpnext"):
     if not isinstance(installed_apps.get(app_name), dict):
         raise SystemExit(f"release manifest installed_apps missing {app_name}")
+    if installed_apps[app_name].get("commit") in {None, "", "unknown"}:
+        raise SystemExit(f"release manifest has unknown {app_name} runtime commit")
+for field in (
+    "custom_app_commit",
+    "custom_app_version",
+    "upstream_frappe_commit",
+    "upstream_erpnext_commit",
+    "database_revision_before",
+    "database_revision_after",
+):
+    if manifest.get(field) in {None, "", "unknown", "not-installed"}:
+        raise SystemExit(f"release manifest has incomplete runtime field: {field}")
 PY
 printf 'release metadata and installed-app inventory passed\n'
 

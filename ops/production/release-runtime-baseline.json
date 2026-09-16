@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "database_revision": "20260528_0007",
+  "upstream_frappe_commit": "edae775dd36b6c4ad7acab10230262bd74040765",
+  "upstream_erpnext_commit": "945e825bee3d0d645f6cb59bcaab90fcbfb98ce3",
+  "runtime_apps": {
+    "frappe": {
+      "commit": "a5524bdb8c4df252bf0a76bcfdcdc9715c9c389b"
+    },
+    "erpnext": {
+      "commit": "0fd1992505bd680432363134063d01b0c755008c"
+    },
+    "lenerp_core": {
+      "commit": "728de29176ddb9c05c78d734318406d57f10f205",
+      "version": "0.1.0"
+    }
+  }
+}
