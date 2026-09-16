@@ -13,6 +13,7 @@ R2_ENV_FILE="${R2_ENV_FILE:-/etc/saas-control/r2-backup.env}"
 source "$BACKEND_ENV_FILE"
 # shellcheck disable=SC1090
 source "$R2_ENV_FILE"
+export DATABASE_URL
 
 export AWS_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID:?R2_ACCESS_KEY_ID is required}"
 export AWS_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY:?R2_SECRET_ACCESS_KEY is required}"
@@ -113,16 +114,15 @@ else:
     lifecycle["error"] = "query failed"
 
 objects = subprocess.run(
-    ["aws", "s3api", "list-objects-v2", "--bucket", bucket, "--endpoint-url", endpoint, "--query", "KeyCount", "--output", "text"],
+    ["aws", "s3api", "list-objects-v2", "--bucket", bucket, "--endpoint-url", endpoint, "--output", "json"],
     check=False,
     capture_output=True,
     text=True,
 )
-object_count = objects.stdout.strip() if objects.returncode == 0 else None
-if object_count in {"", "None", "null"}:
+if objects.returncode == 0:
+    object_count = len(json.loads(objects.stdout).get("Contents", []))
+else:
     object_count = None
-elif object_count is not None:
-    object_count = int(object_count)
 
 data = {
     "captured_at_utc": datetime.now(timezone.utc).isoformat(),
