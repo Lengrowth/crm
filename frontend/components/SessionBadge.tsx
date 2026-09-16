@@ -128,7 +128,7 @@ export function SessionBadge() {
         <div className="mt-2 space-y-3">
           <p style={{ color: "var(--text)" }}>Logged out</p>
           <p className="text-xs leading-5" style={{ color: "var(--muted)" }}>
-            Local auth uses a frontend cookie plus backend sessions. Sign in to enter the protected app shell.
+            Your sign-in uses a secure session shared with the application API.
           </p>
         </div>
       )}

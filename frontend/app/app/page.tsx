@@ -75,7 +75,7 @@ export default function AppHomePage() {
         <InfoCard
           eyebrow="Cutover safety"
           title="Mock stays explicit"
-          description="Local demos can keep mock ERPNext behavior, while production-like environments avoid silent mock fallback."
+          description="Development environments can keep mock ERPNext behavior, while production-like environments avoid silent mock fallback."
         />
       </div>
     </div>

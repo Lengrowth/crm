@@ -1,5 +1,10 @@
 export const env = {
-  appName: process.env.NEXT_PUBLIC_APP_NAME ?? "LenERP",
+  appName: process.env.NEXT_PUBLIC_APP_NAME ?? "Application",
+  environmentLabel:
+    process.env.NEXT_PUBLIC_ENVIRONMENT_LABEL ??
+    (process.env.NODE_ENV === "production" ? "Production" : "Development"),
+  supportUrl: process.env.NEXT_PUBLIC_SUPPORT_URL ?? "/contact",
+  statusUrl: process.env.NEXT_PUBLIC_STATUS_URL ?? "",
   apiBaseUrl:
     process.env.NEXT_PUBLIC_API_BASE_URL ??
     (process.env.NODE_ENV === "production"
