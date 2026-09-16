@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Bricolage_Grotesque } from "next/font/google";
+import { env } from "@/lib/env";
 import "./globals.css";
 
 const bricolage = Bricolage_Grotesque({
@@ -12,23 +13,21 @@ const bricolage = Bricolage_Grotesque({
 
 export const metadata: Metadata = {
   title: {
-    default: "LenERP Control Plane",
-    template: "%s | LenERP Control Plane",
+    default: env.appName,
+    template: `%s | ${env.appName}`,
   },
   description:
-    "Launch-ready SaaS control for onboarding organizations, managing tenants, packaging modules, and coordinating ERPNext-backed operational rollouts without collapsing the product and runtime boundaries.",
-  applicationName: "LenERP Control Plane",
+    "Operator workspace for onboarding customers, managing ERP sites, packaging modules, and coordinating delivery readiness.",
+  applicationName: env.appName,
   openGraph: {
-    title: "LenERP Control Plane",
-    description:
-      "Premium SaaS control for onboarding, implementation visibility, tenant readiness, and ERPNext-aware rollout coordination.",
+    title: env.appName,
+    description: "Operator workspace for customer onboarding, ERP site visibility, and delivery readiness.",
     type: "website",
   },
   twitter: {
     card: "summary",
-    title: "LenERP Control Plane",
-    description:
-      "Premium SaaS control for onboarding, implementation visibility, tenant readiness, and ERPNext-aware rollout coordination.",
+    title: env.appName,
+    description: "Operator workspace for customer onboarding, ERP site visibility, and delivery readiness.",
   },
 };
 
