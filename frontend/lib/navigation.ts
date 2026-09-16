@@ -1,6 +1,6 @@
 export const marketingNav = [
-  { href: "/", label: "Product" },
-  { href: "/modules", label: "Features" },
+  { href: "/", label: "Partners" },
+  { href: "/modules", label: "Platform" },
   { href: "/industries", label: "Industries" },
   { href: "/pricing", label: "Pricing" },
   { href: "/contact", label: "Contact" },
@@ -16,7 +16,7 @@ export const marketingFooterSections = [
   {
     title: "Product",
     links: [
-      { href: "/", label: "Overview" },
+      { href: "/", label: "Partner overview" },
       { href: "/modules", label: "Features" },
       { href: "/pricing", label: "Pricing" },
       { href: "/demo", label: "Book a demo" },

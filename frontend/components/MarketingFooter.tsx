@@ -62,7 +62,7 @@ export function MarketingFooter() {
                 style={{ color: "var(--muted)" }}
               >
                 {section.links.map((link) => (
-                  <li key={link.href}>
+                  <li key={`${link.href}-${link.label}`}>
                     <Link
                       href={link.href}
                       className="transition-opacity hover:opacity-100"
