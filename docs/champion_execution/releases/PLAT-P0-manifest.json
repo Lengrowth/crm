@@ -1,6 +1,6 @@
 {
-  "build_time_utc": "2026-09-16T10:47:25+00:00",
-  "control_plane_commit": "4813607eccf61e06cbeb79b24c02d637f9f7b915",
+  "build_time_utc": "2026-09-16T11:43:39+00:00",
+  "control_plane_commit": "31f6d90d7f131e5beb9f2c976e95b391abebc200",
   "custom_app_commit": "728de29176ddb9c05c78d734318406d57f10f205",
   "custom_app_version": "0.1.0",
   "database_revision_after": "20260528_0007",
@@ -13,10 +13,12 @@
   "feature_flags": {},
   "installed_apps": {
     "erpnext": {
-      "commit": "945e825bee3d0d645f6cb59bcaab90fcbfb98ce3"
+      "commit": "0fd1992505bd680432363134063d01b0c755008c",
+      "upstream_commit": "945e825bee3d0d645f6cb59bcaab90fcbfb98ce3"
     },
     "frappe": {
-      "commit": "edae775dd36b6c4ad7acab10230262bd74040765"
+      "commit": "a5524bdb8c4df252bf0a76bcfdcdc9715c9c389b",
+      "upstream_commit": "edae775dd36b6c4ad7acab10230262bd74040765"
     },
     "lenerp_core": {
       "commit": "728de29176ddb9c05c78d734318406d57f10f205",

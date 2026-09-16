@@ -78,6 +78,6 @@ Every platform phase, Champion solution package, and data/import release uses [`
 
 Start with Phase 0. Record contract commencement, baseline the existing environment, protect the current data, create staging, establish the custom-app boundary, and prove recovery before changing the production experience.
 
-The active Phase 0 release record is [`releases/PLAT-P0.md`](releases/PLAT-P0.md), with the non-secret candidate manifest in [`releases/PLAT-P0-manifest.json`](releases/PLAT-P0-manifest.json). A conditional result is recorded until the production baseline, backups, restore, staging isolation, custom-app boundary, and credential pre-data gate are evidenced.
+The active Phase 0 release record is [`releases/PLAT-P0.md`](releases/PLAT-P0.md), with the non-secret Phase 0 record manifest in [`releases/PLAT-P0-manifest.json`](releases/PLAT-P0-manifest.json). The deployed candidate carries its own runtime manifest generated from `ops/production/release-runtime-baseline.json`; the protected production readback and backup evidence are complete.
 
 Design and discovery can proceed locally while Phase 0 is being completed, but no later phase or package is promoted to production before the Phase 0 gate passes.
