@@ -111,6 +111,32 @@ Do not use the existing production bench as a staging bench. Any production
 restart, migration, source edit, or database operation requires a separately
 approved change and verified backup/rollback target.
 
+### Final Phase 0 smoke handoff
+
+On 2026-09-16 the public production smoke passed for the root page, API
+health, ERP runtime summary, release metadata, installed-app inventory, and
+unauthenticated denial. The production services and Supervisor workers were
+also active. The only remaining assertion is an authenticated API observation;
+the reusable smoke script reports this as skipped when `AUTH_TOKEN_FILE` is
+not configured.
+
+To complete that final assertion without changing production data, an owner
+or existing operator must place an existing non-privileged bearer token in a
+temporary file on the EC2, readable only by the operator, for example:
+
+```bash
+sudo install -o ubuntu -g ubuntu -m 600 /dev/null /run/saas-control/smoke/auth-token
+sudoedit /run/saas-control/smoke/auth-token
+```
+
+Do not paste the token into chat, commits, logs, or documentation. Then run
+the production smoke from this checkout with `AUTH_TOKEN_FILE` pointing to
+that file and `REQUIRE_AUTH_SMOKE=true`; the script checks `/auth/me` and
+authenticated `/organizations` access. Remove the token file after the
+check. Do not create a synthetic production account or perform direct
+production database cleanup merely to manufacture this evidence without a
+separate explicit production-data authorization.
+
 ## EC2 staging map — safe operational lane
 
 Staging is isolated on the same EC2 by path, database, files, processes, ports,
