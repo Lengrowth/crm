@@ -47,33 +47,47 @@ def service(name: str) -> str:
 def git_state(path: Path) -> dict[str, object]:
     if not (path / ".git").exists():
         return {"path": str(path), "present": False}
-    head = command("git", "-C", str(path), "rev-parse", "HEAD")
-    dirty = command("git", "-C", str(path), "status", "--porcelain", "--untracked-files=all")
+    head = command("git", "-c", f"safe.directory={path}", "-C", str(path), "rev-parse", "HEAD")
+    dirty = command(
+        "git",
+        "-c",
+        f"safe.directory={path}",
+        "-C",
+        str(path),
+        "status",
+        "--porcelain",
+        "--untracked-files=all",
+    )
     return {"path": str(path), "present": True, "head": head, "clean": not bool(dirty)}
 
 
 def database_counts() -> dict[str, int | None]:
-    try:
-        sys.path.insert(0, str(Path(app_root) / "current" / "backend"))
-        from sqlalchemy import func, select
-        from app.db.session import SessionLocal
-        from app.models.domain import AuthSession, Organization, SaaSUser
-
-        with SessionLocal() as session:
-            prefix = "phase0-production-smoke-%"
-            return {
-                "smoke_users": session.scalar(
-                    select(func.count()).select_from(SaaSUser).where(SaaSUser.email.like(prefix + "@example.test"))
-                ),
-                "smoke_organizations": session.scalar(
-                    select(func.count()).select_from(Organization).where(Organization.name.like("Phase 0 Production Smoke %"))
-                ),
-                "active_sessions": session.scalar(
-                    select(func.count()).select_from(AuthSession).where(AuthSession.expires_at > __import__("datetime").datetime.now(__import__("datetime").timezone.utc))
-                ),
-            }
-    except Exception:
+    database_url = os.environ.get("DATABASE_URL", "")
+    if not database_url.startswith("sqlite:///"):
         return {"smoke_users": None, "smoke_organizations": None, "active_sessions": None}
+    database_path = database_url.removeprefix("sqlite:///")
+    sql = """
+    SELECT
+      (SELECT count(*) FROM saas_users WHERE email LIKE 'phase0-production-smoke-%@example.test'),
+      (SELECT count(*) FROM organizations WHERE name LIKE 'Phase 0 Production Smoke %'),
+      (SELECT count(*) FROM auth_sessions WHERE user_id IN (SELECT id FROM saas_users WHERE email LIKE 'phase0-production-smoke-%@example.test'));
+    """
+    result = subprocess.run(
+        ["sqlite3", "-csv", database_path, sql],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return {"smoke_users": None, "smoke_organizations": None, "active_sessions": None}
+    values = result.stdout.strip().split(",")
+    if len(values) != 3:
+        return {"smoke_users": None, "smoke_organizations": None, "active_sessions": None}
+    return {
+        "smoke_users": int(values[0]),
+        "smoke_organizations": int(values[1]),
+        "active_sessions": int(values[2]),
+    }
 
 
 lifecycle_raw = subprocess.run(
@@ -104,6 +118,11 @@ objects = subprocess.run(
     capture_output=True,
     text=True,
 )
+object_count = objects.stdout.strip() if objects.returncode == 0 else None
+if object_count in {"", "None", "null"}:
+    object_count = None
+elif object_count is not None:
+    object_count = int(object_count)
 
 data = {
     "captured_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -124,7 +143,7 @@ data = {
     ],
     "r2": {
         "bucket": bucket,
-        "object_count": objects.stdout.strip() if objects.returncode == 0 else None,
+        "object_count": object_count,
         "lifecycle": lifecycle,
     },
 }
