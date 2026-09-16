@@ -107,6 +107,7 @@ if lifecycle_raw.returncode == 0:
             "filter": rule.get("Filter"),
             "expiration_days": rule.get("Expiration", {}).get("Days"),
             "noncurrent_expiration_days": rule.get("NoncurrentVersionExpiration", {}).get("NoncurrentDays"),
+            "abort_multipart_days": rule.get("AbortIncompleteMultipartUpload", {}).get("DaysAfterInitiation"),
         }
         for rule in payload.get("Rules", [])
     ]

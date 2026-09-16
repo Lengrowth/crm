@@ -6,8 +6,8 @@
   "database_revision_after": "20260528_0007",
   "database_revision_before": "20260528_0007",
   "dependency_lock_hashes": {
-    "backend/pyproject.toml": "11fd66c363bfc5ff7784a2fc52d5e19d1eb995d82a985341fe2ff56d8e758d11",
-    "frontend/package-lock.json": "698eda71a3e2401a83504fe78d37c3549854d6d1ab4ee3a6ed412168be69f810"
+    "backend/pyproject.toml": "c991edcb575962c2dd930ec2d3298124ae3a97f5e01829f2661033f71e7c03b2",
+    "frontend/package-lock.json": "fef53a80f262772cf5239a1584d21583236c10a7eba85e992ebf395fadf20056"
   },
   "environment": "staging",
   "feature_flags": {},
