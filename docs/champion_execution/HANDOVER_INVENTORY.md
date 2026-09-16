@@ -16,7 +16,7 @@ Status: working inventory for `PLAT-P0`; no secret values belong here.
 
 - Temporary implementation hostname: `erp.lengrowth.com`; final Champion domain is not selected.
 - Control-plane product and service URLs must come from environment/site configuration.
-- AWS EC2 and Cloudflare zone are verified; the temporary application hostnames are proxied through Cloudflare to the EC2 origin. Canonical public API `lenerp-api.lengrowth.com` resolves through Cloudflare and `/health` returned HTTP `200` on 2026-09-15. The old deep hostname `api.lenerp.lengrowth.com` is retired, must not be used, and its old DNS record is pending deletion.
+- AWS EC2 and Cloudflare zone are verified; the temporary application hostnames are proxied through Cloudflare to the EC2 origin. Canonical public API `lenerp-api.lengrowth.com` resolves through Cloudflare and `/health` returned HTTP `200` on 2026-09-15 and again after retirement verification on 2026-09-16. The old deep hostname `api.lenerp.lengrowth.com` is retired, must not be used, and its old DNS record was deleted from Cloudflare on 2026-09-16.
 - Production SSH inventory completed read-only. Frappe/ERPNext source trees are dirty; no upstream source was changed by this run.
 - Reproducible staging-lane contract: `ops/staging/`; control-plane and ERP staging host/service/database/file evidence is established on the EC2 with private host-header checks.
 

@@ -23,7 +23,7 @@ Credential rotation is explicitly waived and accepted by the owner for this impl
 | Frappe/ERPNext production revisions | Base Frappe `edae775dd36b6c4ad7acab10230262bd74040765` plus local LenERP commits `bd4a4e849a018f2822827f91b27cd24fa796e691` / cleanup `a5524bdb8c4df252bf0a76bcfdcdc9715c9c389b`; base ERPNext `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3` plus local LenERP commit `0fd1992505bd680432363134063d01b0c755008c` | Intentional white-label changes committed locally; harmful functionality removals and `.bak` artifacts removed; worktrees clean |
 | Installed apps and versions | Bench `5.31.0`; site `erp.lengrowth.com`; Frappe `15.119.1`, ERPNext `15.120.0` | Recorded |
 | Production runtime | EC2 nginx, MariaDB `10.6.23`, Redis, Supervisor, Frappe workers, SaaS backend/frontend, GitHub Actions runner; env files under `/opt/saas-control/shared/env/` | Recorded without values |
-| Production routes and services | `lenerp.lengrowth.com` → Next.js `3000`; canonical `lenerp-api.lengrowth.com` → backend `8001`; retired `api.lenerp.lengrowth.com` must not be used; `erp.lengrowth.com` and `*.erp.lengrowth.com` → Frappe `8000/9000`; site files under `/home/frappe/frappe-bench/sites/erp.lengrowth.com` | Canonical hostname is proxied through Cloudflare and public `/health` returned HTTP `200` on 2026-09-15; retired DNS record pending deletion |
+| Production routes and services | `lenerp.lengrowth.com` → Next.js `3000`; canonical `lenerp-api.lengrowth.com` → backend `8001`; retired `api.lenerp.lengrowth.com` must not be used; `erp.lengrowth.com` and `*.erp.lengrowth.com` → Frappe `8000/9000`; site files under `/home/frappe/frappe-bench/sites/erp.lengrowth.com` | Canonical hostname is proxied through Cloudflare and public `/health` returned HTTP `200` on 2026-09-15 and 2026-09-16; retired DNS record deleted on 2026-09-16 |
 | Agreement/payment/commencement | Owner confirmed that signed agreement `FG-CWD-2026-0915-ONE`, commencement, and acceptance are complete; executed copy is retained outside this repository | **PASS by owner attestation** |
 | Delivery owner | Complete delivery plan identifies Fernando Guerra | Recorded from plan |
 | Acceptance authority | Complete delivery plan identifies Champion Well Drilling / Matt or written replacement in Project Start | Recorded from plan; approval not evidenced |
@@ -102,8 +102,7 @@ The Phase 0 gate remains **CONDITIONAL PASS**. Public canonical smoke, R2
 automation/retention/restore evidence, the second operator, credential waiver,
 owner decisions, and staging CI are recorded. The remaining blockers are
 independent production-host/workflow evidence, protected production promotion
-with authenticated smoke and rollback verification, and deletion of the
-retired `api.lenerp.lengrowth.com` DNS record. Agreement, commencement,
+with authenticated smoke and rollback verification. Agreement, commencement,
 and acceptance remain owner-confirmed by attestation, with the executed
 agreement retained outside this repository; the local PDF is not independent
 signature evidence.
@@ -137,7 +136,7 @@ signature evidence.
 | 23 | Test a non-`lengrowth.com` staging hostname | PASS | `staging.example.test` and `erp-staging.example.test` host-header smoke passed without DNS changes. |
 | 24 | Deploy only operationally neutral Phase 0 changes | PASS | Repository changes are safety/configuration tooling only; production promotion and public smoke evidence are recorded. |
 | 25 | Run production smoke and observation window | CONDITIONAL | Public canonical endpoints, authenticated API checks, production host state, workers, timer, pointers, source heads, and zero temporary-user cleanup count passed; exact protected production promotion remains open. |
-| 26 | Update release, blocker/risk, handover, deployment/rollback, and checklist records | CONDITIONAL | Records include the audit findings, canonical hostname retirement, GitHub protection, and corrective tooling; exact production promotion and retired DNS-record deletion remain open. |
+| 26 | Update release, blocker/risk, handover, deployment/rollback, and checklist records | CONDITIONAL | Records include the audit findings, canonical hostname retirement/deletion, GitHub protection, and corrective tooling; exact production promotion remains open. |
 
 ## Rollback instructions
 
