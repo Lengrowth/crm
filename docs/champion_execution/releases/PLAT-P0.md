@@ -23,7 +23,7 @@ Credential rotation is explicitly waived and accepted by the owner for this impl
 | Frappe/ERPNext production revisions | Base Frappe `edae775dd36b6c4ad7acab10230262bd74040765` plus local LenERP commits `bd4a4e849a018f2822827f91b27cd24fa796e691` / cleanup `a5524bdb8c4df252bf0a76bcfdcdc9715c9c389b`; base ERPNext `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3` plus local LenERP commit `0fd1992505bd680432363134063d01b0c755008c` | Intentional white-label changes committed locally; harmful functionality removals and `.bak` artifacts removed; worktrees clean |
 | Installed apps and versions | Bench `5.31.0`; site `erp.lengrowth.com`; Frappe `15.119.1`, ERPNext `15.120.0` | Recorded |
 | Production runtime | EC2 nginx, MariaDB `10.6.23`, Redis, Supervisor, Frappe workers, SaaS backend/frontend, GitHub Actions runner; env files under `/opt/saas-control/shared/env/` | Recorded without values |
-| Production routes and services | `lenerp.lengrowth.com` → Next.js `3000`; canonical `lenerp-api.lengrowth.com` → backend `8001`; legacy `api.lenerp.lengrowth.com` remains an alias; `erp.lengrowth.com` and `*.erp.lengrowth.com` → Frappe `8000/9000`; site files under `/home/frappe/frappe-bench/sites/erp.lengrowth.com` | Canonical hostname is proxied through Cloudflare and public `/health` returned HTTP `200` on 2026-09-15 |
+| Production routes and services | `lenerp.lengrowth.com` → Next.js `3000`; canonical `lenerp-api.lengrowth.com` → backend `8001`; retired `api.lenerp.lengrowth.com` must not be used; `erp.lengrowth.com` and `*.erp.lengrowth.com` → Frappe `8000/9000`; site files under `/home/frappe/frappe-bench/sites/erp.lengrowth.com` | Canonical hostname is proxied through Cloudflare and public `/health` returned HTTP `200` on 2026-09-15; retired DNS record pending deletion |
 | Agreement/payment/commencement | Owner confirmed that signed agreement `FG-CWD-2026-0915-ONE`, commencement, and acceptance are complete; executed copy is retained outside this repository | **PASS by owner attestation** |
 | Delivery owner | Complete delivery plan identifies Fernando Guerra | Recorded from plan |
 | Acceptance authority | Complete delivery plan identifies Champion Well Drilling / Matt or written replacement in Project Start | Recorded from plan; approval not evidenced |
@@ -72,7 +72,7 @@ The exact commands and results are maintained below:
 - Full backend suite: **PASS** — `backend/.venv/Scripts/python.exe -m pytest backend/tests -q`; 36 passed. The integration test now uses a disposable authenticated tenant/database, and provisioning retry/idempotency paths pass.
 - `git diff --check`: **PASS** after removing the reported trailing whitespace.
 - Production baseline: **CONDITIONAL** — read-only SSH verification on 2026-09-16 confirmed immutable `current` `265a9047bb7b4d4cc034be3501b61c0f314cf83f`, `previous` `1c3ea4d570e08443a8100acb1ecdf506c30a4ca5`, active backend/frontend services, enabled/active R2 timer, next timer run, all Supervisor workers running, Frappe `a5524bdb8c4df252bf0a76bcfdcdc9715c9c389b`, ERPNext `0fd1992505bd680432363134063d01b0c755008c`, and local health `200`. The release manifest environment remains `staging` by design for a staging-built candidate; no production workflow run is independently evidenced.
-- Production smoke rerun: **PUBLIC/AUTHENTICATED API EVIDENCE** — the reusable smoke command passed root `200`, backend health `200`, ERP runtime `200`, release/app inventory, unauthenticated denial `401`, authenticated `/auth/me`, and authenticated `/organizations` using a temporary account. A read-only production query now confirms zero users matching the temporary smoke prefix; the production workflow, rollback proof, and legacy TLS requirement remain open.
+- Production smoke rerun: **PUBLIC/AUTHENTICATED API EVIDENCE** — the reusable smoke command passed root `200`, backend health `200`, ERP runtime `200`, release/app inventory, unauthenticated denial `401`, authenticated `/auth/me`, and authenticated `/organizations` using a temporary account. A read-only production query now confirms zero users matching the temporary smoke prefix; the exact protected production workflow and rollback proof remain open. The former deep API hostname is retired rather than being kept as a TLS compatibility route.
 - Actual control-plane staging CI: **PASS** — GitHub Actions runs `34968621678` and `34968811226` proved authenticated deployment/idempotency for the earlier candidate; handover candidate `265a9047bb7b4d4cc034be3501b61c0f314cf83f` passed in run `34971552445`, and the documentation/ownership follow-up passed in run `35077096785`. The verified post-run current/previous pointers were `265a9047bb7b4d4cc034be3501b61c0f314cf83f` / `b6e96b628513e7033949d711fd845f5a4fe4125b`.
 - Actual ERP staging: **PASS for the disposable lane** — `/opt/frappe-staging-bench`, site `erp-staging.example.test`, Frappe `15.119.1` at `edae775dd36b6c4ad7acab10230262bd74040765`, ERPNext `15.120.0` at `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`, `lenerp_core` installed; web/login/API, dedicated Redis ports `14100/14101`, web port `28000`, workers, scheduler, and install/uninstall/reinstall cycle passed via `scripts/release/erp_staging_smoke.sh`.
 
@@ -102,11 +102,11 @@ The Phase 0 gate remains **CONDITIONAL PASS**. Public canonical smoke, R2
 automation/retention/restore evidence, the second operator, credential waiver,
 owner decisions, and staging CI are recorded. The remaining blockers are
 independent production-host/workflow evidence, protected production promotion
-with authenticated smoke and rollback verification, and the required legacy
-`api.lenerp.lengrowth.com/health` TLS route. Agreement, commencement, and
-acceptance remain owner-confirmed by attestation, with the executed agreement
-retained outside this repository; the local PDF is not independent signature
-evidence.
+with authenticated smoke and rollback verification, and deletion of the
+retired `api.lenerp.lengrowth.com` DNS record. Agreement, commencement,
+and acceptance remain owner-confirmed by attestation, with the executed
+agreement retained outside this repository; the local PDF is not independent
+signature evidence.
 
 ## Phase 0 checklist status
 
@@ -132,12 +132,12 @@ evidence.
 | 18 | Add server-controlled feature flags | PASS | Settings-backed flag map and runtime metadata are implemented and tested. |
 | 19 | Make deployment/provisioning idempotent | PASS | Provisioning retry/idempotency tests and immutable-slot idempotency rehearsal pass. |
 | 20 | Prevent failed candidates from receiving traffic and restore after failed health | PASS | Preflight gate, atomic pointers, failed-health rollback, first-deploy pointer removal, and pointer-isolation rehearsal pass. |
-| 21 | Configure staging CI and separate explicit production promotion | CONDITIONAL | Staging CI passes; no independently verifiable production workflow run was found and the GitHub `production` environment/branch protection are not evidenced. |
+| 21 | Configure staging CI and separate explicit production promotion | CONDITIONAL | Staging CI passes; GitHub `production` environment/reviewer protection and `main` branch protection are configured, but no independently verifiable exact-candidate production workflow run is recorded. |
 | 22 | Make hostnames/configuration independent and document final-domain cutover | PASS | Environment-driven URLs/cookies/provider endpoint and domain cutover checklist added; external validation remains open. |
 | 23 | Test a non-`lengrowth.com` staging hostname | PASS | `staging.example.test` and `erp-staging.example.test` host-header smoke passed without DNS changes. |
 | 24 | Deploy only operationally neutral Phase 0 changes | PASS | Repository changes are safety/configuration tooling only; production promotion and public smoke evidence are recorded. |
-| 25 | Run production smoke and observation window | CONDITIONAL | Public canonical endpoints, authenticated API checks, production host state, workers, timer, pointers, source heads, and zero temporary-user cleanup count passed; legacy TLS and a protected production workflow run remain open. |
-| 26 | Update release, blocker/risk, handover, deployment/rollback, and checklist records | CONDITIONAL | Records now include the audit findings and corrective tooling; final production evidence and legacy TLS resolution remain open. |
+| 25 | Run production smoke and observation window | CONDITIONAL | Public canonical endpoints, authenticated API checks, production host state, workers, timer, pointers, source heads, and zero temporary-user cleanup count passed; exact protected production promotion remains open. |
+| 26 | Update release, blocker/risk, handover, deployment/rollback, and checklist records | CONDITIONAL | Records include the audit findings, canonical hostname retirement, GitHub protection, and corrective tooling; exact production promotion and retired DNS-record deletion remain open. |
 
 ## Rollback instructions
 
@@ -145,4 +145,4 @@ For staging, stop promotion if preflight fails. If post-switch smoke fails, `dep
 
 ## Recommended review focus
 
-Review the staging host paths and service units against the scripts, verify that the protected production environment is configured, then complete the production as-built/backup/restore evidence. Confirm the credential exception deadline and secret-store owner before any Champion data handling.
+Review the staging host paths and service units against the scripts, verify that the protected production environment is configured, then complete the production as-built/backup/restore evidence. Credential rotation is explicitly waived by the owner for this phase; do not rotate or invalidate the existing credential without renewed authorization.
