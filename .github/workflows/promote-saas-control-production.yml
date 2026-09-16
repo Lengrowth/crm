@@ -47,6 +47,28 @@ jobs:
       - name: Make release scripts executable
         run: chmod +x scripts/release/*.sh scripts/deploy/*.sh
 
+      - name: Materialize the exact tested staging candidate
+        env:
+          RELEASE_ID: ${{ inputs.release_id }}
+        run: ./scripts/release/materialize_production_candidate.sh
+
+      - name: Prepare disposable authenticated smoke identity
+        env:
+          SMOKE_EMAIL: phase0-production-smoke-${{ github.run_id }}@example.test
+          SMOKE_ORGANIZATION: Phase 0 Production Smoke ${{ github.run_id }}
+          TOKEN_FILE: /run/saas-control/smoke/auth-token
+        run: |
+          sudo install -d -o ubuntu -g ubuntu -m 700 /run/saas-control/smoke
+          set -a
+          . /opt/saas-control/shared/env/backend.env
+          set +a
+          PYTHONPATH=/opt/saas-control/current/backend \
+            /opt/saas-control/shared/backend-venv/bin/python \
+            scripts/release/production_smoke_auth.py prepare \
+            --email "$SMOKE_EMAIL" \
+            --organization "$SMOKE_ORGANIZATION" \
+            --token-file "$TOKEN_FILE"
+
       - name: Promote only the requested tested candidate
         env:
           RELEASE_ID: ${{ inputs.release_id }}
@@ -55,4 +77,23 @@ jobs:
           OFFHOST_BACKUP_VERIFIED: ${{ inputs.offhost_backup_verified }}
           REQUIRE_AUTH_SMOKE: "true"
           AUTH_TOKEN_FILE: /run/saas-control/smoke/auth-token
+          PRODUCTION_BASE_URL: https://lenerp.lengrowth.com
+          PRODUCTION_BACKEND_URL: https://lenerp-api.lengrowth.com
         run: ./scripts/deploy/promote_saas_control.sh
+
+      - name: Remove disposable authenticated smoke identity
+        if: always()
+        env:
+          SMOKE_EMAIL: phase0-production-smoke-${{ github.run_id }}@example.test
+          SMOKE_ORGANIZATION: Phase 0 Production Smoke ${{ github.run_id }}
+          TOKEN_FILE: /run/saas-control/smoke/auth-token
+        run: |
+          set -a
+          . /opt/saas-control/shared/env/backend.env
+          set +a
+          PYTHONPATH=/opt/saas-control/current/backend \
+            /opt/saas-control/shared/backend-venv/bin/python \
+            scripts/release/production_smoke_auth.py cleanup \
+            --email "$SMOKE_EMAIL" \
+            --organization "$SMOKE_ORGANIZATION"
+          rm -f -- "$TOKEN_FILE"

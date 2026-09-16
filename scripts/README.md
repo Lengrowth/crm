@@ -21,4 +21,6 @@ Release safety scripts are intentionally split by responsibility:
 - `release/verify_upstream_clean.sh` fails on dirty or unpinned upstream Frappe/ERPNext trees, including when an expected SHA is missing.
 - `release/secret_scan.py` reports only paths and never matching credential content.
 - `deploy/deploy_saas_control.sh` is staging-only, performs automatic code-pointer rollback, and records a per-candidate successful staging-smoke marker.
+- `release/materialize_production_candidate.sh` copies only the exact, smoke-marked staging candidate into the production release root before promotion; it refuses incomplete or mismatched candidates.
+- `release/production_smoke_auth.py` creates and removes the uniquely named, disposable authenticated smoke identity used by the protected production workflow; it never prints token values.
 - `deploy/promote_saas_control.sh` is the separate explicit production promotion path and rejects candidates without that exact staging-smoke marker.
