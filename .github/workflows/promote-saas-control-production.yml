@@ -102,7 +102,8 @@ jobs:
         if: always()
         run: |
           chmod +x scripts/release/capture_production_readback.sh
-          scripts/release/capture_production_readback.sh "$GITHUB_WORKSPACE/production-readback.json"
+          sudo scripts/release/capture_production_readback.sh "$GITHUB_WORKSPACE/production-readback.json"
+          sudo chown "$(id -u):$(id -g)" "$GITHUB_WORKSPACE/production-readback.json"
 
       - name: Upload non-secret production readback
         if: always()
