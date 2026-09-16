@@ -35,10 +35,10 @@ production promotion workflow.
 - Local `lengrowth` remote: `https://github.com/Lengrowth/crm.git`
 - Branch: `main`; pushes to `main` deploy the exact commit to staging only.
 - Production promotion is separate and protected: `.github/workflows/promote-saas-control-production.yml` and `scripts/deploy/promote_saas_control.sh`.
-- Last verified production/staging candidate: `31f6d90d7f131e5beb9f2c976e95b391abebc200`.
-- Production promotion run: GitHub Actions `35091870822` (protected,
+- Last verified production/staging candidate: `7e30e40b2e601567419c97debee7e6d43fc89f1c`.
+- Production promotion run: GitHub Actions `35108238557` (protected,
   authenticated smoke, cleanup, and non-secret readback passed).
-- Final main staging run: GitHub Actions `35091711932`.
+- Final main staging run: GitHub Actions `35108031809`.
 
 Useful local checks:
 
@@ -242,8 +242,8 @@ automated run on 2026-09-16 uploaded and byte-hash verified six objects under
    `728de29176ddb9c05c78d734318406d57f10f205`.
 5. **Production release rollback:** the repository contains immutable-pointer
    tooling and disposable rollback rehearsal evidence. Protected production
-   workflow run `35091870822` promoted exact candidate
-   `31f6d90d7f131e5beb9f2c976e95b391abebc200`; its uploaded non-secret
+   workflow run `35108238557` promoted exact candidate
+   `7e30e40b2e601567419c97debee7e6d43fc89f1c`; its uploaded non-secret
    readback confirmed the production `current`/`previous` pointers, services,
    R2 timer, source heads, R2 lifecycle, cleanup counts, and local health. An
    earlier readiness-race failure rolled back cleanly; the final promotion
@@ -256,8 +256,8 @@ automated run on 2026-09-16 uploaded and byte-hash verified six objects under
 7. **Production workflow protection:** GitHub has a protected `production`
    environment with `guerra2fernando` as required reviewer, and `main`
    requires the staging deployment check with force pushes/deletions disabled.
-   Exact candidate `31f6d90d7f131e5beb9f2c976e95b391abebc200` passed protected
-   production workflow `35091870822`, including authenticated smoke,
+   Exact candidate `7e30e40b2e601567419c97debee7e6d43fc89f1c` passed protected
+   production workflow `35108238557`, including authenticated smoke,
    temporary-identity cleanup, and non-secret production readback.
 
 Primary records:
