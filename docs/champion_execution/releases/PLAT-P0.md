@@ -1,11 +1,11 @@
 # PLAT-P0 — Phase 0 Release Record
 
-Status: **CONDITIONAL PASS — repository and staging foundation complete; production gates remain open**
+Status: **PASS — Phase 0 release-safety foundation and protected production promotion complete**
 Release identity: `PLAT-P0`  
-Record date: 2026-09-15  
+Record date: 2026-09-16
 Operator: Codex, working with the delivery owner  
 Approver: Matt Newcomer — owner-confirmed acceptance; executed agreement retained outside this repository
-Production promotion: **Recorded historically, not independently verified in the current audit**
+Production promotion: **PASS — protected workflow `35086867902` promoted exact candidate `4813607eccf61e06cbeb79b24c02d637f9f7b915` with authenticated smoke and cleanup**
 
 ## Scope and safety decision
 
@@ -17,7 +17,7 @@ Credential rotation is explicitly waived and accepted by the owner for this impl
 
 | Item | Evidence | Result |
 |---|---|---|
-| CRM repository | Local `origin` is `https://github.com/BuildGrowthNow/crm.git`; requested GitHub destination is `https://github.com/Lengrowth/crm`; verified handover candidate `265a9047bb7b4d4cc034be3501b61c0f314cf83f` | Recorded; destination alignment remains a repository-ownership action |
+| CRM repository | Local `origin` is `https://github.com/BuildGrowthNow/crm.git`; requested GitHub destination is `https://github.com/Lengrowth/crm`; verified handover candidate `4813607eccf61e06cbeb79b24c02d637f9f7b915` | Recorded; exact candidate passed protected production promotion |
 | Previous CRM source tip | `bab5568...` in local history | Recorded as source history only; not claimed as a production rollback target |
 | Champion forecast repository | `https://github.com/guerra2fernando/champion-forecast.git`; local branch is ahead of its remote and contains unrelated dirty changes | Read-only inventory only; preserved |
 | Frappe/ERPNext production revisions | Base Frappe `edae775dd36b6c4ad7acab10230262bd74040765` plus local LenERP commits `bd4a4e849a018f2822827f91b27cd24fa796e691` / cleanup `a5524bdb8c4df252bf0a76bcfdcdc9715c9c389b`; base ERPNext `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3` plus local LenERP commit `0fd1992505bd680432363134063d01b0c755008c` | Intentional white-label changes committed locally; harmful functionality removals and `.bak` artifacts removed; worktrees clean |
@@ -71,9 +71,9 @@ The exact commands and results are maintained below:
 - Disposable control-plane backup/restore rehearsal: **PASS** — `backend/.venv/Scripts/python.exe scripts/release/rehearse_backup_restore.py --self-test`; a restored control-plane database was upgraded from the first migration to head, its synthetic record was preserved, and site configuration, public files, and private files were restored and verified.
 - Full backend suite: **PASS** — `backend/.venv/Scripts/python.exe -m pytest backend/tests -q`; 36 passed. The integration test now uses a disposable authenticated tenant/database, and provisioning retry/idempotency paths pass.
 - `git diff --check`: **PASS** after removing the reported trailing whitespace.
-- Production baseline: **CONDITIONAL** — read-only SSH verification on 2026-09-16 confirmed immutable `current` `265a9047bb7b4d4cc034be3501b61c0f314cf83f`, `previous` `1c3ea4d570e08443a8100acb1ecdf506c30a4ca5`, active backend/frontend services, enabled/active R2 timer, next timer run, all Supervisor workers running, Frappe `a5524bdb8c4df252bf0a76bcfdcdc9715c9c389b`, ERPNext `0fd1992505bd680432363134063d01b0c755008c`, and local health `200`. The release manifest environment remains `staging` by design for a staging-built candidate; no production workflow run is independently evidenced.
-- Production smoke rerun: **PUBLIC/AUTHENTICATED API EVIDENCE** — the reusable smoke command passed root `200`, backend health `200`, ERP runtime `200`, release/app inventory, unauthenticated denial `401`, authenticated `/auth/me`, and authenticated `/organizations` using a temporary account. A read-only production query now confirms zero users matching the temporary smoke prefix; the exact protected production workflow and rollback proof remain open. The former deep API hostname is retired rather than being kept as a TLS compatibility route.
-- Actual control-plane staging CI: **PASS** — GitHub Actions runs `34968621678` and `34968811226` proved authenticated deployment/idempotency for the earlier candidate; handover candidate `265a9047bb7b4d4cc034be3501b61c0f314cf83f` passed in run `34971552445`, and the documentation/ownership follow-up passed in run `35077096785`. The verified post-run current/previous pointers were `265a9047bb7b4d4cc034be3501b61c0f314cf83f` / `b6e96b628513e7033949d711fd845f5a4fe4125b`.
+- Production baseline: **PASS** — final read-only SSH verification on 2026-09-16 confirmed immutable `current` `4813607eccf61e06cbeb79b24c02d637f9f7b915`, `previous` `265a9047bb7b4d4cc034be3501b61c0f314cf83f`, active backend/frontend/nginx services, enabled/active R2 timer, Frappe `a5524bdb8c4df252bf0a76bcfdcdc9715c9c389b`, ERPNext `0fd1992505bd680432363134063d01b0c755008c`, local health `200`, and zero temporary smoke users, organizations, or active sessions. The release manifest environment remains `staging` by design for a staging-built candidate.
+- Production smoke and promotion: **PASS** — protected workflow `35086867902` materialized the exact staging-tested candidate, passed public root `200`, canonical API health `200`, ERP runtime `200`, release/app inventory, unauthenticated denial `401`, authenticated `/auth/me`, and authenticated `/organizations`, then removed the temporary token/user/organization/session. The retired hostname is unsupported and deleted.
+- Actual control-plane staging CI: **PASS** — the final main staging run `35086724598` passed for candidate `4813607eccf61e06cbeb79b24c02d637f9f7b915`; earlier authenticated deployment/idempotency runs also passed. The final production promotion used that exact staging-tested candidate.
 - Actual ERP staging: **PASS for the disposable lane** — `/opt/frappe-staging-bench`, site `erp-staging.example.test`, Frappe `15.119.1` at `edae775dd36b6c4ad7acab10230262bd74040765`, ERPNext `15.120.0` at `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`, `lenerp_core` installed; web/login/API, dedicated Redis ports `14100/14101`, web port `28000`, workers, scheduler, and install/uninstall/reinstall cycle passed via `scripts/release/erp_staging_smoke.sh`.
 
 ## Backup and recovery evidence
@@ -88,24 +88,23 @@ Code rollback and data recovery remain separate: the release scripts switch immu
 
 ## Release identifiers
 
-- Current CRM handover source identifier: `265a9047bb7b4d4cc034be3501b61c0f314cf83f`.
+- Current CRM handover source identifier: `4813607eccf61e06cbeb79b24c02d637f9f7b915`.
 - Previous CRM source identifier in local history: `bab5568...`; exact full SHA must be recorded from the final candidate manifest before use as a rollback target.
-- Current production control-plane source identifier: `265a9047bb7b4d4cc034be3501b61c0f314cf83f` in immutable `/opt/saas-control/current`; production Alembic revision is `20260528_0007`.
+- Current production control-plane source identifier: `4813607eccf61e06cbeb79b24c02d637f9f7b915` in immutable `/opt/saas-control/current`; production Alembic revision is `20260528_0007`.
 - Current production ERP source identifiers: Frappe `a5524bdb8c4df252bf0a76bcfdcdc9715c9c389b`; ERPNext `0fd1992505bd680432363134063d01b0c755008c`; pinned upstream bases remain Frappe `edae775dd36b6c4ad7acab10230262bd74040765` and ERPNext `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`.
-- Previous production release identifier: `1c3ea4d570e08443a8100acb1ecdf506c30a4ca5` in immutable `/opt/saas-control/previous`.
+- Previous production release identifier: `265a9047bb7b4d4cc034be3501b61c0f314cf83f` in immutable `/opt/saas-control/previous`.
 - `lenerp_core` commit `728de29176ddb9c05c78d734318406d57f10f205` is published to private `https://github.com/Len-OS/lenerp_core.git`; install/migrate/list/uninstall/reinstall proof passed on the disposable staging site.
-- Current staging control-plane release: `265a9047bb7b4d4cc034be3501b61c0f314cf83f`; previous staging release: `b6e96b628513e7033949d711fd845f5a4fe4125b`.
+- Current staging control-plane release: `4813607eccf61e06cbeb79b24c02d637f9f7b915`; previous staging release: `0b3baa939419bf03bfe6820bbf4ed49de055cbcb`.
 
 ## Gate status
 
-The Phase 0 gate remains **CONDITIONAL PASS**. Public canonical smoke, R2
-automation/retention/restore evidence, the second operator, credential waiver,
-owner decisions, and staging CI are recorded. The remaining blockers are
-independent production-host/workflow evidence, protected production promotion
-with authenticated smoke and rollback verification. Agreement, commencement,
-and acceptance remain owner-confirmed by attestation, with the executed
-agreement retained outside this repository; the local PDF is not independent
-signature evidence.
+The Phase 0 gate is **PASS**. Public canonical smoke, protected production
+promotion with authenticated smoke and cleanup, immutable current/previous
+release pointers, R2 automation/retention/restore evidence, the second
+operator, credential waiver, owner decisions, and staging CI are recorded.
+Agreement, commencement, and acceptance are owner-confirmed by attestation,
+with the executed agreement retained outside this repository; the local PDF is
+not independent signature evidence.
 
 ## Phase 0 checklist status
 
@@ -125,18 +124,18 @@ signature evidence.
 | 12 | Create isolated staging lane | PASS for staging | EC2 evidence shows separate control-plane and ERP paths, databases, files, ports, Redis instances, services/workers, and non-production host-header policy. |
 | 13 | Implement immutable release directories/slots | PASS | Candidate builder, current/previous pointers, and slot rehearsal are implemented and tested. |
 | 14 | Build frontend/backend/custom-app artifacts before switching traffic | PASS | Candidate builder and preflight enforce this ordering; exact host execution remains pending. |
-| 15 | Keep current/previous exact release identifiers | PASS for control plane | Read-only SSH verification confirmed production current `265a9047bb7b4d4cc034be3501b61c0f314cf83f` and previous `1c3ea4d570e08443a8100acb1ecdf506c30a4ca5`; services use current and local-origin health passed. |
-| 16 | Add preflight and post-deploy smoke coverage | CONDITIONAL | Staging/authenticated local smoke and public production API smoke pass; production workflow enforcement and host-side authenticated smoke evidence remain open. |
+| 15 | Keep current/previous exact release identifiers | PASS | Read-only SSH verification confirmed production current `4813607eccf61e06cbeb79b24c02d637f9f7b915` and previous `265a9047bb7b4d4cc034be3501b61c0f314cf83f`; services use current and local-origin health passed. |
+| 16 | Add preflight and post-deploy smoke coverage | PASS | Protected production workflow enforced readiness, public smoke, authenticated checks, cleanup, and rollback handling; final run `35086867902` passed. |
 | 17 | Add non-secret release manifest | PASS | Manifest contains commits, versions, build time, hashes, revisions, flags, environment, and operator. |
 | 18 | Add server-controlled feature flags | PASS | Settings-backed flag map and runtime metadata are implemented and tested. |
 | 19 | Make deployment/provisioning idempotent | PASS | Provisioning retry/idempotency tests and immutable-slot idempotency rehearsal pass. |
 | 20 | Prevent failed candidates from receiving traffic and restore after failed health | PASS | Preflight gate, atomic pointers, failed-health rollback, first-deploy pointer removal, and pointer-isolation rehearsal pass. |
-| 21 | Configure staging CI and separate explicit production promotion | CONDITIONAL | Staging CI passes; GitHub `production` environment/reviewer protection and `main` branch protection are configured, but no independently verifiable exact-candidate production workflow run is recorded. |
+| 21 | Configure staging CI and separate explicit production promotion | PASS | Staging CI passes; GitHub `production` environment/reviewer protection and `main` branch protection are configured; exact candidate passed protected run `35086867902`. |
 | 22 | Make hostnames/configuration independent and document final-domain cutover | PASS | Environment-driven URLs/cookies/provider endpoint and domain cutover checklist added; external validation remains open. |
 | 23 | Test a non-`lengrowth.com` staging hostname | PASS | `staging.example.test` and `erp-staging.example.test` host-header smoke passed without DNS changes. |
 | 24 | Deploy only operationally neutral Phase 0 changes | PASS | Repository changes are safety/configuration tooling only; production promotion and public smoke evidence are recorded. |
-| 25 | Run production smoke and observation window | CONDITIONAL | Public canonical endpoints, authenticated API checks, production host state, workers, timer, pointers, source heads, and zero temporary-user cleanup count passed; exact protected production promotion remains open. |
-| 26 | Update release, blocker/risk, handover, deployment/rollback, and checklist records | CONDITIONAL | Records include the audit findings, canonical hostname retirement/deletion, GitHub protection, and corrective tooling; exact production promotion remains open. |
+| 25 | Run production smoke and observation window | PASS | Public canonical endpoints, authenticated API checks, production host state, workers, timer, pointers, source heads, and zero temporary-user cleanup count passed in protected run `35086867902`. |
+| 26 | Update release, blocker/risk, handover, deployment/rollback, and checklist records | PASS | Records include the completed production promotion, canonical hostname retirement/deletion, GitHub protection, R2 automation, owner waiver, and corrective tooling. |
 
 ## Rollback instructions
 
@@ -144,4 +143,4 @@ For staging, stop promotion if preflight fails. If post-switch smoke fails, `dep
 
 ## Recommended review focus
 
-Review the staging host paths and service units against the scripts, verify that the protected production environment is configured, then complete the production as-built/backup/restore evidence. Credential rotation is explicitly waived by the owner for this phase; do not rotate or invalidate the existing credential without renewed authorization.
+Keep future changes on the protected staging-first path. Credential rotation is explicitly waived by the owner for this phase; do not rotate or invalidate the existing credential without renewed authorization.
