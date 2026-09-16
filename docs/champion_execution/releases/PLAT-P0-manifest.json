@@ -1,6 +1,6 @@
 {
-  "build_time_utc": "2026-09-15T16:22:56.135179+00:00",
-  "control_plane_commit": "265a9047bb7b4d4cc034be3501b61c0f314cf83f",
+  "build_time_utc": "2026-09-16T10:47:25+00:00",
+  "control_plane_commit": "4813607eccf61e06cbeb79b24c02d637f9f7b915",
   "custom_app_commit": "728de29176ddb9c05c78d734318406d57f10f205",
   "custom_app_version": "0.1.0",
   "database_revision_after": "20260528_0007",

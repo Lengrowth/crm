@@ -3,14 +3,12 @@
 ## Phase 0 handover — read this first
 
 This repository has a verified Phase 0 release-safety foundation. The current
-result is **CONDITIONAL PASS**: the repository safety foundation, staging
-lane, public endpoint smoke, R2 automation, and owner decisions are recorded,
-but production promotion and rollback still require independently verifiable
-evidence. Credential rotation is an accepted owner waiver for this phase. The
-canonical API is `lenerp-api.lengrowth.com`; the former
-`api.lenerp.lengrowth.com` hostname is retired and must not be used. Do not
-describe Phase 0 as a final production PASS until the protected production
-workflow and rollback path are verified.
+result is **PASS**: the repository safety foundation, staging lane, public
+endpoint smoke, R2 automation, owner decisions, protected production
+promotion, authenticated smoke, and rollback evidence are recorded. Credential
+rotation is an accepted owner waiver for this phase. The canonical API is
+`lenerp-api.lengrowth.com`; the former `api.lenerp.lengrowth.com` hostname is
+retired and must not be used.
 
 Never print, paste, commit, or place credential values in logs, documentation,
 patches, shell history, or chat. Retrieve secrets only from the approved secret
@@ -25,8 +23,9 @@ uncommitted `frontend/tsconfig.tsbuildinfo` change. Do not run `git reset
 Do not edit the production Frappe or ERPNext worktrees. They contain preserved
 tracked and untracked drift and have no configured upstream remote. Never clean
 or reset them to make a check pass. Do not perform production migrations,
-database/schema changes, public DNS changes, or production pointer switches as
-part of Phase 0.
+database/schema changes, or public DNS changes outside an explicitly approved
+runbook. Production pointer switches are allowed only through the protected
+production promotion workflow.
 
 ## Repository and release state
 
@@ -36,10 +35,10 @@ part of Phase 0.
 - Local `lengrowth` remote: `https://github.com/Lengrowth/crm.git`
 - Branch: `main`; pushes to `main` deploy the exact commit to staging only.
 - Production promotion is separate and protected: `.github/workflows/promote-saas-control-production.yml` and `scripts/deploy/promote_saas_control.sh`.
-- Last verified staging candidate: `265a9047bb7b4d4cc034be3501b61c0f314cf83f`.
-- Verified previous staging candidate: `b6e96b628513e7033949d711fd845f5a4fe4125b`.
-- Successful exact-candidate runs: GitHub Actions `34970823140` (latest),
-  `34968621678`, and repeat/idempotency run `34968811226`.
+- Last verified production/staging candidate: `4813607eccf61e06cbeb79b24c02d637f9f7b915`.
+- Production promotion run: GitHub Actions `35086867902` (protected,
+  authenticated smoke and cleanup passed).
+- Final main staging run: GitHub Actions `35086724598`.
 
 Useful local checks:
 
@@ -242,21 +241,23 @@ automated run on 2026-09-16 uploaded and byte-hash verified six objects under
    `https://github.com/Len-OS/lenerp_core.git`, with clean `main` at
    `728de29176ddb9c05c78d734318406d57f10f205`.
 5. **Production release rollback:** the repository contains immutable-pointer
-   tooling and disposable rollback rehearsal evidence. Read-only SSH
-   verification on 2026-09-16 confirmed the recorded production
-   `current`/`previous` pointers, services, workers, R2 timer, source heads,
-   and local health. Production promotion must still use the protected
-   workflow and fail-closed rollback path.
+   tooling and disposable rollback rehearsal evidence. Protected production
+   workflow run `35086867902` promoted exact candidate
+   `4813607eccf61e06cbeb79b24c02d637f9f7b915`; final read-only SSH verification
+   on 2026-09-16 confirmed the production `current`/`previous` pointers,
+   services, workers, R2 timer, source heads, and local health. An earlier
+   readiness-race failure rolled back cleanly; the final promotion passed.
 6. **Acceptance records:** owner attestation records agreement
    `FG-CWD-2026-0915-ONE`, commencement, and acceptance as complete, with the
    executed copy retained outside this repository. The local PDF is not
    independent signature evidence; do not describe this as independently
    verified acceptance.
-7. **Production workflow protection:** GitHub now has a protected
-   `production` environment with `guerra2fernando` as required reviewer, and
-   `main` requires the staging deployment check with force pushes/deletions
-   disabled. No exact-candidate production promotion run has yet been
-   independently recorded; complete that run before calling Phase 0 PASS.
+7. **Production workflow protection:** GitHub has a protected `production`
+   environment with `guerra2fernando` as required reviewer, and `main`
+   requires the staging deployment check with force pushes/deletions disabled.
+   Exact candidate `4813607eccf61e06cbeb79b24c02d637f9f7b915` passed protected
+   production workflow `35086867902`, including authenticated smoke and
+   temporary-identity cleanup.
 
 Primary records:
 
