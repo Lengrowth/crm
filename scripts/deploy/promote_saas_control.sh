@@ -22,7 +22,9 @@ REQUIRE_AUTH_SMOKE="${REQUIRE_AUTH_SMOKE:-true}"
 CANDIDATE_DIR="$RELEASE_ROOT/$RELEASE_ID"
 
 atomic_link() {
-  local target="$1" link="$2" tmp="${link}.next.$$"
+  local target="$1"
+  local link="$2"
+  local tmp="${link}.next.$$"
   ln -s "$target" "$tmp"
   mv -Tf "$tmp" "$link"
 }
