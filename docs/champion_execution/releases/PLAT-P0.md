@@ -1,6 +1,6 @@
 # PLAT-P0 — Phase 0 Release Record
 
-Status: **CONDITIONAL PASS — repository safety foundation implemented; operational gate remains open**  
+Status: **PASS — Phase 0 repository, production, backup, ownership, and smoke gates completed**
 Release identity: `PLAT-P0`  
 Record date: 2026-09-15  
 Operator: Codex, working with the delivery owner  
@@ -71,8 +71,8 @@ The exact commands and results are maintained below:
 - Disposable control-plane backup/restore rehearsal: **PASS** — `backend/.venv/Scripts/python.exe scripts/release/rehearse_backup_restore.py --self-test`; a restored control-plane database was upgraded from the first migration to head, its synthetic record was preserved, and site configuration, public files, and private files were restored and verified.
 - Full backend suite: **PASS** — `backend/.venv/Scripts/python.exe -m pytest backend/tests -q`; 36 passed. The integration test now uses a disposable authenticated tenant/database, and provisioning retry/idempotency paths pass.
 - `git diff --check`: **PASS** after removing the reported trailing whitespace.
-- Production baseline: **CONDITIONAL** — after promotion, immutable `current`/`previous` pointers were active; local backend health/database/live-ERP runtime passed, local frontend returned `200`, unauthenticated API denial returned `401`, public root/login/API/ERP runtime checks passed, the production supervisor workers were running, and public `https://lenerp-api.lengrowth.com/health` returned `200` through Cloudflare. Only the authenticated production observation remains open.
-- Production smoke rerun: **PASS except authenticated assertion** — `BASE_URL=https://lenerp.lengrowth.com BACKEND_URL=https://lenerp-api.lengrowth.com EXPECTED_RELEASE=265a9047bb7b4d4cc034be3501b61c0f314cf83f PYTHON_BIN=py.exe REQUIRE_AUTH_SMOKE=false bash scripts/release/smoke.sh` passed root `200`, backend health `200`, ERP runtime `200`, release/app inventory, and unauthenticated denial `401`; authenticated checks were skipped because no `AUTH_TOKEN_FILE` is available. The exact handoff is recorded in `CLAUDE.md`.
+- Production baseline: **PASS** — after promotion, immutable `current`/`previous` pointers were active; local backend health/database/live-ERP runtime passed, local frontend returned `200`, unauthenticated API denial returned `401`, public root/login/API/ERP runtime checks passed, the production supervisor workers were running, and public `https://lenerp-api.lengrowth.com/health` returned `200` through Cloudflare.
+- Production smoke rerun: **PASS** — `BASE_URL=https://lenerp.lengrowth.com BACKEND_URL=https://lenerp-api.lengrowth.com EXPECTED_RELEASE=265a9047bb7b4d4cc034be3501b61c0f314cf83f PYTHON_BIN=py.exe REQUIRE_AUTH_SMOKE=true bash scripts/release/smoke.sh` passed root `200`, backend health `200`, ERP runtime `200`, release/app inventory, unauthenticated denial `401`, authenticated `/auth/me`, and authenticated `/organizations`. A uniquely named temporary account was deleted afterward; exact user, organization, membership, session, and token cleanup verified zero matching rows.
 - Actual control-plane staging CI: **PASS** — GitHub Actions runs `34968621678` and `34968811226` proved authenticated deployment/idempotency for the earlier candidate; handover candidate `265a9047bb7b4d4cc034be3501b61c0f314cf83f` passed in run `34971552445`, and the documentation/ownership follow-up passed in run `35077096785`. The verified post-run current/previous pointers were `265a9047bb7b4d4cc034be3501b61c0f314cf83f` / `b6e96b628513e7033949d711fd845f5a4fe4125b`.
 - Actual ERP staging: **PASS for the disposable lane** — `/opt/frappe-staging-bench`, site `erp-staging.example.test`, Frappe `15.119.1` at `edae775dd36b6c4ad7acab10230262bd74040765`, ERPNext `15.120.0` at `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`, `lenerp_core` installed; web/login/API, dedicated Redis ports `14100/14101`, web port `28000`, workers, scheduler, and install/uninstall/reinstall cycle passed via `scripts/release/erp_staging_smoke.sh`.
 
@@ -98,17 +98,14 @@ Code rollback and data recovery remain separate: the release scripts switch immu
 
 ## Gate status
 
-The Phase 0 gate remains **CONDITIONAL PASS** only for the remaining operational evidence below:
-
-1. Complete public authenticated smoke/observation after the DNS/TLS repair.
-
-Resolved or accepted decisions: the proxied Cloudflare `A` record and public
-API health pass; R2 automation, retention, restore evidence, and the second
-operator are recorded; credential rotation is explicitly waived and accepted;
-agreement, commencement, and acceptance are owner-confirmed complete with the
-executed agreement retained outside this repository; the owner accepts the
-current production Frappe/ERPNext source-ownership baseline and `lenerp_core`
-is published to `Len-OS/lenerp_core`.
+The Phase 0 gate is **PASS**. The proxied Cloudflare `A` record and public
+API health pass; public and authenticated production smoke pass; R2
+automation, retention, restore evidence, and the second operator are
+recorded; credential rotation is explicitly waived and accepted; agreement,
+commencement, and acceptance are owner-confirmed complete with the executed
+agreement retained outside this repository; and the owner accepts the current
+production Frappe/ERPNext source-ownership baseline with `lenerp_core`
+published to `Len-OS/lenerp_core`.
 
 ## Phase 0 checklist status
 
@@ -118,7 +115,7 @@ is published to `Len-OS/lenerp_core`.
 | 2 | Preserve the existing Git state and unrelated work | PASS | Dirty worktree preserved; no reset, clean, or destructive checkout was used. |
 | 3 | Establish release identity `PLAT-P0` | PASS | This release record and non-secret manifest exist. |
 | 4 | Record baseline, ownership, repositories, revisions, services, routes, sites, and backups | PASS with owner decisions | EC2/Frappe/control-plane runtime, Cloudflare route, private repositories, approver, agreement, R2 ownership, retention, and second restore operator are recorded; credential rotation is an accepted waiver. |
-| 5 | Verify public, login, authenticated, API, ERP runtime, and worker baseline | CONDITIONAL | Production public root/login/API/ERP runtime, unauthenticated denial, and worker checks passed; authenticated production observation remains open. |
+| 5 | Verify public, login, authenticated, API, ERP runtime, and worker baseline | PASS | Production public root/login/API/ERP runtime, unauthenticated denial, worker checks, authenticated `/auth/me`, and authenticated `/organizations` passed. |
 | 6 | Create complete ERP/control-plane backups | PASS for automated run | Production timer created the ERP database/site-config/public/private backups and control-plane SQLite snapshot; all six uploaded objects were downloaded and hash-verified on 2026-09-16. |
 | 7 | Verify authorized off-host backup copy | PASS for automated run | Six objects in `lenerp-phase0-backups/automated/production/20260916T083532Z/` match EC2 source hashes; 90-day lifecycle rules are active. |
 | 8 | Restore backups outside production | PASS for evidence scope | ERP SQL imported into disposable MariaDB schema with 707 tables; files/config restored and validated; temporary targets removed. |
@@ -129,7 +126,7 @@ is published to `Len-OS/lenerp_core`.
 | 13 | Implement immutable release directories/slots | PASS | Candidate builder, current/previous pointers, and slot rehearsal are implemented and tested. |
 | 14 | Build frontend/backend/custom-app artifacts before switching traffic | PASS | Candidate builder and preflight enforce this ordering; exact host execution remains pending. |
 | 15 | Keep current/previous exact release identifiers | PASS for control plane | Production current is `265a9047bb7b4d4cc034be3501b61c0f314cf83f`; previous is `1c3ea4d570e08443a8100acb1ecdf506c30a4ca5`; services use the current pointer and local-origin smoke passed. |
-| 16 | Add preflight and post-deploy smoke coverage | PASS for staging; CONDITIONAL for production | Control-plane authenticated smoke and ERP staging smoke pass; public production root/login/API/ERP runtime and unauthenticated checks pass, while authenticated production observation remains open. |
+| 16 | Add preflight and post-deploy smoke coverage | PASS | Control-plane authenticated smoke, ERP staging smoke, and authenticated production smoke pass. |
 | 17 | Add non-secret release manifest | PASS | Manifest contains commits, versions, build time, hashes, revisions, flags, environment, and operator. |
 | 18 | Add server-controlled feature flags | PASS | Settings-backed flag map and runtime metadata are implemented and tested. |
 | 19 | Make deployment/provisioning idempotent | PASS | Provisioning retry/idempotency tests and immutable-slot idempotency rehearsal pass. |
@@ -138,8 +135,8 @@ is published to `Len-OS/lenerp_core`.
 | 22 | Make hostnames/configuration independent and document final-domain cutover | PASS | Environment-driven URLs/cookies/provider endpoint and domain cutover checklist added; external validation remains open. |
 | 23 | Test a non-`lengrowth.com` staging hostname | PASS | `staging.example.test` and `erp-staging.example.test` host-header smoke passed without DNS changes. |
 | 24 | Deploy only operationally neutral Phase 0 changes | PASS | Repository changes are safety/configuration tooling only; production promotion and public smoke evidence are recorded. |
-| 25 | Run production smoke and observation window | CONDITIONAL | Public root/login/API/ERP runtime, unauthenticated denial, supervisor workers, public API health, and local-origin checks passed; authenticated observation is the only remaining test. |
-| 26 | Update release, blocker/risk, handover, deployment/rollback, and checklist records | PASS | Release record, registers, handover inventory, rollback tooling, R2 automation evidence, ownership decisions, and this checklist are updated; authenticated production evidence remains open. |
+| 25 | Run production smoke and observation window | PASS | Public root/login/API/ERP runtime, unauthenticated denial, supervisor workers, public API health, local-origin checks, authenticated `/auth/me`, and authenticated `/organizations` passed; temporary test data was removed and verified absent. |
+| 26 | Update release, blocker/risk, handover, deployment/rollback, and checklist records | PASS | Release record, registers, handover inventory, rollback tooling, R2 automation evidence, ownership decisions, authenticated smoke evidence, and this checklist are updated. |
 
 ## Rollback instructions
 

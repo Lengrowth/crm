@@ -3,11 +3,11 @@
 ## Phase 0 handover — read this first
 
 This repository has a verified Phase 0 release-safety foundation. The current
-result is **CONDITIONAL PASS**: staging and the promoted production control
-plane are operational, credential rotation is an accepted waiver, agreement
-acceptance is owner-confirmed, R2 automation is active with an independent
-restore operator recorded, and the remaining open item is authenticated
-observation.
+result is **PASS**: staging and the promoted production control plane are
+operational, credential rotation is an accepted waiver, agreement acceptance
+is owner-confirmed, R2 automation is active with an independent restore
+operator recorded, and authenticated production observation passed using a
+temporary account that was removed and verified absent afterward.
 
 Never print, paste, commit, or place credential values in logs, documentation,
 patches, shell history, or chat. Retrieve secrets only from the approved secret
@@ -116,26 +116,11 @@ approved change and verified backup/rollback target.
 On 2026-09-16 the public production smoke passed for the root page, API
 health, ERP runtime summary, release metadata, installed-app inventory, and
 unauthenticated denial. The production services and Supervisor workers were
-also active. The only remaining assertion is an authenticated API observation;
-the reusable smoke script reports this as skipped when `AUTH_TOKEN_FILE` is
-not configured.
-
-To complete that final assertion without changing production data, an owner
-or existing operator must place an existing non-privileged bearer token in a
-temporary file on the EC2, readable only by the operator, for example:
-
-```bash
-sudo install -o ubuntu -g ubuntu -m 600 /dev/null /run/saas-control/smoke/auth-token
-sudoedit /run/saas-control/smoke/auth-token
-```
-
-Do not paste the token into chat, commits, logs, or documentation. Then run
-the production smoke from this checkout with `AUTH_TOKEN_FILE` pointing to
-that file and `REQUIRE_AUTH_SMOKE=true`; the script checks `/auth/me` and
-authenticated `/organizations` access. Remove the token file after the
-check. Do not create a synthetic production account or perform direct
-production database cleanup merely to manufacture this evidence without a
-separate explicit production-data authorization.
+also active. Authenticated `/auth/me` and `/organizations` checks then passed
+using a uniquely named temporary account; the account, organization,
+membership, sessions, and tokens were deleted by exact identifier and the
+post-cleanup query returned zero matching rows. The temporary token file and
+SSH rule were removed afterward.
 
 ## EC2 staging map — safe operational lane
 
