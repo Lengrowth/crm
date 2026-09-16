@@ -34,8 +34,76 @@ def main() -> int:
     parser.add_argument("--upstream-erpnext-commit", default="unknown")
     parser.add_argument("--custom-app-version", default="not-installed")
     parser.add_argument("--custom-app-commit", default="unknown")
+    parser.add_argument("--runtime-frappe-commit", default="unknown")
+    parser.add_argument("--runtime-erpnext-commit", default="unknown")
+    parser.add_argument("--runtime-baseline", type=Path)
     parser.add_argument("--feature-flags", default="")
     args = parser.parse_args()
+
+    baseline = {}
+    if args.runtime_baseline and args.runtime_baseline.is_file():
+        try:
+            baseline = json.loads(args.runtime_baseline.read_text(encoding="utf-8"))
+        except (OSError, TypeError, ValueError) as exc:
+            raise SystemExit(f"invalid runtime baseline: {args.runtime_baseline}: {exc}") from exc
+        if not isinstance(baseline, dict) or baseline.get("schema_version") != 1:
+            raise SystemExit("runtime baseline must be a JSON object with schema_version 1")
+
+    runtime_apps = baseline.get("runtime_apps", {})
+    frappe_runtime = runtime_apps.get("frappe", {}) if isinstance(runtime_apps, dict) else {}
+    erpnext_runtime = runtime_apps.get("erpnext", {}) if isinstance(runtime_apps, dict) else {}
+    lenerp_core_runtime = runtime_apps.get("lenerp_core", {}) if isinstance(runtime_apps, dict) else {}
+
+    def baseline_value(current: str, *values: object, fallback: str) -> str:
+        if current not in {"unknown", "not-installed"}:
+            return current
+        for value in values:
+            if isinstance(value, str) and value:
+                return value
+        return fallback
+
+    database_before = baseline_value(
+        args.database_revision_before,
+        baseline.get("database_revision"),
+        fallback="unknown",
+    )
+    database_after = baseline_value(
+        args.database_revision_after,
+        baseline.get("database_revision"),
+        fallback="unknown",
+    )
+    upstream_frappe = baseline_value(
+        args.upstream_frappe_commit,
+        baseline.get("upstream_frappe_commit"),
+        fallback="unknown",
+    )
+    upstream_erpnext = baseline_value(
+        args.upstream_erpnext_commit,
+        baseline.get("upstream_erpnext_commit"),
+        fallback="unknown",
+    )
+    runtime_frappe = baseline_value(
+        args.runtime_frappe_commit,
+        frappe_runtime.get("commit"),
+        upstream_frappe,
+        fallback="unknown",
+    )
+    runtime_erpnext = baseline_value(
+        args.runtime_erpnext_commit,
+        erpnext_runtime.get("commit"),
+        upstream_erpnext,
+        fallback="unknown",
+    )
+    custom_app_version = baseline_value(
+        args.custom_app_version,
+        lenerp_core_runtime.get("version"),
+        fallback="not-installed",
+    )
+    custom_app_commit = baseline_value(
+        args.custom_app_commit,
+        lenerp_core_runtime.get("commit"),
+        fallback="unknown",
+    )
 
     locks = {}
     for relative_path in ("frontend/package-lock.json", "backend/pyproject.toml"):
@@ -53,13 +121,13 @@ def main() -> int:
             feature_flags[name.strip()] = value.strip().lower()
 
     installed_apps = {
-        "frappe": {"commit": args.upstream_frappe_commit},
-        "erpnext": {"commit": args.upstream_erpnext_commit},
+        "frappe": {"commit": runtime_frappe, "upstream_commit": upstream_frappe},
+        "erpnext": {"commit": runtime_erpnext, "upstream_commit": upstream_erpnext},
     }
-    if args.custom_app_version != "not-installed" or args.custom_app_commit != "unknown":
+    if custom_app_version != "not-installed" or custom_app_commit != "unknown":
         installed_apps["lenerp_core"] = {
-            "version": args.custom_app_version,
-            "commit": args.custom_app_commit,
+            "version": custom_app_version,
+            "commit": custom_app_commit,
         }
 
     manifest = {
@@ -68,13 +136,18 @@ def main() -> int:
         "environment": args.environment,
         "build_time_utc": datetime.now(timezone.utc).isoformat(),
         "operator": args.operator,
-        "upstream_frappe_commit": args.upstream_frappe_commit,
-        "upstream_erpnext_commit": args.upstream_erpnext_commit,
-        "custom_app_version": args.custom_app_version,
-        "custom_app_commit": args.custom_app_commit,
+        "upstream_frappe_commit": upstream_frappe,
+        "upstream_erpnext_commit": upstream_erpnext,
+        "custom_app_version": custom_app_version,
+        "custom_app_commit": custom_app_commit,
         "installed_apps": installed_apps,
-        "database_revision_before": args.database_revision_before,
-        "database_revision_after": args.database_revision_after,
+        "database_revision_before": database_before,
+        "database_revision_after": database_after,
+        "runtime_baseline": (
+            "ops/production/release-runtime-baseline.json"
+            if args.runtime_baseline
+            else None
+        ),
         "dependency_lock_hashes": locks,
         "feature_flags": feature_flags,
     }

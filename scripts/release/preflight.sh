@@ -27,6 +27,8 @@ required = {
     "installed_apps",
     "dependency_lock_hashes",
     "feature_flags",
+    "database_revision_before",
+    "database_revision_after",
 }
 missing = sorted(required - payload.keys())
 if missing:
@@ -38,10 +40,46 @@ if not isinstance(payload["installed_apps"], dict):
 for app_name in ("frappe", "erpnext"):
     if not isinstance(payload["installed_apps"].get(app_name), dict):
         raise SystemExit(f"manifest installed_apps is missing {app_name}")
-if payload.get("custom_app_version") not in {None, "not-installed"}:
-    candidate = path.parent / "custom-app"
-    if not candidate.is_dir():
-        raise SystemExit("manifest declares a custom app but candidate artifact is missing")
+    app = payload["installed_apps"][app_name]
+    if app.get("commit") in {None, "", "unknown"}:
+        raise SystemExit(f"manifest installed_apps has unknown {app_name} commit")
+for field in (
+    "custom_app_commit",
+    "custom_app_version",
+    "upstream_frappe_commit",
+    "upstream_erpnext_commit",
+    "database_revision_before",
+    "database_revision_after",
+):
+    if payload.get(field) in {None, "", "unknown", "not-installed"}:
+        raise SystemExit(f"manifest has incomplete runtime field: {field}")
+baseline_path = path.parent / "ops/production/release-runtime-baseline.json"
+if not baseline_path.is_file():
+    raise SystemExit("candidate runtime baseline is missing")
+baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
+if baseline.get("schema_version") != 1:
+    raise SystemExit("candidate runtime baseline has an unsupported schema")
+runtime_apps = baseline.get("runtime_apps", {})
+expected = {
+    "upstream_frappe_commit": baseline.get("upstream_frappe_commit"),
+    "upstream_erpnext_commit": baseline.get("upstream_erpnext_commit"),
+    "database_revision_before": baseline.get("database_revision"),
+    "database_revision_after": baseline.get("database_revision"),
+    "custom_app_commit": runtime_apps.get("lenerp_core", {}).get("commit"),
+    "custom_app_version": runtime_apps.get("lenerp_core", {}).get("version"),
+}
+for field, value in expected.items():
+    if payload.get(field) != value:
+        raise SystemExit(f"manifest {field} does not match the checked-in runtime baseline")
+for app_name in ("frappe", "erpnext"):
+    expected_commit = runtime_apps.get(app_name, {}).get("commit")
+    actual_commit = payload["installed_apps"][app_name].get("commit")
+    if actual_commit != expected_commit:
+        raise SystemExit(f"manifest installed_apps {app_name} does not match the runtime baseline")
+# The ERP app inventory is a non-secret runtime baseline for the co-hosted
+# Frappe/ERPNext service. It is not required to be packaged into the
+# control-plane candidate; when CUSTOM_APP_REPO is supplied, build_candidate.sh
+# may additionally include a custom-app artifact.
 PY
 
 printf 'Preflight passed for candidate %s\n' "$CANDIDATE_DIR"

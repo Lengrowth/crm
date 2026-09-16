@@ -97,3 +97,18 @@ jobs:
             --email "$SMOKE_EMAIL" \
             --organization "$SMOKE_ORGANIZATION"
           rm -f -- "$TOKEN_FILE"
+
+      - name: Capture non-secret production readback
+        if: always()
+        run: |
+          chmod +x scripts/release/capture_production_readback.sh
+          scripts/release/capture_production_readback.sh "$GITHUB_WORKSPACE/production-readback.json"
+
+      - name: Upload non-secret production readback
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-readback-${{ github.run_id }}
+          path: production-readback.json
+          if-no-files-found: error
+          retention-days: 30
