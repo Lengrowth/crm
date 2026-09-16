@@ -197,7 +197,11 @@ R2 lifecycle retention is configured for 90 days on both `erp/` and
 `control-plane/` prefixes. Matt Newcomer approved that policy per the delivery
 owner's instruction. Reproducible scheduled automation is now defined under
 `ops/production/`; activation still requires a bucket-scoped R2 Object Read &
-Write credential on EC2 and a named second independent restore operator.
+Write credential on EC2 and a named second independent restore operator. The
+credential was installed without printing its value, the systemd timer is
+enabled on production, and the first automated run on 2026-09-16 uploaded and
+byte-hash verified six objects under
+`automated/production/20260916T083532Z/`.
 
 ## Known blockers and handoff actions
 

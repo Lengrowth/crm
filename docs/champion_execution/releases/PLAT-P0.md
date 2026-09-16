@@ -81,6 +81,8 @@ Production backups are now evidenced for the pre-Champion system. A fresh `bench
 
 The R2 copy was restored outside production: gzip integrity and JSON validation passed, public/private archives extracted, and the SQL dump imported into a new disposable MariaDB schema with 707 tables. The temporary schema and recovery directory were removed after verification. The bucket now expires `erp/` and `control-plane/` objects after 90 days; non-interactive backup automation credentials and a second independent restore operator still need explicit confirmation; no Champion data is covered by this evidence.
 
+On 2026-09-16 the production systemd timer was enabled with a bucket-scoped R2 credential. The first automated run created the ERP database/site-config/public/private-file backup plus the control-plane SQLite snapshot, uploaded six objects under `automated/production/20260916T083532Z/`, downloaded each object, and passed byte-for-byte SHA-256 verification. A second independent restore operator still needs to be named and recorded.
+
 Code rollback and data recovery remain separate: the release scripts switch immutable code pointers; database/files restoration must be completed and evidenced independently before Champion data cutover.
 
 ## Release identifiers
@@ -98,7 +100,7 @@ Code rollback and data recovery remain separate: the release scripts switch immu
 The Phase 0 gate remains **CONDITIONAL PASS** only for the remaining operational evidence below. Agreement/acceptance and credential-rotation waiver status are recorded as owner-resolved decisions:
 
 1. Complete public authenticated smoke/observation after the DNS/TLS repair.
-2. Confirm non-interactive R2 backup automation credentials and a second independent restore operator.
+2. Record a second independent R2 restore operator; automated backup credentials and the first scheduled backup run are now verified.
 3. Keep the committed production Frappe/ERPNext branding baseline under approved private source ownership if future changes are required; `lenerp_core` is already published to `Len-OS/lenerp_core`.
 4. Keep the proxied Cloudflare `A` record `lenerp-api → 100.62.163.246`; public HTTPS/API health verification passed. Keep the old deep hostname only as a temporary alias.
 5. Credential rotation is explicitly waived and accepted by the delivery owner for this implementation run; no rotation proof is claimed.
@@ -113,8 +115,8 @@ The Phase 0 gate remains **CONDITIONAL PASS** only for the remaining operational
 | 3 | Establish release identity `PLAT-P0` | PASS | This release record and non-secret manifest exist. |
 | 4 | Record baseline, ownership, repositories, revisions, services, routes, sites, and backups | CONDITIONAL | EC2/Frappe/control-plane runtime is recorded; repository ownership, approver, and Cloudflare edge TLS ownership remain open. |
 | 5 | Verify public, login, authenticated, API, ERP runtime, and worker baseline | CONDITIONAL | Disposable local staging-style smoke passed; production baseline and observation remain unverified. |
-| 6 | Create complete ERP/control-plane backups | CONDITIONAL PASS | Fresh ERP database/site-config/public/private backups and control-plane SQLite backup exist; long-term retention/automation ownership is open. |
-| 7 | Verify authorized off-host backup copy | CONDITIONAL PASS | Five R2 objects in `lenerp-phase0-backups` match EC2 source hashes; bucket retention/owner is not yet recorded. |
+| 6 | Create complete ERP/control-plane backups | PASS for automated run | Production timer created the ERP database/site-config/public/private backups and control-plane SQLite snapshot; all six uploaded objects were downloaded and hash-verified on 2026-09-16. |
+| 7 | Verify authorized off-host backup copy | PASS for automated run | Six objects in `lenerp-phase0-backups/automated/production/20260916T083532Z/` match EC2 source hashes; 90-day lifecycle rules are active. |
 | 8 | Restore backups outside production | PASS for evidence scope | ERP SQL imported into disposable MariaDB schema with 707 tables; files/config restored and validated; temporary targets removed. |
 | 9 | Confirm clean, pinned Frappe and ERPNext clones | PASS with local client commits | Production worktrees are clean at the recorded LenERP commits, based on the pinned upstream SHAs; client-specific changes were not pushed to official upstream remotes. |
 | 10 | Establish and independently install/migrate/list/uninstall `lenerp_core` | PASS for disposable staging | Local scaffold commit `728de29`; install, migrate, list, uninstall, reinstall, and final list passed on `erp-staging.example.test`. Remote private repository ownership remains open. |
