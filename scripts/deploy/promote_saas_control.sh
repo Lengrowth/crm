@@ -117,6 +117,19 @@ if ! AUTH_TOKEN_FILE="$AUTH_TOKEN_FILE" REQUIRE_AUTH_SMOKE="$REQUIRE_AUTH_SMOKE"
   exit 1
 fi
 
+if [[ "${RUN_SHELL_SMOKE:-false}" == "true" ]]; then
+  if ! AUTH_TOKEN_FILE="$AUTH_TOKEN_FILE" \
+    BASE_URL="${PRODUCTION_BASE_URL:?Set PRODUCTION_BASE_URL}" \
+    BACKEND_URL="${PRODUCTION_BACKEND_URL:?Set PRODUCTION_BACKEND_URL}" \
+    EXPECTED_RELEASE="$RELEASE_ID" \
+    EXPECTED_PHASE_ONE_SHELL="${EXPECTED_PHASE_ONE_SHELL:?Set EXPECTED_PHASE_ONE_SHELL}" \
+    bash "$CANDIDATE_DIR/scripts/release/shell_smoke.sh"; then
+    rollback "$OLD_TARGET" "$OLD_PREVIOUS" || echo "CRITICAL: production rollback after shell smoke failure was not fully verified." >&2
+    echo "Production shell smoke failed; previous release restored." >&2
+    exit 1
+  fi
+fi
+
 if [[ -n "$OLD_TARGET" && "$OLD_TARGET" != "$CANDIDATE_DIR" ]]; then
   atomic_link "$OLD_TARGET" "$PREVIOUS_LINK"
 fi
