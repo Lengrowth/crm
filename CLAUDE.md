@@ -6,9 +6,11 @@ This repository has a verified Phase 0 release-safety foundation. The current
 result is **CONDITIONAL PASS**: the repository safety foundation, staging
 lane, public endpoint smoke, R2 automation, and owner decisions are recorded,
 but production promotion and rollback still require independently verifiable
-evidence. Credential rotation is an accepted waiver. Do not describe Phase 0
-as a final production PASS until the protected production workflow, rollback
-path, and legacy TLS route are verified.
+evidence. Credential rotation is an accepted owner waiver for this phase. The
+canonical API is `lenerp-api.lengrowth.com`; the former
+`api.lenerp.lengrowth.com` hostname is retired and must not be used. Do not
+describe Phase 0 as a final production PASS until the protected production
+workflow, rollback path, and retired DNS record cleanup are verified.
 
 Never print, paste, commit, or place credential values in logs, documentation,
 patches, shell history, or chat. Retrieve secrets only from the approved secret
@@ -216,18 +218,18 @@ automated run on 2026-09-16 uploaded and byte-hash verified six objects under
 
 ## Known blockers and handoff actions
 
-1. **Cloudflare API edge TLS:** canonical route resolved; legacy route open.
+1. **Cloudflare API hostname:** canonical route resolved; legacy hostname
+   retired.
    The exact proxied `A` record
    `lenerp-api → 100.62.163.246` is present, and
    `https://lenerp-api.lengrowth.com/health` returned HTTP `200` through
    Cloudflare on 2026-09-15. The required legacy
-   `https://api.lenerp.lengrowth.com/health` still fails edge TLS because the
-   full-zone Universal certificate does not cover this multi-level hostname.
-   Total TLS/Advanced Certificate Manager or a dedicated certificate is
-   required; the connected Wrangler identity cannot change DNS/certificate
-   settings and the shared zone-wide SSL mode must not be changed.
-2. **Credential rotation:** intentionally not performed. It is mandatory before
-   Champion confidential data; do not silently mark this complete.
+   `api.lenerp.lengrowth.com` is no longer a supported route. Its old proxied
+   DNS record must be deleted from the Cloudflare zone; do not add a
+   certificate, route, redirect, or application dependency for that hostname.
+2. **Credential rotation:** intentionally not performed under the owner's
+   explicit waiver for this phase. Record it as waived, not as completed
+   rotation; do not rotate or invalidate credentials without renewed approval.
 3. **Production source ownership:** production Frappe/ERPNext drift was
    reviewed. White-label branding and removal of vendor-promotional banners
    were retained and committed locally; help/video/payment functionality and
@@ -249,10 +251,11 @@ automated run on 2026-09-16 uploaded and byte-hash verified six objects under
    executed copy retained outside this repository. The local PDF is not
    independent signature evidence; do not describe this as independently
    verified acceptance.
-7. **Production workflow protection:** no production workflow run was found;
-   GitHub currently has a `staging` environment only and `main` is not
-   protected. Configure the production environment/reviewer controls and
-   record one exact-candidate production run before calling Phase 0 PASS.
+7. **Production workflow protection:** GitHub now has a protected
+   `production` environment with `guerra2fernando` as required reviewer, and
+   `main` requires the staging deployment check with force pushes/deletions
+   disabled. No exact-candidate production promotion run has yet been
+   independently recorded; complete that run before calling Phase 0 PASS.
 
 Primary records:
 
@@ -397,10 +400,9 @@ Dashboard → Caching → Configuration → Development Mode → Enable (3 hours
 - `lenerp.lengrowth.com` → `100.62.163.246` (proxied)
 - `lenerp-api.lengrowth.com` → proxied to the same EC2 origin; this is the
   canonical API hostname because Cloudflare Universal SSL covers it as a
-  first-level subdomain. `api.lenerp.lengrowth.com` remains a required legacy
-  compatibility alias but currently fails edge TLS because it is a second-level
-  subdomain under a full-zone Universal certificate. Do not purchase ACM or
-  enable Total TLS without owner approval.
+  first-level subdomain. `api.lenerp.lengrowth.com` is retired and must not be
+  used. Delete its old proxied DNS record; no ACM/Total TLS purchase is needed
+  for the retired hostname.
 
 **Purge specific URL:**
 Dashboard → Caching → Cache Rules → Purge Cache → Custom Purge
