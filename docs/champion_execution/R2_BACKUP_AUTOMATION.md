@@ -53,7 +53,7 @@ log or print the environment file.
 
 ## Independent restore operator
 
-The owner must name a second person who can access the Cloudflare R2 bucket and
-the EC2 restore runbook independently of the primary operator. Record the
-person's name, role, and date of the witnessed restore in the private handover
-record; do not put credentials in this repository.
+The owner-confirmed second independent restore operator is Pedro
+(`pedrocdiegues@gmail.com`). He can access the Cloudflare R2 bucket and EC2
+restore runbook independently of the primary operator. No credentials are
+stored in this repository.

@@ -81,7 +81,7 @@ Production backups are now evidenced for the pre-Champion system. A fresh `bench
 
 The R2 copy was restored outside production: gzip integrity and JSON validation passed, public/private archives extracted, and the SQL dump imported into a new disposable MariaDB schema with 707 tables. The temporary schema and recovery directory were removed after verification. The bucket now expires `erp/` and `control-plane/` objects after 90 days; non-interactive backup automation credentials and a second independent restore operator still need explicit confirmation; no Champion data is covered by this evidence.
 
-On 2026-09-16 the production systemd timer was enabled with a bucket-scoped R2 credential. The first automated run created the ERP database/site-config/public/private-file backup plus the control-plane SQLite snapshot, uploaded six objects under `automated/production/20260916T083532Z/`, downloaded each object, and passed byte-for-byte SHA-256 verification. A second independent restore operator still needs to be named and recorded.
+On 2026-09-16 the production systemd timer was enabled with a bucket-scoped R2 credential. The first automated run created the ERP database/site-config/public/private-file backup plus the control-plane SQLite snapshot, uploaded six objects under `automated/production/20260916T083532Z/`, downloaded each object, and passed byte-for-byte SHA-256 verification. Pedro (`pedrocdiegues@gmail.com`) is recorded as the second independent restore operator.
 
 Code rollback and data recovery remain separate: the release scripts switch immutable code pointers; database/files restoration must be completed and evidenced independently before Champion data cutover.
 
@@ -97,14 +97,16 @@ Code rollback and data recovery remain separate: the release scripts switch immu
 
 ## Gate status
 
-The Phase 0 gate remains **CONDITIONAL PASS** only for the remaining operational evidence below. Agreement/acceptance and credential-rotation waiver status are recorded as owner-resolved decisions:
+The Phase 0 gate remains **CONDITIONAL PASS** only for the remaining operational evidence below:
 
 1. Complete public authenticated smoke/observation after the DNS/TLS repair.
-2. Record a second independent R2 restore operator; automated backup credentials and the first scheduled backup run are now verified.
-3. Keep the committed production Frappe/ERPNext branding baseline under approved private source ownership if future changes are required; `lenerp_core` is already published to `Len-OS/lenerp_core`.
-4. Keep the proxied Cloudflare `A` record `lenerp-api → 100.62.163.246`; public HTTPS/API health verification passed. Keep the old deep hostname only as a temporary alias.
-5. Credential rotation is explicitly waived and accepted by the delivery owner for this implementation run; no rotation proof is claimed.
-6. Agreement, commencement, and acceptance are owner-confirmed complete; the executed agreement remains outside this repository.
+2. Keep the committed production Frappe/ERPNext branding baseline under approved private source ownership if future changes are required; `lenerp_core` is already published to `Len-OS/lenerp_core`.
+
+Resolved or accepted decisions: the proxied Cloudflare `A` record and public
+API health pass; R2 automation, retention, restore evidence, and the second
+operator are recorded; credential rotation is explicitly waived and accepted;
+agreement, commencement, and acceptance are owner-confirmed complete with the
+executed agreement retained outside this repository.
 
 ## Phase 0 checklist status
 

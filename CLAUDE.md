@@ -5,8 +5,9 @@
 This repository has a verified Phase 0 release-safety foundation. The current
 result is **CONDITIONAL PASS**: staging and the promoted production control
 plane are operational, credential rotation is an accepted waiver, agreement
-acceptance is owner-confirmed, and the remaining open items are R2 credential
-activation, restore-operator confirmation, and authenticated observation.
+acceptance is owner-confirmed, R2 automation is active with an independent
+restore operator recorded, and the remaining open item is authenticated
+observation.
 
 Never print, paste, commit, or place credential values in logs, documentation,
 patches, shell history, or chat. Retrieve secrets only from the approved secret
@@ -195,12 +196,10 @@ npx --yes wrangler@latest r2 object list lenerp-phase0-backups
 
 R2 lifecycle retention is configured for 90 days on both `erp/` and
 `control-plane/` prefixes. Matt Newcomer approved that policy per the delivery
-owner's instruction. Reproducible scheduled automation is now defined under
-`ops/production/`; activation still requires a bucket-scoped R2 Object Read &
-Write credential on EC2 and a named second independent restore operator. The
-credential was installed without printing its value, the systemd timer is
-enabled on production, and the first automated run on 2026-09-16 uploaded and
-byte-hash verified six objects under
+owner's instruction. Reproducible scheduled automation is defined under
+`ops/production/`; a bucket-scoped R2 Object Read & Write credential is
+installed on EC2, the systemd timer is enabled on production, and the first
+automated run on 2026-09-16 uploaded and byte-hash verified six objects under
 `automated/production/20260916T083532Z/`.
 
 ## Known blockers and handoff actions
