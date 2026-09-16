@@ -21,6 +21,14 @@ on:
         options:
           - "no"
           - "yes"
+      phase1_shell_state:
+        description: Set the server-controlled operator shell flag for this promotion
+        required: true
+        default: "off"
+        type: choice
+        options:
+          - "off"
+          - "on"
 
 permissions:
   contents: read
@@ -69,6 +77,36 @@ jobs:
             --organization "$SMOKE_ORGANIZATION" \
             --token-file "$TOKEN_FILE"
 
+      - name: Apply requested server-controlled shell flag
+        env:
+          PHASE1_SHELL_STATE: ${{ inputs.phase1_shell_state }}
+        run: |
+          case "$PHASE1_SHELL_STATE" in
+            on|off) ;;
+            *) echo "Invalid Phase 1 shell state" >&2; exit 1 ;;
+          esac
+          sudo python3 - /opt/saas-control/shared/env/backend.env "$PHASE1_SHELL_STATE" <<'PY'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          state = sys.argv[2]
+          lines = path.read_text(encoding="utf-8").splitlines()
+          updated = False
+          output = []
+          for line in lines:
+              if not line.startswith("FEATURE_FLAGS="):
+                  output.append(line)
+                  continue
+              entries = [entry for entry in line.removeprefix("FEATURE_FLAGS=").split(",") if entry and not entry.startswith("platform_phase1_shell=")]
+              entries.append(f"platform_phase1_shell={state}")
+              output.append("FEATURE_FLAGS=" + ",".join(entries))
+              updated = True
+          if not updated:
+              output.append(f"FEATURE_FLAGS=platform_phase1_shell={state}")
+          path.write_text("\n".join(output) + "\n", encoding="utf-8")
+          PY
+
       - name: Promote only the requested tested candidate
         env:
           RELEASE_ID: ${{ inputs.release_id }}
@@ -79,6 +117,8 @@ jobs:
           AUTH_TOKEN_FILE: /run/saas-control/smoke/auth-token
           PRODUCTION_BASE_URL: https://lenerp.lengrowth.com
           PRODUCTION_BACKEND_URL: https://lenerp-api.lengrowth.com
+          RUN_SHELL_SMOKE: "true"
+          EXPECTED_PHASE_ONE_SHELL: ${{ inputs.phase1_shell_state == 'on' }}
         run: ./scripts/deploy/promote_saas_control.sh
 
       - name: Remove disposable authenticated smoke identity
