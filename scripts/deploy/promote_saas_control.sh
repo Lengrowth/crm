@@ -17,6 +17,8 @@ PREVIOUS_LINK="${PREVIOUS_LINK:-$APP_ROOT/previous}"
 SYSTEMCTL_BIN="${SYSTEMCTL_BIN:-/usr/bin/systemctl}"
 NGINX_BIN="${NGINX_BIN:-/usr/sbin/nginx}"
 LOCK_FILE="${LOCK_FILE:-/tmp/saas-control-production-promote.lock}"
+AUTH_TOKEN_FILE="${AUTH_TOKEN_FILE:-/run/saas-control/smoke/auth-token}"
+REQUIRE_AUTH_SMOKE="${REQUIRE_AUTH_SMOKE:-true}"
 CANDIDATE_DIR="$RELEASE_ROOT/$RELEASE_ID"
 
 atomic_link() {
@@ -30,6 +32,27 @@ restart_services() {
 validate_nginx() {
   sudo "$NGINX_BIN" -t
   sudo "$SYSTEMCTL_BIN" reload nginx
+}
+rollback() {
+  local old_target="$1" old_previous="$2" recovery_status=0
+  echo "Restoring previous production release" >&2
+  if [[ -n "$old_target" ]]; then
+    atomic_link "$old_target" "$CURRENT_LINK" || recovery_status=1
+  else
+    rm -f "$CURRENT_LINK" || recovery_status=1
+  fi
+  if [[ -n "$old_previous" ]]; then
+    atomic_link "$old_previous" "$PREVIOUS_LINK" || recovery_status=1
+  else
+    rm -f "$PREVIOUS_LINK" || recovery_status=1
+  fi
+  if [[ -n "$old_target" ]]; then
+    restart_services || recovery_status=1
+  else
+    sudo "$SYSTEMCTL_BIN" stop "${BACKEND_SERVICE:-saas-backend}" "${FRONTEND_SERVICE:-saas-frontend}" || recovery_status=1
+  fi
+  validate_nginx || recovery_status=1
+  return "$recovery_status"
 }
 
 [[ -f "$CANDIDATE_DIR/.candidate-complete" ]] || { echo "Candidate is not built: $CANDIDATE_DIR" >&2; exit 1; }
@@ -52,30 +75,33 @@ if manifest.get("environment") != "staging":
     raise SystemExit("production can promote only a candidate previously built for staging")
 PY
 
+if [[ "$REQUIRE_AUTH_SMOKE" == "true" ]]; then
+  [[ -r "$AUTH_TOKEN_FILE" ]] || {
+    echo "Production promotion requires a readable AUTH_TOKEN_FILE: $AUTH_TOKEN_FILE" >&2
+    exit 1
+  }
+fi
+
 exec 9>"$LOCK_FILE"
 flock -n 9 || { echo "Another production promotion is already running." >&2; exit 1; }
 
 OLD_TARGET="$(readlink -f "$CURRENT_LINK" 2>/dev/null || true)"
 OLD_PREVIOUS="$(readlink -f "$PREVIOUS_LINK" 2>/dev/null || true)"
 atomic_link "$CANDIDATE_DIR" "$CURRENT_LINK"
-restart_services
-validate_nginx
+if ! restart_services; then
+  rollback "$OLD_TARGET" "$OLD_PREVIOUS" || echo "CRITICAL: production rollback after restart failure was not fully verified." >&2
+  exit 1
+fi
+if ! validate_nginx; then
+  rollback "$OLD_TARGET" "$OLD_PREVIOUS" || echo "CRITICAL: production rollback after nginx validation failure was not fully verified." >&2
+  exit 1
+fi
 
-if ! BASE_URL="${PRODUCTION_BASE_URL:?Set PRODUCTION_BASE_URL}" \
+if ! AUTH_TOKEN_FILE="$AUTH_TOKEN_FILE" REQUIRE_AUTH_SMOKE="$REQUIRE_AUTH_SMOKE" \
+  BASE_URL="${PRODUCTION_BASE_URL:?Set PRODUCTION_BASE_URL}" \
   BACKEND_URL="${PRODUCTION_BACKEND_URL:?Set PRODUCTION_BACKEND_URL}" \
   EXPECTED_RELEASE="$RELEASE_ID" bash "$CANDIDATE_DIR/scripts/release/smoke.sh"; then
-  if [[ -n "$OLD_TARGET" ]]; then
-    atomic_link "$OLD_TARGET" "$CURRENT_LINK"
-  else
-    rm -f "$CURRENT_LINK"
-  fi
-  if [[ -n "$OLD_PREVIOUS" ]]; then
-    atomic_link "$OLD_PREVIOUS" "$PREVIOUS_LINK"
-  else
-    rm -f "$PREVIOUS_LINK"
-  fi
-  restart_services
-  validate_nginx
+  rollback "$OLD_TARGET" "$OLD_PREVIOUS" || echo "CRITICAL: production rollback after smoke failure was not fully verified." >&2
   echo "Production smoke failed; previous release restored." >&2
   exit 1
 fi

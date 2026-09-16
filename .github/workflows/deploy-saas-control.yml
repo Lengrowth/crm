@@ -39,4 +39,5 @@ jobs:
           DEPLOY_TARGET: staging
           TARGET_REF: ${{ github.sha }}
           RELEASE_ID: ${{ github.sha }}
+          REQUIRE_AUTH_SMOKE: "true"
         run: ./scripts/deploy/deploy_saas_control.sh

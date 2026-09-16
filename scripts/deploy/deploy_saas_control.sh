@@ -79,7 +79,7 @@ rollback() {
   else
     sudo "$SYSTEMCTL_BIN" stop "$BACKEND_SERVICE" "$FRONTEND_SERVICE" || true
   fi
-  validate_nginx
+  validate_nginx || log "Nginx validation after staging rollback failed; manual recovery may be required."
 }
 
 exec 9>"$LOCK_FILE"
@@ -116,7 +116,11 @@ if ! restart_services; then
   rollback "$OLD_TARGET" "$OLD_PREVIOUS"
   exit 1
 fi
-validate_nginx
+if ! validate_nginx; then
+  log "Nginx validation failed after staging switch; rolling back."
+  rollback "$OLD_TARGET" "$OLD_PREVIOUS" || log "Nginx validation after staging rollback failed; manual recovery may be required."
+  exit 1
+fi
 
 if [[ "${REQUIRE_AUTH_SMOKE:-false}" == "true" ]]; then
   if id "$STAGING_SERVICE_USER" >/dev/null 2>&1; then

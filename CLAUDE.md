@@ -3,11 +3,12 @@
 ## Phase 0 handover — read this first
 
 This repository has a verified Phase 0 release-safety foundation. The current
-result is **PASS**: staging and the promoted production control plane are
-operational, credential rotation is an accepted waiver, agreement acceptance
-is owner-confirmed, R2 automation is active with an independent restore
-operator recorded, and authenticated production observation passed using a
-temporary account that was removed and verified absent afterward.
+result is **CONDITIONAL PASS**: the repository safety foundation, staging
+lane, public endpoint smoke, R2 automation, and owner decisions are recorded,
+but production promotion and rollback still require independently verifiable
+evidence. Credential rotation is an accepted waiver. Do not describe Phase 0
+as a final production PASS until the protected production workflow, rollback
+path, and legacy TLS route are verified.
 
 Never print, paste, commit, or place credential values in logs, documentation,
 patches, shell history, or chat. Retrieve secrets only from the approved secret
@@ -215,13 +216,16 @@ automated run on 2026-09-16 uploaded and byte-hash verified six objects under
 
 ## Known blockers and handoff actions
 
-1. **Cloudflare API edge TLS:** resolved. The exact proxied `A` record
+1. **Cloudflare API edge TLS:** canonical route resolved; legacy route open.
+   The exact proxied `A` record
    `lenerp-api → 100.62.163.246` is present, and
    `https://lenerp-api.lengrowth.com/health` returned HTTP `200` through
-   Cloudflare on 2026-09-15. The connected Wrangler identity still has only
-   zone-read scope for DNS, so future DNS edits require the dashboard or a
-   narrowly scoped zone `DNS:Edit` token. Do **not** change the shared
-   zone-wide SSL mode.
+   Cloudflare on 2026-09-15. The required legacy
+   `https://api.lenerp.lengrowth.com/health` still fails edge TLS because the
+   full-zone Universal certificate does not cover this multi-level hostname.
+   Total TLS/Advanced Certificate Manager or a dedicated certificate is
+   required; the connected Wrangler identity cannot change DNS/certificate
+   settings and the shared zone-wide SSL mode must not be changed.
 2. **Credential rotation:** intentionally not performed. It is mandatory before
    Champion confidential data; do not silently mark this complete.
 3. **Production source ownership:** production Frappe/ERPNext drift was
@@ -234,14 +238,21 @@ automated run on 2026-09-16 uploaded and byte-hash verified six objects under
 4. **`lenerp_core` ownership:** private remote is now
    `https://github.com/Len-OS/lenerp_core.git`, with clean `main` at
    `728de29176ddb9c05c78d734318406d57f10f205`.
-5. **Production release rollback:** resolved for the control plane. Production
-   `current` is `265a9047bb7b4d4cc034be3501b61c0f314cf83f` and `previous` is
-   `1c3ea4d570e08443a8100acb1ecdf506c30a4ca5`; both are immutable release
-   directories and services use the `current` pointer.
-6. **Acceptance records:** the local six-page agreement PDF `FG-CWD-2026-0915-ONE`
-   exists and names Matt Newcomer as final acceptance authority, but its extracted
-   signature/date lines are blank and no cleared-payment or DocuSign completion
-   certificate is available. Commencement and acceptance therefore remain open.
+5. **Production release rollback:** the repository contains immutable-pointer
+   tooling and disposable rollback rehearsal evidence. Read-only SSH
+   verification on 2026-09-16 confirmed the recorded production
+   `current`/`previous` pointers, services, workers, R2 timer, source heads,
+   and local health. Production promotion must still use the protected
+   workflow and fail-closed rollback path.
+6. **Acceptance records:** owner attestation records agreement
+   `FG-CWD-2026-0915-ONE`, commencement, and acceptance as complete, with the
+   executed copy retained outside this repository. The local PDF is not
+   independent signature evidence; do not describe this as independently
+   verified acceptance.
+7. **Production workflow protection:** no production workflow run was found;
+   GitHub currently has a `staging` environment only and `main` is not
+   protected. Configure the production environment/reviewer controls and
+   record one exact-candidate production run before calling Phase 0 PASS.
 
 Primary records:
 
@@ -386,8 +397,10 @@ Dashboard → Caching → Configuration → Development Mode → Enable (3 hours
 - `lenerp.lengrowth.com` → `100.62.163.246` (proxied)
 - `lenerp-api.lengrowth.com` → proxied to the same EC2 origin; this is the
   canonical API hostname because Cloudflare Universal SSL covers it as a
-  first-level subdomain. `api.lenerp.lengrowth.com` remains only as a temporary
-  compatibility alias.
+  first-level subdomain. `api.lenerp.lengrowth.com` remains a required legacy
+  compatibility alias but currently fails edge TLS because it is a second-level
+  subdomain under a full-zone Universal certificate. Do not purchase ACM or
+  enable Total TLS without owner approval.
 
 **Purge specific URL:**
 Dashboard → Caching → Cache Rules → Purge Cache → Custom Purge

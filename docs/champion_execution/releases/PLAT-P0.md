@@ -1,11 +1,11 @@
 # PLAT-P0 — Phase 0 Release Record
 
-Status: **PASS — Phase 0 repository, production, backup, ownership, and smoke gates completed**
+Status: **CONDITIONAL PASS — repository and staging foundation complete; production gates remain open**
 Release identity: `PLAT-P0`  
 Record date: 2026-09-15  
 Operator: Codex, working with the delivery owner  
 Approver: Matt Newcomer — owner-confirmed acceptance; executed agreement retained outside this repository
-Production promotion: **Performed and verified**
+Production promotion: **Recorded historically, not independently verified in the current audit**
 
 ## Scope and safety decision
 
@@ -71,8 +71,8 @@ The exact commands and results are maintained below:
 - Disposable control-plane backup/restore rehearsal: **PASS** — `backend/.venv/Scripts/python.exe scripts/release/rehearse_backup_restore.py --self-test`; a restored control-plane database was upgraded from the first migration to head, its synthetic record was preserved, and site configuration, public files, and private files were restored and verified.
 - Full backend suite: **PASS** — `backend/.venv/Scripts/python.exe -m pytest backend/tests -q`; 36 passed. The integration test now uses a disposable authenticated tenant/database, and provisioning retry/idempotency paths pass.
 - `git diff --check`: **PASS** after removing the reported trailing whitespace.
-- Production baseline: **PASS** — after promotion, immutable `current`/`previous` pointers were active; local backend health/database/live-ERP runtime passed, local frontend returned `200`, unauthenticated API denial returned `401`, public root/login/API/ERP runtime checks passed, the production supervisor workers were running, and public `https://lenerp-api.lengrowth.com/health` returned `200` through Cloudflare.
-- Production smoke rerun: **PASS** — `BASE_URL=https://lenerp.lengrowth.com BACKEND_URL=https://lenerp-api.lengrowth.com EXPECTED_RELEASE=265a9047bb7b4d4cc034be3501b61c0f314cf83f PYTHON_BIN=py.exe REQUIRE_AUTH_SMOKE=true bash scripts/release/smoke.sh` passed root `200`, backend health `200`, ERP runtime `200`, release/app inventory, unauthenticated denial `401`, authenticated `/auth/me`, and authenticated `/organizations`. A uniquely named temporary account was deleted afterward; exact user, organization, membership, session, and token cleanup verified zero matching rows.
+- Production baseline: **CONDITIONAL** — read-only SSH verification on 2026-09-16 confirmed immutable `current` `265a9047bb7b4d4cc034be3501b61c0f314cf83f`, `previous` `1c3ea4d570e08443a8100acb1ecdf506c30a4ca5`, active backend/frontend services, enabled/active R2 timer, next timer run, all Supervisor workers running, Frappe `a5524bdb8c4df252bf0a76bcfdcdc9715c9c389b`, ERPNext `0fd1992505bd680432363134063d01b0c755008c`, and local health `200`. The release manifest environment remains `staging` by design for a staging-built candidate; no production workflow run is independently evidenced.
+- Production smoke rerun: **PUBLIC/AUTHENTICATED API EVIDENCE** — the reusable smoke command passed root `200`, backend health `200`, ERP runtime `200`, release/app inventory, unauthenticated denial `401`, authenticated `/auth/me`, and authenticated `/organizations` using a temporary account. A read-only production query now confirms zero users matching the temporary smoke prefix; the production workflow, rollback proof, and legacy TLS requirement remain open.
 - Actual control-plane staging CI: **PASS** — GitHub Actions runs `34968621678` and `34968811226` proved authenticated deployment/idempotency for the earlier candidate; handover candidate `265a9047bb7b4d4cc034be3501b61c0f314cf83f` passed in run `34971552445`, and the documentation/ownership follow-up passed in run `35077096785`. The verified post-run current/previous pointers were `265a9047bb7b4d4cc034be3501b61c0f314cf83f` / `b6e96b628513e7033949d711fd845f5a4fe4125b`.
 - Actual ERP staging: **PASS for the disposable lane** — `/opt/frappe-staging-bench`, site `erp-staging.example.test`, Frappe `15.119.1` at `edae775dd36b6c4ad7acab10230262bd74040765`, ERPNext `15.120.0` at `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`, `lenerp_core` installed; web/login/API, dedicated Redis ports `14100/14101`, web port `28000`, workers, scheduler, and install/uninstall/reinstall cycle passed via `scripts/release/erp_staging_smoke.sh`.
 
@@ -98,14 +98,15 @@ Code rollback and data recovery remain separate: the release scripts switch immu
 
 ## Gate status
 
-The Phase 0 gate is **PASS**. The proxied Cloudflare `A` record and public
-API health pass; public and authenticated production smoke pass; R2
-automation, retention, restore evidence, and the second operator are
-recorded; credential rotation is explicitly waived and accepted; agreement,
-commencement, and acceptance are owner-confirmed complete with the executed
-agreement retained outside this repository; and the owner accepts the current
-production Frappe/ERPNext source-ownership baseline with `lenerp_core`
-published to `Len-OS/lenerp_core`.
+The Phase 0 gate remains **CONDITIONAL PASS**. Public canonical smoke, R2
+automation/retention/restore evidence, the second operator, credential waiver,
+owner decisions, and staging CI are recorded. The remaining blockers are
+independent production-host/workflow evidence, protected production promotion
+with authenticated smoke and rollback verification, and the required legacy
+`api.lenerp.lengrowth.com/health` TLS route. Agreement, commencement, and
+acceptance remain owner-confirmed by attestation, with the executed agreement
+retained outside this repository; the local PDF is not independent signature
+evidence.
 
 ## Phase 0 checklist status
 
@@ -125,18 +126,18 @@ published to `Len-OS/lenerp_core`.
 | 12 | Create isolated staging lane | PASS for staging | EC2 evidence shows separate control-plane and ERP paths, databases, files, ports, Redis instances, services/workers, and non-production host-header policy. |
 | 13 | Implement immutable release directories/slots | PASS | Candidate builder, current/previous pointers, and slot rehearsal are implemented and tested. |
 | 14 | Build frontend/backend/custom-app artifacts before switching traffic | PASS | Candidate builder and preflight enforce this ordering; exact host execution remains pending. |
-| 15 | Keep current/previous exact release identifiers | PASS for control plane | Production current is `265a9047bb7b4d4cc034be3501b61c0f314cf83f`; previous is `1c3ea4d570e08443a8100acb1ecdf506c30a4ca5`; services use the current pointer and local-origin smoke passed. |
-| 16 | Add preflight and post-deploy smoke coverage | PASS | Control-plane authenticated smoke, ERP staging smoke, and authenticated production smoke pass. |
+| 15 | Keep current/previous exact release identifiers | PASS for control plane | Read-only SSH verification confirmed production current `265a9047bb7b4d4cc034be3501b61c0f314cf83f` and previous `1c3ea4d570e08443a8100acb1ecdf506c30a4ca5`; services use current and local-origin health passed. |
+| 16 | Add preflight and post-deploy smoke coverage | CONDITIONAL | Staging/authenticated local smoke and public production API smoke pass; production workflow enforcement and host-side authenticated smoke evidence remain open. |
 | 17 | Add non-secret release manifest | PASS | Manifest contains commits, versions, build time, hashes, revisions, flags, environment, and operator. |
 | 18 | Add server-controlled feature flags | PASS | Settings-backed flag map and runtime metadata are implemented and tested. |
 | 19 | Make deployment/provisioning idempotent | PASS | Provisioning retry/idempotency tests and immutable-slot idempotency rehearsal pass. |
 | 20 | Prevent failed candidates from receiving traffic and restore after failed health | PASS | Preflight gate, atomic pointers, failed-health rollback, first-deploy pointer removal, and pointer-isolation rehearsal pass. |
-| 21 | Configure staging CI and separate explicit production promotion | PASS for staging path | Exact-candidate CI runs `34968621678` and `34968811226` passed; production promotion remains a separate explicit workflow. |
+| 21 | Configure staging CI and separate explicit production promotion | CONDITIONAL | Staging CI passes; no independently verifiable production workflow run was found and the GitHub `production` environment/branch protection are not evidenced. |
 | 22 | Make hostnames/configuration independent and document final-domain cutover | PASS | Environment-driven URLs/cookies/provider endpoint and domain cutover checklist added; external validation remains open. |
 | 23 | Test a non-`lengrowth.com` staging hostname | PASS | `staging.example.test` and `erp-staging.example.test` host-header smoke passed without DNS changes. |
 | 24 | Deploy only operationally neutral Phase 0 changes | PASS | Repository changes are safety/configuration tooling only; production promotion and public smoke evidence are recorded. |
-| 25 | Run production smoke and observation window | PASS | Public root/login/API/ERP runtime, unauthenticated denial, supervisor workers, public API health, local-origin checks, authenticated `/auth/me`, and authenticated `/organizations` passed; temporary test data was removed and verified absent. |
-| 26 | Update release, blocker/risk, handover, deployment/rollback, and checklist records | PASS | Release record, registers, handover inventory, rollback tooling, R2 automation evidence, ownership decisions, authenticated smoke evidence, and this checklist are updated. |
+| 25 | Run production smoke and observation window | CONDITIONAL | Public canonical endpoints, authenticated API checks, production host state, workers, timer, pointers, source heads, and zero temporary-user cleanup count passed; legacy TLS and a protected production workflow run remain open. |
+| 26 | Update release, blocker/risk, handover, deployment/rollback, and checklist records | CONDITIONAL | Records now include the audit findings and corrective tooling; final production evidence and legacy TLS resolution remain open. |
 
 ## Rollback instructions
 

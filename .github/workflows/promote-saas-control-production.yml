@@ -53,4 +53,6 @@ jobs:
           PRODUCTION_PROMOTION_APPROVED: yes
           PRODUCTION_BACKUP_VERIFIED: ${{ inputs.production_backup_verified }}
           OFFHOST_BACKUP_VERIFIED: ${{ inputs.offhost_backup_verified }}
+          REQUIRE_AUTH_SMOKE: "true"
+          AUTH_TOKEN_FILE: /run/saas-control/smoke/auth-token
         run: ./scripts/deploy/promote_saas_control.sh
