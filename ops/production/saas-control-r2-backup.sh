@@ -78,9 +78,10 @@ sqlite3 "$CONTROL_DB" ".backup '$RUN_DIR/saas_control.db'"
 
 manifest="$RUN_DIR/manifest.sha256"
 (
-  cd "$RUN_DIR"
-  find erp -maxdepth 1 -type f -printf '%P\n' | sort | xargs -r sha256sum
-  sha256sum saas_control.db
+  for source_file in "$RUN_DIR"/erp/*; do
+    (cd "$RUN_DIR/erp" && sha256sum "$(basename "$source_file")")
+  done
+  (cd "$RUN_DIR" && sha256sum saas_control.db)
 ) > "$manifest"
 
 export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
