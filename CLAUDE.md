@@ -10,7 +10,7 @@ evidence. Credential rotation is an accepted owner waiver for this phase. The
 canonical API is `lenerp-api.lengrowth.com`; the former
 `api.lenerp.lengrowth.com` hostname is retired and must not be used. Do not
 describe Phase 0 as a final production PASS until the protected production
-workflow, rollback path, and retired DNS record cleanup are verified.
+workflow and rollback path are verified.
 
 Never print, paste, commit, or place credential values in logs, documentation,
 patches, shell history, or chat. Retrieve secrets only from the approved secret
@@ -225,8 +225,9 @@ automated run on 2026-09-16 uploaded and byte-hash verified six objects under
    `https://lenerp-api.lengrowth.com/health` returned HTTP `200` through
    Cloudflare on 2026-09-15. The required legacy
    `api.lenerp.lengrowth.com` is no longer a supported route. Its old proxied
-   DNS record must be deleted from the Cloudflare zone; do not add a
-   certificate, route, redirect, or application dependency for that hostname.
+   DNS record was deleted from Cloudflare on 2026-09-16; DNS now returns no
+   result and the endpoint fails as expected. Do not add a certificate, route,
+   redirect, or application dependency for that hostname.
 2. **Credential rotation:** intentionally not performed under the owner's
    explicit waiver for this phase. Record it as waived, not as completed
    rotation; do not rotate or invalidate credentials without renewed approval.
