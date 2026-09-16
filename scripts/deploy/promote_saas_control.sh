@@ -30,6 +30,15 @@ atomic_link() {
 }
 restart_services() {
   sudo "$SYSTEMCTL_BIN" restart "${BACKEND_SERVICE:-saas-backend}" "${FRONTEND_SERVICE:-saas-frontend}"
+  for _ in {1..30}; do
+    if curl -fsS -o /dev/null --max-time 3 "${PRODUCTION_BACKEND_LOCAL_URL:-http://127.0.0.1:8001}/health" \
+      && curl -fsS -o /dev/null --max-time 3 "${PRODUCTION_FRONTEND_LOCAL_URL:-http://127.0.0.1:3000}/"; then
+      return 0
+    fi
+    sleep 2
+  done
+  echo "Production services did not become ready in time." >&2
+  return 1
 }
 validate_nginx() {
   sudo "$NGINX_BIN" -t
