@@ -14,7 +14,7 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 
 from app.core.security import generate_session_token, hash_session_token
 from app.db.session import SessionLocal
@@ -29,6 +29,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--token-file", required=True)
     parser.add_argument("--email", default=os.environ.get("STAGING_SMOKE_EMAIL", DEFAULT_EMAIL))
+    parser.add_argument("--non-admin", action="store_true")
+    parser.add_argument("--cleanup", action="store_true")
     return parser.parse_args()
 
 
@@ -41,23 +43,37 @@ def main() -> None:
     token = generate_session_token()
 
     with SessionLocal() as session:
+        if args.cleanup:
+            user = session.execute(
+                select(SaaSUser).where(SaaSUser.email == args.email.lower())
+            ).scalar_one_or_none()
+            if user is not None:
+                session.execute(delete(AuthSession).where(AuthSession.user_id == user.id))
+                session.execute(
+                    delete(OrganizationMembership).where(OrganizationMembership.user_id == user.id)
+                )
+                session.delete(user)
+                session.commit()
+            print("staging smoke session cleaned")
+            return
+
         user = session.execute(
             select(SaaSUser).where(SaaSUser.email == args.email.lower())
         ).scalar_one_or_none()
         if user is None:
             user = SaaSUser(
                 email=args.email.lower(),
-                full_name="Phase 0 Synthetic Smoke Operator",
+                full_name="Phase 1 Synthetic Non-Admin Smoke User" if args.non_admin else "Phase 0 Synthetic Smoke Operator",
                 password_hash=None,
                 status="active",
-                is_platform_admin=True,
+                is_platform_admin=not args.non_admin,
                 email_verified_at=now,
             )
             session.add(user)
             session.flush()
         else:
             user.status = "active"
-            user.is_platform_admin = True
+            user.is_platform_admin = not args.non_admin
             user.email_verified_at = user.email_verified_at or now
 
         organization = session.execute(
