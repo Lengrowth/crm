@@ -101,8 +101,7 @@ jobs:
         run: ./scripts/deploy/deploy_saas_control.sh
 
       - name: Install browser runtime for durable staging evidence
-        working-directory: frontend
-        run: npx playwright install chromium
+        run: /opt/saas-control-staging/current/frontend/node_modules/.bin/playwright install chromium
 
       - name: Capture candidate-bound browser and accessibility evidence
         env:
@@ -114,7 +113,9 @@ jobs:
         run: |
           token_file="$RUNNER_TEMP/saas-staging-smoke-token"
           sudo install -m 600 -o "$(id -u)" -g "$(id -g)" /run/saas-control-staging/smoke/auth-token "$token_file"
-          AUTH_TOKEN_FILE="$token_file" node /opt/saas-control-staging/current/frontend/scripts/capture_browser_evidence.mjs
+          browser_path="$(find "$HOME/.cache/ms-playwright" -type f -path '*/chrome-linux/chrome' -print -quit 2>/dev/null || true)"
+          [[ -n "$browser_path" ]] || { echo "Installed Chromium executable was not found" >&2; exit 1; }
+          AUTH_TOKEN_FILE="$token_file" BROWSER_EXECUTABLE_PATH="$browser_path" node /opt/saas-control-staging/current/frontend/scripts/capture_browser_evidence.mjs
           rm -f -- "$token_file"
 
       - name: Upload durable staging browser evidence
