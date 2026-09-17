@@ -4,6 +4,7 @@ import type { DashboardSummary } from "@/features/dashboard/types";
 import type { ImplementationPortfolio } from "@/features/implementation/types";
 import type { DomainRecord, ProvisioningJobRecord, TenantRecord } from "@/features/tenants/types";
 import type { OrganizationRecord } from "@/features/organizations/types";
+import type { ModuleAudit, ModuleBundle, ModuleEffective, ModulePreview, ModuleSummary } from "@/features/modules/types";
 
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) { super(message); this.name = "ApiError"; }
@@ -59,3 +60,10 @@ export function manualActivateDomain(tenantId: string, domainId: string, payload
 export function provisionTenant(organizationId: string, tenantId: string, payload: Record<string, unknown>) { return requestJson<{ id: string }>(`/organizations/${organizationId}/tenants/${tenantId}/provision`, { method: "POST", body: JSON.stringify(payload) }); }
 export function getProvisioningStatus(provisionId: string) { return requestJson<{ id: string; status: string }>(`/provisioning/${provisionId}`); }
 export function listProvisioningJobs(tenantId: string) { return requestJson<ProvisioningJobRecord[]>(`/tenants/${tenantId}/provisioning_jobs`); }
+export function fetchModuleCatalog() { return requestJson<ModuleSummary[]>("/catalog/modules"); }
+export function fetchPublicModuleCatalog() { return requestJson<Array<{ code: string; name: string; category: string | null; description: string; display_order: number }>>("/public/modules", {}, false); }
+export function fetchModuleBundles() { return requestJson<ModuleBundle[]>("/module-bundles"); }
+export function fetchOrganizationModules(organizationId: string) { return requestJson<ModuleEffective>(`/organizations/${organizationId}/modules`); }
+export function previewOrganizationModules(organizationId: string, payload: Record<string, unknown>) { return requestJson<ModulePreview>(`/organizations/${organizationId}/modules/preview`, { method: "POST", body: JSON.stringify({ ...payload, organization_id: organizationId }) }); }
+export function applyOrganizationModules(organizationId: string, payload: Record<string, unknown>) { return requestJson<{ operation: string; replayed: boolean; audit_id: string | null; effective: ModuleEffective }>(`/organizations/${organizationId}/modules/apply`, { method: "POST", body: JSON.stringify({ ...payload, organization_id: organizationId }) }); }
+export function fetchOrganizationModuleAudit(organizationId: string) { return requestJson<ModuleAudit[]>(`/organizations/${organizationId}/modules/audit`); }

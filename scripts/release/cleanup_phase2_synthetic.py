@@ -19,6 +19,10 @@ from app.models.domain import (
     OrganizationMembership,
     ProvisioningJob,
     Tenant,
+    ModuleApplicationStatus,
+    ModuleEntitlementAudit,
+    ModuleEntitlementRequest,
+    OrganizationModule,
 )
 from app.models.erpnext import ERPNextIntegrationMetadata, TenantProvisioningRecord
 
@@ -44,6 +48,10 @@ def main() -> int:
         session.execute(delete(ProvisioningJob).where(ProvisioningJob.tenant_id.in_(tenant_ids)))
         session.execute(delete(TenantProvisioningRecord).where(TenantProvisioningRecord.tenant_id.in_(tenant_ids)))
         session.execute(delete(ERPNextIntegrationMetadata).where(ERPNextIntegrationMetadata.tenant_id.in_(tenant_ids)))
+        session.execute(delete(ModuleApplicationStatus).where(ModuleApplicationStatus.tenant_id.in_(tenant_ids)))
+        session.execute(delete(ModuleEntitlementAudit).where(ModuleEntitlementAudit.organization_id.in_(organization_ids)))
+        session.execute(delete(ModuleEntitlementRequest).where(ModuleEntitlementRequest.organization_id.in_(organization_ids)))
+        session.execute(delete(OrganizationModule).where(OrganizationModule.organization_id.in_(organization_ids)))
         session.execute(delete(AuditLog).where(AuditLog.organization_id.in_(organization_ids)))
         session.execute(delete(Tenant).where(Tenant.id.in_(tenant_ids), Tenant.organization_id.in_(organization_ids)))
         session.execute(delete(OrganizationMembership).where(OrganizationMembership.organization_id.in_(organization_ids)))

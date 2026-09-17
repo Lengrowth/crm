@@ -167,6 +167,7 @@ class Plan(Base, UUIDMixin, TimestampMixin):
     monthly_price_cents: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     annual_price_cents: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    default_modules_json: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
 
 
 class Module(Base, UUIDMixin, TimestampMixin):
@@ -178,6 +179,22 @@ class Module(Base, UUIDMixin, TimestampMixin):
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     category: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    public_description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    internal_description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    is_marketed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    dependency_codes_json: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    incompatibility_codes_json: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    required_app: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    minimum_app_version: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    compatible_app_version: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    default_roles_json: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    default_workspaces_json: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    configuration_schema_json: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    administrative_visibility: Mapped[str] = mapped_column(String(32), nullable=False, default="public")
+    alias_of: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
+    deprecated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    metadata_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
 
 class OrganizationModule(Base, UUIDMixin, TimestampMixin):
@@ -205,6 +222,14 @@ class OrganizationModule(Base, UUIDMixin, TimestampMixin):
     settings_json: Mapped[dict[str, object]] = mapped_column(
         JSON, nullable=False, default=dict
     )
+    explicit_state: Mapped[str] = mapped_column(String(32), nullable=False, default="enabled")
+    requested_state: Mapped[str] = mapped_column(String(32), nullable=False, default="enabled")
+    entitled_state: Mapped[str] = mapped_column(String(32), nullable=False, default="entitled")
+    source_type: Mapped[str] = mapped_column(String(32), nullable=False, default="organization")
+    source_ref: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    reason: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    last_idempotency_key: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    requested_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class Subscription(Base, UUIDMixin, TimestampMixin):
@@ -251,6 +276,81 @@ class ImplementationTemplate(Base, UUIDMixin, TimestampMixin):
     default_settings_json: Mapped[dict[str, object]] = mapped_column(
         JSON, nullable=False, default=dict
     )
+
+
+class ModuleBundle(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "module_bundles"
+    __table_args__ = (UniqueConstraint("bundle_key", "version", name="uq_module_bundle_key_version"),)
+
+    bundle_key: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    source: Mapped[str] = mapped_column(String(255), nullable=False, default="platform")
+
+
+class ModuleBundleItem(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "module_bundle_items"
+    __table_args__ = (
+        UniqueConstraint("bundle_id", "module_id", name="uq_module_bundle_item"),
+    )
+
+    bundle_id: Mapped[str] = mapped_column(ForeignKey("module_bundles.id"), nullable=False, index=True)
+    module_id: Mapped[str] = mapped_column(ForeignKey("modules.id"), nullable=False, index=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
+class ModuleEntitlementRequest(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "module_entitlement_requests"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "idempotency_key", name="uq_module_request_org_key"),
+    )
+
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)
+    actor_user_id: Mapped[str] = mapped_column(ForeignKey("saas_users.id"), nullable=False, index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    operation: Mapped[str] = mapped_column(String(32), nullable=False)
+    response_json: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="applied")
+
+
+class ModuleEntitlementAudit(Base):
+    __tablename__ = "module_entitlement_audits"
+    __table_args__ = (Index("ix_module_entitlement_audits_org_created", "organization_id", "created_at"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    actor_user_id: Mapped[Optional[str]] = mapped_column(ForeignKey("saas_users.id"), nullable=True, index=True)
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)
+    operation: Mapped[str] = mapped_column(String(32), nullable=False)
+    previous_requested_json: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    new_requested_json: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    previous_effective_json: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    new_effective_json: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    source_type: Mapped[str] = mapped_column(String(32), nullable=False, default="organization")
+    source_ref: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    reason: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    result: Mapped[str] = mapped_column(String(32), nullable=False, default="applied")
+
+
+class ModuleApplicationStatus(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "module_application_statuses"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "module_id", name="uq_module_application_tenant_module"),
+    )
+
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), nullable=False, index=True)
+    module_id: Mapped[str] = mapped_column(ForeignKey("modules.id"), nullable=False, index=True)
+    application_state: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
+    verification_state: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
+    evidence_ref: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    failure_reason: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    applied_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    verified_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_checked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class ImplementationProject(Base, UUIDMixin, TimestampMixin):

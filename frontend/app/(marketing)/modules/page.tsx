@@ -13,94 +13,20 @@ export const metadata: Metadata = {
     "LenERP covers accounting, CRM, sales, procurement, inventory, manufacturing, projects, HR, quality, and support — one connected platform for any business.",
 };
 
-const modules = [
-  {
-    icon: "building" as const,
-    title: "CRM",
-    description:
-      "Leads, opportunities, quotations, multi-territory sales, SLA management, and customer newsletters — full pipeline from first touch to closed deal.",
-    highlights: ["Leads & opportunities", "Quotations", "Multi-territory sales", "SLA management"],
-  },
-  {
-    icon: "chart" as const,
-    title: "Accounting",
-    description:
-      "General ledger, accounts payable/receivable, financial statements, fixed assets, multi-currency, and global tax compliance out of the box.",
-    highlights: ["Multi-subsidiary", "Financial statements", "Fixed assets", "Global tax & compliance"],
-  },
-  {
-    icon: "spark" as const,
-    title: "Sales",
-    description:
-      "Order-to-cash cycle: sales orders, invoicing, pricing rules, print formats, and integrated payments — connected directly to your CRM.",
-    highlights: ["Order-to-cash", "Sales invoicing", "Pricing rules", "Payment integration"],
-  },
-  {
-    icon: "shield" as const,
-    title: "Procurement",
-    description:
-      "Procure-to-pay cycle with material requests, purchase orders, multi-level approvals, supplier scorecards, and supplier payments.",
-    highlights: ["Purchase orders", "Material requests", "Multi-level approvals", "Supplier scorecards"],
-  },
-  {
-    icon: "layers" as const,
-    title: "Inventory & Stock",
-    description:
-      "Item master, warehouses, serial and batch tracking, stock ledger, item defaults, and inventory reports across every location.",
-    highlights: ["Warehouses", "Serial & batch tracking", "Stock ledger", "Inventory reports"],
-  },
-  {
-    icon: "bolt" as const,
-    title: "Manufacturing",
-    description:
-      "Multi-level BOM, production planning, work orders, job cards, subcontracting, quality checks, and manufacturing reports.",
-    highlights: ["Multi-level BOM", "Work orders & job cards", "Subcontracting", "Quality checks"],
-  },
-  {
-    icon: "clock" as const,
-    title: "Projects",
-    description:
-      "Project and task tracking, revenue recognition, expense tracking, timesheet logging, inventory tracking, and cashflow management.",
-    highlights: ["Task tracking", "Revenue recognition", "Timesheets", "Cashflow management"],
-  },
-  {
-    icon: "grid" as const,
-    title: "Point of Sale",
-    description:
-      "Cloud-based, multi-store POS with collections, invoicing, shift management, POS profiles, and print formats for retail businesses.",
-    highlights: ["Cloud-based", "Multi-store", "Shift management", "Print formats"],
-  },
-  {
-    icon: "eye" as const,
-    title: "Quality",
-    description:
-      "Quality assurance plans, quality inspections, templates, non-conformance reporting, and quality analytics across end-to-end material flow.",
-    highlights: ["QA plans", "Quality inspections", "Non-conformance reporting", "Quality analytics"],
-  },
-  {
-    icon: "link" as const,
-    title: "Support & Helpdesk",
-    description:
-      "Auto-assign tickets, SLA definitions, customer portal, maintenance visits, knowledge base, and integrated invoicing for support teams.",
-    highlights: ["Auto-assign rules", "SLAs", "Customer portal", "Knowledge base"],
-  },
-  {
-    icon: "flag" as const,
-    title: "Field Operations",
-    description:
-      "Job dispatch, crew assignment, task tracking, and real-time status updates for businesses running work outside the office — including drilling.",
-    highlights: ["Job dispatch", "Crew management", "Task tracking", "Real-time status"],
-  },
-  {
-    icon: "dot" as const,
-    title: "Reporting & Dashboards",
-    description:
-      "Customisable reports, management dashboards, cost analysis, and real-time KPIs downloadable for leadership and operational teams.",
-    highlights: ["Custom reports", "Management dashboards", "Cost analysis", "Real-time KPIs"],
-  },
-];
+type PublicModule = { code: string; name: string; category: string | null; description: string; display_order: number };
 
-export default function ModulesPage() {
+async function loadPublicModules(): Promise<PublicModule[]> {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000"}/public/modules`, { next: { revalidate: 60 } });
+    if (!response.ok) return [];
+    return await response.json() as PublicModule[];
+  } catch {
+    return [];
+  }
+}
+
+export default async function ModulesPage() {
+  const modules = await loadPublicModules();
   return (
     <div className="space-y-16 lg:space-y-24">
       {/* Hero */}
@@ -132,20 +58,20 @@ export default function ModulesPage() {
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3 marketing-stagger">
           {modules.map((mod) => (
             <div
-              key={mod.title}
+              key={mod.code}
               className="marketing-module-card marketing-panel rounded-[1.75rem] p-6 flex flex-col"
             >
               <span
                 className="marketing-module-icon flex h-10 w-10 items-center justify-center rounded-xl border border-[color:var(--border)] text-[color:var(--text)]"
                 style={{ background: "var(--surface-strong)" }}
               >
-                <MarketingIcon icon={mod.icon} className="h-5 w-5" />
+                <MarketingIcon icon="grid" className="h-5 w-5" />
               </span>
               <h2
                 className="mt-4 text-xl font-semibold tracking-[-0.02em]"
                 style={{ color: "var(--text)" }}
               >
-                {mod.title}
+                {mod.name}
               </h2>
               <p
                 className="mt-2 text-sm leading-6"
@@ -153,17 +79,7 @@ export default function ModulesPage() {
               >
                 {mod.description}
               </p>
-              <ul className="mt-4 space-y-1.5">
-                {mod.highlights.map((h) => (
-                  <li key={h} className="flex items-center gap-2">
-                    <span
-                      className="h-1.5 w-1.5 rounded-full shrink-0"
-                      style={{ background: "var(--accent)" }}
-                    />
-                    <span className="text-xs" style={{ color: "var(--muted)" }}>{h}</span>
-                  </li>
-                ))}
-              </ul>
+              <p className="mt-4 font-mono text-[0.65rem] uppercase tracking-[0.16em]" style={{ color: "var(--accent)" }}>{mod.code}</p>
             </div>
           ))}
         </div>

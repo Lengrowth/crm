@@ -297,15 +297,20 @@ function RangeControl({ label, value, min, max, step, display, onChange }: { lab
 }
 
 const industries = [
-  { name: "Manufacturing", code: "MFG", stat: "96.2%", statLabel: "On-time production", color: "#f0642b", modules: ["Production", "Quality", "Inventory"], chart: [35, 52, 44, 68, 62, 83, 91] },
-  { name: "Distribution", code: "DST", stat: "4.8×", statLabel: "Stock velocity", color: "#6257ff", modules: ["Warehouses", "Procurement", "Sales"], chart: [28, 44, 57, 49, 72, 79, 94] },
-  { name: "Field services", code: "FLD", stat: "92%", statLabel: "First-time completion", color: "#16a36a", modules: ["Dispatch", "Projects", "Mobile"], chart: [42, 39, 55, 61, 58, 77, 86] },
-  { name: "Drilling", code: "DRL", stat: "18", statLabel: "Active field jobs", color: "#1d7afc", modules: ["Jobs", "Fleet", "Materials"], chart: [22, 36, 48, 43, 66, 71, 89] },
+  { name: "Manufacturing", code: "MFG", stat: "96.2%", statLabel: "On-time production", color: "#f0642b", chart: [35, 52, 44, 68, 62, 83, 91] },
+  { name: "Distribution", code: "DST", stat: "4.8×", statLabel: "Stock velocity", color: "#6257ff", chart: [28, 44, 57, 49, 72, 79, 94] },
+  { name: "Field services", code: "FLD", stat: "92%", statLabel: "First-time completion", color: "#16a36a", chart: [42, 39, 55, 61, 58, 77, 86] },
+  { name: "Drilling", code: "DRL", stat: "18", statLabel: "Active field jobs", color: "#1d7afc", chart: [22, 36, 48, 43, 66, 71, 89] },
 ];
 
 function IndustryWorlds() {
   const [active, setActive] = useState(0);
+  const [catalogModules, setCatalogModules] = useState<string[]>([]);
+  useEffect(() => {
+    void fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000"}/public/modules`).then((response) => response.ok ? response.json() : []).then((items: Array<{ name: string }>) => setCatalogModules(items.map((item) => item.name))).catch(() => undefined);
+  }, []);
   const industry = industries[active];
+  const industryModules = catalogModules.slice(active * 3, active * 3 + 3);
   const points = industry.chart.map((value, index) => `${index * (300 / (industry.chart.length - 1))},${100 - value}`).join(" ");
 
   return (
@@ -325,7 +330,7 @@ function IndustryWorlds() {
               <div className="reseller-industry-main">
                 <div className="reseller-industry-header"><div><small>OPERATIONS / {industry.code}</small><h3>{industry.name} command</h3></div><span>Live overview</span></div>
                 <div className="reseller-industry-dashboard">
-                  <div className="reseller-industry-chart"><small>Operational performance</small><svg viewBox="0 0 300 105" preserveAspectRatio="none"><polyline points={points} /></svg><div>{industry.modules.map((module) => <span key={module}>{module}</span>)}</div></div>
+                  <div className="reseller-industry-chart"><small>Operational performance</small><svg viewBox="0 0 300 105" preserveAspectRatio="none"><polyline points={points} /></svg><div>{industryModules.map((module) => <span key={module}>{module}</span>)}</div></div>
                   <div className="reseller-industry-stat"><span className="reseller-live-dot" /><strong>{industry.stat}</strong><small>{industry.statLabel}</small><i>Live</i></div>
                 </div>
               </div>

@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models.domain import ImplementationTemplate, Module, Organization, Plan, Tenant
+from app.models.domain import ImplementationTemplate, Module, ModuleBundle, ModuleBundleItem, Organization, Plan, Tenant
 
 
 class CatalogRepository:
@@ -16,7 +16,13 @@ class CatalogRepository:
         return self._list(session, select(Tenant).order_by(Tenant.created_at.desc()))
 
     def list_modules(self, session: Session) -> Sequence[Module]:
-        return self._list(session, select(Module).order_by(Module.category.asc().nullslast(), Module.name.asc()))
+        return self._list(session, select(Module).order_by(Module.display_order.asc(), Module.code.asc()))
+
+    def list_bundles(self, session: Session) -> Sequence[ModuleBundle]:
+        return self._list(session, select(ModuleBundle).where(ModuleBundle.is_active.is_(True)).order_by(ModuleBundle.bundle_key.asc(), ModuleBundle.version.desc()))
+
+    def list_bundle_items(self, session: Session, bundle_id: str) -> Sequence[ModuleBundleItem]:
+        return self._list(session, select(ModuleBundleItem).where(ModuleBundleItem.bundle_id == bundle_id).order_by(ModuleBundleItem.sort_order.asc(), ModuleBundleItem.module_id.asc()))
 
     def list_plans(self, session: Session) -> Sequence[Plan]:
         return self._list(session, select(Plan).order_by(Plan.monthly_price_cents.asc(), Plan.name.asc()))
