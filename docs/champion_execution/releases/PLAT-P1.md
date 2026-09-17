@@ -5,7 +5,7 @@ Release identity: `PLAT-P1`
 Record date: 2026-09-17
 Operator: Codex, working with the delivery owner
 Approver: Required GitHub `production` environment reviewer; delivery owner acceptance recorded at the protected promotion gate
-Production candidate: `0db050931933f7d8f0a4295121f3337edc135778`
+Production candidate: `12bc548056c59341d3ccc492a5353a696a7c0661`
 
 ## Scope and safety decision
 
@@ -77,35 +77,45 @@ separate procedure and is not implied by this release.
 | Check | Result | Evidence |
 |---|---|---|
 | Frontend typecheck | PASS | `npm run typecheck` |
-| Frontend production build | PASS | `npm run build`; 33 routes generated |
+| Frontend production build | PASS | `npm run build`; 34 routes generated |
 | Frontend/unit tests | PASS | `npm test`; 10 tests passed |
 | Backend suite | PASS | `python -m pytest backend/tests -q`; 36 passed |
 | Secret scan | PASS | `python scripts/release/secret_scan.py` |
 | Diff whitespace | PASS | `git diff --check` |
-| Authenticated route matrix | PASS | Candidate-bound main staging browser artifact [10491986933](https://github.com/Lengrowth/crm/actions/runs/35210899381/artifacts/10491986933); 11 routes returned HTTP 200 |
-| Mobile drawer/breadcrumb evidence | PASS | Main staging run [35210899381](https://github.com/Lengrowth/crm/actions/runs/35210899381) retained desktop/mobile screenshots and axe results; serious/critical violations were zero |
-| Runtime flag fallback | PASS | Protected flag-only off run [35204249048](https://github.com/Lengrowth/crm/actions/runs/35204249048) and on run [35211232762](https://github.com/Lengrowth/crm/actions/runs/35211232762) preserved the exact release pointer |
+| Authenticated route matrix | PASS | Exact post-merge candidate browser artifact [10498661711](https://github.com/Lengrowth/crm/actions/runs/35223932797/artifacts/10498661711); 11 routes returned HTTP 200 |
+| Mobile drawer/breadcrumb evidence | PASS | Exact post-merge candidate run [35223932797](https://github.com/Lengrowth/crm/actions/runs/35223932797) used shell `on`, retained desktop/mobile screenshots, and recorded zero serious/critical violations and zero serious/critical incomplete checks |
+| Runtime flag fallback | PASS | Protected flag-only off run [35204249048](https://github.com/Lengrowth/crm/actions/runs/35204249048) and on run [35211232762](https://github.com/Lengrowth/crm/actions/runs/35211232762) verified pointer-preserving fallback on the prior serving candidate; the production promotion above serves the corrected candidate |
 
 ## Staging and production evidence
 
-The final-main candidate-bound staging run [35210899381](https://github.com/Lengrowth/crm/actions/runs/35210899381)
-retained artifact [10491986933](https://github.com/Lengrowth/crm/actions/runs/35210899381/artifacts/10491986933).
-It covered 11 authenticated routes, desktop/mobile screenshots, axe WCAG 2A/AA
-results with zero serious/critical violations, and non-admin implementation
-denial with zero restricted navigation links.
+The authoritative post-merge candidate-bound staging run [35223932797](https://github.com/Lengrowth/crm/actions/runs/35223932797)
+retained artifact [10498661711](https://github.com/Lengrowth/crm/actions/runs/35223932797/artifacts/10498661711).
+It tested the exact `main` candidate `12bc548056c59341d3ccc492a5353a696a7c0661`
+with the shell explicitly enabled. The artifact records runtime release and
+commit identity equal to that candidate, operator-validation provenance, 11
+authenticated routes, desktop/mobile screenshots, zero serious/critical axe
+violations and zero serious/critical incomplete checks, plus non-admin
+implementation denial.
 
-Protected production evidence for the exact serving release:
+The earlier candidate `0db050931933f7d8f0a4295121f3337edc135778` is retained as
+the previous production release only. Its exact enabled-shell evidence run
+failed the now-enforced serious-incomplete gate on `aria-prohibited-attr`, so
+it is not the authoritative P1 candidate and must not be promoted again.
+
+Protected production evidence and fallback evidence:
 
 | Action | Run | Artifact / result |
 |---|---|---|
 | Flag-only fallback to legacy shell | [35204249048](https://github.com/Lengrowth/crm/actions/runs/35204249048) | [readback artifact 10489067913](https://github.com/Lengrowth/crm/actions/runs/35204249048/artifacts/10489067913); exact release pointer preserved, flag `false` |
-| Flag-only enablement on `0db0509…` | [35211232762](https://github.com/Lengrowth/crm/actions/runs/35211232762) | [readback artifact 10491683776](https://github.com/Lengrowth/crm/actions/runs/35211232762/artifacts/10491683776); exact release pointer preserved, authenticated shell smoke passed, flag `true` |
+| Exact candidate staging evidence with shell enabled | [35223932797](https://github.com/Lengrowth/crm/actions/runs/35223932797) | [browser artifact 10498661711](https://github.com/Lengrowth/crm/actions/runs/35223932797/artifacts/10498661711); exact candidate/runtime identity matched, operator-validation provenance recorded, strict desktop/mobile axe gate passed |
+| Protected production promotion of `12bc548…` | [35224283218](https://github.com/Lengrowth/crm/actions/runs/35224283218) | [production readback artifact 10498031884](https://github.com/Lengrowth/crm/actions/runs/35224283218/artifacts/10498031884); exact release promoted, shell flag `true`, authenticated production smoke and cleanup passed |
 
 The final readback recorded for the currently serving candidate:
 
-- `current`: `/opt/saas-control/releases/0db050931933f7d8f0a4295121f3337edc135778`
-- `previous`: `/opt/saas-control/releases/c2b923a5550923749b4f4ade7599b4a96a8943f1`
+- `current`: `/opt/saas-control/releases/12bc548056c59341d3ccc492a5353a696a7c0661`
+- `previous`: `/opt/saas-control/releases/0db050931933f7d8f0a4295121f3337edc135778`
 - backend, frontend, nginx, and R2 backup timer active; R2 timer enabled
+- R2 lifecycle query succeeded with 17 objects present
 - local production health HTTP `200`; clean Frappe/ERPNext source trees
 - zero temporary smoke users, organizations, or active sessions
 
@@ -116,7 +126,11 @@ candidate with `platform_phase1_shell=true`, and the retired
 readback recorded local health `200`, active backend/frontend/nginx/R2 timer,
 R2 lifecycle verification, and zero temporary smoke users, organizations, or
 sessions. The candidate-bound browser artifact covered the full dynamic route
-matrix, desktop/mobile shell states, authorization denial, and WCAG results.
+matrix, desktop/mobile shell states, authorization denial, and strict WCAG
+results. The runtime manifest intentionally reports `environment: staging`:
+the immutable artifact is built in the staging lane and promoted unchanged to
+production; release identity and production readback are authoritative for
+where it is serving.
 Automated component coverage includes persistent preferences, mobile drawer
 behavior, active links, skip-link/main focus semantics, breadcrumbs, and
 keyboard close behavior.
@@ -126,8 +140,8 @@ keyboard close behavior.
 The generic checklist in `docs/champion_execution/PHASE_DEPLOYMENT_GATE.md`
 applies. The P1 gate is closed: server-side restricted-route authorization,
 candidate-bound CI/browser/WCAG artifacts, runtime fail-closed behavior, mobile
-focus management, legacy permission filtering, and same-candidate flag-only
-off/on evidence are recorded above.
+focus management, legacy permission filtering, and pointer-preserving flag
+fallback evidence are recorded above.
 
 ## Accepted waivers and follow-up
 
@@ -135,8 +149,7 @@ The existing credential-rotation waiver from Phase 0 remains explicitly
 accepted. No credentials were rotated or invalidated, no production Frappe or
 ERPNext worktree was modified, and no database migration or business API change
 was introduced. The GitHub Actions Node.js 20 deprecation annotation is an
-upstream runner warning only. The inherited frontend dependency audit finding
-(currently 8 vulnerabilities after adding the browser-test tooling, including a
-critical advisory in the existing Next dependency chain) is tracked separately
-and is not silently treated as a release pass; it requires dependency-owner
-review before the final P1 gate is closed.
+upstream runner warning only. The independent frontend dependency audit
+inventory is seven vulnerabilities (1 low, 1 moderate, 4 high, 1 critical)
+and remains a separately tracked dependency-owner review item; it is not
+silently treated as zero risk or conflated with the functional/browser gate.

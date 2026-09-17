@@ -7,9 +7,10 @@
 This folder is the tactical implementation sequence for `../../../champion-forecast/docs/COMPLETE_LENERP_DELIVERY_PLAN.md`. The agreement and accepted proposal define the commercial obligation. The complete delivery plan defines the promised outcome. This pack defines how the work is built, released, validated, and handed over.
 
 The completed Phase 1 production baseline is candidate
-`0db050931933f7d8f0a4295121f3337edc135778`, with the responsive operator
+`12bc548056c59341d3ccc492a5353a696a7c0661`, with the responsive operator
 shell enabled by the server-controlled `platform_phase1_shell` flag. The old
-shell remains available for the next platform phase; see
+shell remains available through the same global flag for the next platform
+phase; see
 [`releases/PLAT-P1.md`](releases/PLAT-P1.md) for the evidence record.
 
 ## Current implementation assumptions
