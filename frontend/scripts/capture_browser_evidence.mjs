@@ -29,7 +29,7 @@ const routes = [
   "/app/settings",
 ];
 
-const browser = await chromium.launch({ headless: true, executablePath: process.env.BROWSER_EXECUTABLE_PATH || undefined });
+const browser = await chromium.launch({ headless: process.env.HEADLESS !== "false", args: process.env.HEADLESS === "false" ? ["--headless=new", "--no-sandbox"] : undefined, executablePath: process.env.BROWSER_EXECUTABLE_PATH || undefined });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: "reduce", extraHTTPHeaders: hostHeader ? { Host: hostHeader } : undefined });
 if (tokenFile) {
   const token = (await readFile(tokenFile, "utf8")).trim();

@@ -107,6 +107,7 @@ jobs:
       - name: Capture candidate-bound browser and accessibility evidence
         env:
           EXPECTED_PHASE_ONE_SHELL: ${{ inputs.phase1_shell_state || 'off' }}
+          HEADLESS: "false"
           BASE_URL: http://127.0.0.1:13001
           HOST_HEADER: staging.example.test
           OUTPUT_DIR: ${{ github.workspace }}/staging-browser-evidence
