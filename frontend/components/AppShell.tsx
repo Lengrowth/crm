@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SessionBadge } from "@/components/SessionBadge";
@@ -62,11 +62,15 @@ export function AppShell({ children }: AppShellProps) {
   }, []);
 
   if (!isPhaseOneShellEnabled(runtime)) {
-    return <LegacyAppShell>{children}</LegacyAppShell>;
+    return <LegacyAppShell sessionState={sessionState} user={user}>{children}</LegacyAppShell>;
   }
 
   if (sessionState === "anonymous") {
     return <SessionRequired />;
+  }
+
+  if (sessionState === "loading") {
+    return <SessionLoading />;
   }
 
   const groups = filterNavigation(operatorNavigation, {
@@ -76,9 +80,7 @@ export function AppShell({ children }: AppShellProps) {
   });
 
   return (
-    <OperatorShellFrame groups={groups} runtime={runtime} user={user}>
-      {pathname.startsWith("/app/implementation") && user && !user.is_platform_admin ? <AccessDenied /> : children}
-    </OperatorShellFrame>
+    <OperatorShellFrame groups={groups} runtime={runtime} user={user}>{children}</OperatorShellFrame>
   );
 }
 
@@ -90,9 +92,44 @@ export function OperatorShellFrame({ children, groups, runtime, user }: { childr
   const [sessionOpen, setSessionOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const sessionMenuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileDrawerRef = useRef<HTMLElement>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
   const breadcrumbs = useMemo(() => buildBreadcrumbs(pathname), [pathname]);
   const pageTitle = useMemo(() => getPageTitle(pathname), [pathname]);
 
+  useEffect(() => {
+    if (mobileOpen) {
+      restoreFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : mobileMenuButtonRef.current;
+      const drawer = mobileDrawerRef.current;
+      const focusable = drawer ? getFocusableElements(drawer) : [];
+      (focusable.find((element) => element.getAttribute("aria-label") === "Close navigation") ?? focusable[0] ?? drawer)?.focus();
+
+      function trapFocus(event: KeyboardEvent) {
+        if (event.key !== "Tab" || !mobileDrawerRef.current) return;
+        const elements = getFocusableElements(mobileDrawerRef.current);
+        if (!elements.length) {
+          event.preventDefault();
+          mobileDrawerRef.current.focus();
+          return;
+        }
+        const first = elements.find((element) => element.getAttribute("aria-label") === "Close navigation") ?? elements[0];
+        const last = elements[elements.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+
+      document.addEventListener("keydown", trapFocus);
+      return () => document.removeEventListener("keydown", trapFocus);
+    }
+    restoreFocusRef.current?.focus();
+    restoreFocusRef.current = null;
+  }, [mobileOpen]);
   useEffect(() => {
     setCompact(readCompactPreference(window.localStorage));
     setCollapsedGroups(readCollapsedGroups(window.localStorage));
@@ -102,7 +139,7 @@ export function OperatorShellFrame({ children, groups, runtime, user }: { childr
   useEffect(() => { window.localStorage.setItem(GROUPS_STORAGE_KEY, JSON.stringify(collapsedGroups)); }, [collapsedGroups]);
   useEffect(() => {
     function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") { setMobileOpen(false); setSessionOpen(false); }
+      if (event.key === "Escape") { setMobileOpen(false); mobileMenuButtonRef.current?.focus(); setSessionOpen(false); }
     }
     document.addEventListener("keydown", closeOnEscape);
     return () => document.removeEventListener("keydown", closeOnEscape);
@@ -134,11 +171,11 @@ export function OperatorShellFrame({ children, groups, runtime, user }: { childr
     <div className="operator-shell min-h-screen">
       <a href="#main-content" className="operator-skip-link">Skip to main content</a>
       <div className="flex min-h-screen">
-        <Sidebar groups={groups} pathname={pathname} compact={compact} collapsedGroups={collapsedGroups} mobileOpen={mobileOpen} onCloseMobile={() => setMobileOpen(false)} onToggleCompact={() => setCompact((value) => !value)} onToggleGroup={(id) => setCollapsedGroups((value) => ({ ...value, [id]: !value[id] }))} />
+        <Sidebar groups={groups} pathname={pathname} compact={compact} collapsedGroups={collapsedGroups} mobileOpen={mobileOpen} mobileDrawerRef={mobileDrawerRef} onCloseMobile={() => { setMobileOpen(false); mobileMenuButtonRef.current?.focus(); }} onToggleCompact={() => setCompact((value) => !value)} onToggleGroup={(id) => setCollapsedGroups((value) => ({ ...value, [id]: !value[id] }))} />
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="operator-header">
             <div className="flex min-w-0 items-center gap-3">
-              <button type="button" className="operator-icon-button lg:hidden" aria-label="Open navigation" aria-expanded={mobileOpen} onClick={() => setMobileOpen(true)}><MenuIcon /></button>
+              <button ref={mobileMenuButtonRef} type="button" className="operator-icon-button lg:hidden" aria-label="Open navigation" aria-expanded={mobileOpen} onClick={() => setMobileOpen(true)}><MenuIcon /></button>
               <div className="min-w-0">
                 <div className="operator-breadcrumbs" aria-label="Breadcrumb">
                   {breadcrumbs.map((crumb, index) => <span key={`${crumb.label}-${index}`} className="flex items-center gap-2">{index > 0 ? <ChevronIcon /> : null}{crumb.href ? <Link href={crumb.href}>{crumb.label}</Link> : <span aria-current="page">{crumb.label}</span>}</span>)}
@@ -147,7 +184,7 @@ export function OperatorShellFrame({ children, groups, runtime, user }: { childr
               </div>
             </div>
             <div className="operator-header-actions">
-              <span className="operator-status" title="Runtime status"><span className="operator-status-dot" aria-hidden="true" /><span className="hidden sm:inline">Operational</span></span>
+              <span className="operator-status" title="Runtime status"><span className="operator-status-dot" aria-hidden="true" /><span className="hidden sm:inline">{env.statusLabel}</span></span>
               <span className="operator-environment">{displayEnvironment}</span>
               <ThemeToggle />
               <div className="relative" ref={sessionMenuRef}>
@@ -164,7 +201,7 @@ export function OperatorShellFrame({ children, groups, runtime, user }: { childr
   );
 }
 
-export function Sidebar({ groups, pathname, compact, collapsedGroups, mobileOpen, onCloseMobile, onToggleCompact, onToggleGroup }: { groups: NavigationGroup[]; pathname: string; compact: boolean; collapsedGroups: Record<string, boolean>; mobileOpen: boolean; onCloseMobile: () => void; onToggleCompact: () => void; onToggleGroup: (id: string) => void }) {
+export function Sidebar({ groups, pathname, compact, collapsedGroups, mobileOpen, mobileDrawerRef, onCloseMobile, onToggleCompact, onToggleGroup }: { groups: NavigationGroup[]; pathname: string; compact: boolean; collapsedGroups: Record<string, boolean>; mobileOpen: boolean; mobileDrawerRef?: RefObject<HTMLElement | null>; onCloseMobile: () => void; onToggleCompact: () => void; onToggleGroup: (id: string) => void }) {
   const content = <>
     <div className="operator-brand-row"><Link href="/app" className="operator-brand" onClick={onCloseMobile}><span className="operator-brand-mark" aria-hidden="true">L</span><span className={compact ? "sr-only" : ""}>{env.appName}</span></Link><button type="button" className="operator-icon-button lg:hidden" aria-label="Close navigation" onClick={onCloseMobile}><CloseIcon /></button></div>
     <div className={`operator-rail-label ${compact ? "sr-only" : ""}`}><span>Workspace</span><span className="operator-environment">{env.environmentLabel}</span></div>
@@ -173,13 +210,14 @@ export function Sidebar({ groups, pathname, compact, collapsedGroups, mobileOpen
     </nav>
     <div className="mt-auto pt-6"><button type="button" className={`operator-compact-toggle ${compact ? "justify-center" : ""}`} onClick={onToggleCompact} aria-pressed={compact}><CollapseIcon /><span className={compact ? "sr-only" : ""}>{compact ? "Expand sidebar" : "Compact sidebar"}</span></button></div>
   </>;
-  return <><aside className={`operator-sidebar operator-sidebar-desktop ${compact ? "is-compact" : ""}`} aria-label="Desktop navigation">{content}</aside>{mobileOpen ? <div className="operator-mobile-layer" aria-hidden="true" onClick={onCloseMobile} /> : null}<aside className={`operator-sidebar operator-sidebar-mobile ${mobileOpen ? "is-open" : ""}`} aria-label="Mobile navigation">{content}</aside></>;
+  return <><aside className={`operator-sidebar operator-sidebar-desktop ${compact ? "is-compact" : ""}`} aria-label="Desktop navigation" aria-hidden={mobileOpen ? true : undefined} inert={mobileOpen ? true : undefined}>{content}</aside>{mobileOpen ? <div className="operator-mobile-layer" aria-hidden="true" onClick={onCloseMobile} /> : null}<aside ref={mobileDrawerRef} tabIndex={-1} className={`operator-sidebar operator-sidebar-mobile ${mobileOpen ? "is-open" : ""}`} aria-label="Mobile navigation" role="dialog" aria-modal="true" aria-hidden={mobileOpen ? undefined : true} inert={!mobileOpen ? true : undefined}>{content}</aside></>;
 }
 
-function LegacyAppShell({ children }: AppShellProps) { return <div className="theme-shell min-h-screen"><div className="grid min-h-screen lg:grid-cols-[260px_1fr]"><aside className="border-r p-6" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}><div className="mb-8"><p className="text-xs font-semibold uppercase tracking-[0.24em]" style={{ color: "var(--muted)" }}>Workspace</p><h1 className="mt-2 text-xl font-semibold" style={{ color: "var(--text)" }}>{env.appName}</h1><p className="mt-2 text-sm leading-6" style={{ color: "var(--muted)" }}>Operator routes for customers, sites, modules, and delivery work.</p></div><SessionBadge /><nav className="mt-6 space-y-2 text-sm" aria-label="Dashboard navigation">{operatorNavigation.flatMap((group) => group.items).map((item) => <Link key={item.href} href={item.href} className="block rounded-xl border px-4 py-3 transition hover:translate-x-0.5" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-strong)", color: "var(--text)", boxShadow: "0 10px 30px var(--shadow)" }}>{item.label}</Link>)}</nav><div className="mt-8"><ThemeToggle /></div></aside><main className="p-6 lg:p-10">{children}</main></div></div>; }
+function LegacyAppShell({ children, sessionState, user }: AppShellProps & { sessionState: SessionState; user: AuthUser | null }) { const groups = filterNavigation(operatorNavigation, { isAuthenticated: sessionState === "authenticated", isPlatformAdmin: user?.is_platform_admin === true }); return <div className="theme-shell min-h-screen"><div className="grid min-h-screen lg:grid-cols-[260px_1fr]"><aside className="border-r p-6" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}><div className="mb-8"><p className="text-xs font-semibold uppercase tracking-[0.24em]" style={{ color: "var(--muted)" }}>Workspace</p><h1 className="mt-2 text-xl font-semibold" style={{ color: "var(--text)" }}>{env.appName}</h1><p className="mt-2 text-sm leading-6" style={{ color: "var(--muted)" }}>Operator routes for customers, sites, modules, and delivery work.</p></div><SessionBadge /><nav className="mt-6 space-y-2 text-sm" aria-label="Dashboard navigation">{groups.flatMap((group) => group.items).map((item) => <Link key={item.href} href={item.href} className="block rounded-xl border px-4 py-3 transition hover:translate-x-0.5" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-strong)", color: "var(--text)", boxShadow: "0 10px 30px var(--shadow)" }}>{item.label}</Link>)}</nav><div className="mt-8"><ThemeToggle /></div></aside><main className="p-6 lg:p-10">{children}</main></div></div>; }
+function SessionLoading() { return <div className="theme-shell flex min-h-screen items-center justify-center p-6"><div className="operator-state-card" role="status" aria-live="polite"><p className="operator-eyebrow">Loading workspace</p><div className="mt-4 h-5 w-48 animate-pulse rounded-full" style={{ backgroundColor: "var(--surface-muted)" }} /><div className="mt-3 h-4 max-w-xl animate-pulse rounded-full" style={{ backgroundColor: "var(--surface-muted)" }} /></div></div>; }
 function SessionRequired() { return <div className="theme-shell flex min-h-screen items-center justify-center p-6"><div className="operator-state-card"><p className="operator-eyebrow">Session required</p><h1 className="mt-3 text-2xl font-semibold">Sign in to continue</h1><p className="mt-3 text-sm leading-6" style={{ color: "var(--muted)" }}>Your session is no longer valid. Sign in again to access the operator workspace.</p><Link className="operator-primary-button mt-6 inline-flex" href="/login">Return to sign in</Link></div></div>; }
-function AccessDenied() { return <div className="operator-state-card max-w-xl"><p className="operator-eyebrow">Access denied</p><h2 className="mt-3 text-2xl font-semibold">You do not have access to this area</h2><p className="mt-3 text-sm leading-6" style={{ color: "var(--muted)" }}>This area is reserved for platform administrators. Your session and organization access remain unchanged.</p><Link className="operator-primary-button mt-6 inline-flex" href="/app">Back to Home</Link></div>; }
 function initials(name: string) { return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "?"; }
+function getFocusableElements(container: HTMLElement): HTMLElement[] { return Array.from(container.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')).filter((element) => !element.hasAttribute("hidden") && element.getAttribute("aria-hidden") !== "true"); }
 
 function NavIcon({ name }: { name: NavigationIcon }) { const common = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const }; const paths: Record<NavigationIcon, ReactNode> = { home: <><path d="m3 10 9-7 9 7" /><path d="M5 9.5V21h14V9.5" /><path d="M9 21v-6h6v6" /></>, building: <><path d="M4 21V5a2 2 0 0 1 2-2h8v18" /><path d="M14 9h4a2 2 0 0 1 2 2v10" /><path d="M8 7h2M8 11h2M8 15h2M17 13h1M17 17h1" /></>, server: <><rect x="3" y="4" width="18" height="6" rx="1.5" /><rect x="3" y="14" width="18" height="6" rx="1.5" /><path d="M7 7h.01M7 17h.01M11 7h7M11 17h7" /></>, route: <><circle cx="5" cy="6" r="2" /><circle cx="19" cy="18" r="2" /><path d="M7 6h5a4 4 0 0 1 4 4v4a4 4 0 0 0 4 4M17 18h-1" /></>, grid: <><rect x="4" y="4" width="6" height="6" rx="1" /><rect x="14" y="4" width="6" height="6" rx="1" /><rect x="4" y="14" width="6" height="6" rx="1" /><rect x="14" y="14" width="6" height="6" rx="1" /></>, settings: <><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" /><circle cx="12" cy="12" r="4" /></> }; return <svg aria-hidden="true" viewBox="0 0 24 24" className="operator-nav-icon" {...common}>{paths[name]}</svg>; }
 function MenuIcon() { return <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7h16M4 12h16M4 17h16" /></svg>; }

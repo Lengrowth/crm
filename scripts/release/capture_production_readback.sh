@@ -45,6 +45,21 @@ def service(name: str) -> str:
     return command("systemctl", "is-active", name) or "unknown"
 
 
+def runtime_release() -> dict[str, object]:
+    raw = command("curl", "-fsS", "--max-time", "10", "http://127.0.0.1:8001/runtime/release")
+    try:
+        payload = json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return {"available": False}
+    return {
+        "available": True,
+        "release_id": payload.get("release_id"),
+        "commit": payload.get("commit"),
+        "environment": payload.get("environment"),
+        "platform_phase1_shell": payload.get("feature_flags", {}).get("platform_phase1_shell"),
+    }
+
+
 def git_state(path: Path) -> dict[str, object]:
     if not (path / ".git").exists():
         return {"path": str(path), "present": False}
@@ -129,6 +144,7 @@ data = {
     "captured_at_utc": datetime.now(timezone.utc).isoformat(),
     "current_release": os.path.realpath(f"{app_root}/current"),
     "previous_release": os.path.realpath(f"{app_root}/previous"),
+    "runtime_release": runtime_release(),
     "services": {
         "backend": service("saas-backend"),
         "frontend": service("saas-frontend"),

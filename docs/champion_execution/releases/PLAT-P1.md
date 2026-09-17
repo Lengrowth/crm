@@ -1,6 +1,6 @@
 # PLAT-P1 — Phase 1 UX Shell and Menu Release Record
 
-Status: **PASS — production default enabled and post-release observation complete**
+Status: **REVIEW FAIL — remediation in progress; production gate not verified**
 Release identity: `PLAT-P1`
 Record date: 2026-09-17
 Operator: Codex, working with the delivery owner
@@ -17,8 +17,11 @@ migration or business API change is included.
 
 The existing shell remains available behind the same runtime flag. The flag is
 server-controlled through `FEATURE_FLAGS=platform_phase1_shell=on|off` and is
-read from `GET /runtime/release`; changing it does not require a frontend build
-or redeployment.
+read from `GET /runtime/release`. The earlier production fallback evidence is
+not valid for this gate: run `35188091170` also materialized/promoted a
+different candidate (`15268f8…`) and restarted production. Until the new
+flag-only workflow proves off/on while the exact current release remains
+unchanged, fallback is unverified.
 
 ## Acceptance scenarios and rollback triggers
 
@@ -55,8 +58,16 @@ separate procedure and is not implied by this release.
 - Added responsive desktop sidebar, collapsible groups, compact mode,
   persistent preferences, mobile drawer, skip link, page header, environment
   indicator, operational status, theme control, support link, and session menu.
-- Added fail-closed runtime flag consumption and retained the legacy shell as
-  the immediate fallback.
+- Added fail-closed runtime flag consumption requiring a complete release
+  identity and retained the legacy shell as the immediate fallback.
+- Added server-side platform-admin authorization before the implementation
+  page renders, with a client loading state that does not render protected
+  children while session resolution is pending.
+- Added mobile drawer focus trapping, focus restoration, modal semantics, and
+  inert background navigation.
+- Added candidate-bound validation and durable staging browser/WCAG evidence
+  workflows; production flag transitions now have a pointer-preserving,
+  protected flag-only workflow.
 - Added route-level loading, error, not-found, and access-denied surfaces.
 - Added Vitest coverage for filtering, permissions, flags, active routes,
   titles, and breadcrumbs.
@@ -70,36 +81,32 @@ separate procedure and is not implied by this release.
 |---|---|---|
 | Frontend typecheck | PASS | `npm run typecheck` |
 | Frontend production build | PASS | `npm run build`; 33 routes generated |
-| Frontend/unit tests | PASS | `npm test`; 5 tests passed |
+| Frontend/unit tests | PASS | `npm test`; 10 tests passed |
 | Backend suite | PASS | `python -m pytest backend/tests -q`; 36 passed |
 | Secret scan | PASS | `python scripts/release/secret_scan.py` |
 | Diff whitespace | PASS | `git diff --check` |
-| Authenticated route matrix | PASS | Disposable local runtime; all required paths directly navigated |
-| Mobile drawer/breadcrumb evidence | PASS | Browser evidence on local flag-on runtime |
-| Runtime flag fallback | PASS | Disposable runtime changed from on to off; legacy shell reloaded without rebuild |
+| Authenticated route matrix | PARTIAL | Local direct-navigation evidence exists; candidate-bound staging browser artifact is required by the remediation workflow |
+| Mobile drawer/breadcrumb evidence | PARTIAL | Component tests pass; durable desktop/mobile screenshots and axe results are pending the final-main staging run |
+| Runtime flag fallback | FAIL / REOPENED | Prior production fallback run changed candidate and restarted services; same-candidate flag-only off/on evidence is required |
 
 ## Staging and production evidence
 
-The final follow-up was reviewed and merged through PR [#17](https://github.com/Lengrowth/crm/pull/17).
-The exact post-merge `main` candidate was tested in staging by run
-[35189053400](https://github.com/Lengrowth/crm/actions/runs/35189053400), with
-the existing staging workflow's secret scan, immutable candidate build,
-preflight, public/API/authenticated smoke, and deployment checks passing. The
-workflow does not emit a staging artifact; its immutable candidate ID and run
-log are the staging evidence. Earlier UI candidate staging evidence is retained
-in run [35117700699](https://github.com/Lengrowth/crm/actions/runs/35117700699).
-Operator validation also covered the non-`lengrowth.com` host-header lane
-(`staging.example.test`) and the temporary implementation lane.
+The earlier final-main staging run [35189053400](https://github.com/Lengrowth/crm/actions/runs/35189053400)
+passed its then-current checks but emitted no durable artifact and did not run
+the new candidate-bound browser/WCAG suite. The post-merge documentation run
+[35189666162](https://github.com/Lengrowth/crm/actions/runs/35189666162) likewise
+did not close that evidence gap. The production candidate remains `c2b923a…`
+until a remediated candidate is tested and explicitly promoted.
 
 Protected production evidence for the same release family:
 
 | Action | Run | Artifact / result |
 |---|---|---|
 | Initial enablement on candidate `15268f8…` | [35186693396](https://github.com/Lengrowth/crm/actions/runs/35186693396) | [readback artifact 10483045169](https://github.com/Lengrowth/crm/actions/runs/35186693396/artifacts/10483045169); authenticated shell smoke passed, flag `true` |
-| Flag fallback on the same candidate | [35188091170](https://github.com/Lengrowth/crm/actions/runs/35188091170) | [readback artifact 10483290012](https://github.com/Lengrowth/crm/actions/runs/35188091170/artifacts/10483290012); authenticated shell smoke passed, flag `false` |
+| Claimed flag fallback (invalid for same-candidate gate) | [35188091170](https://github.com/Lengrowth/crm/actions/runs/35188091170) | [readback artifact 10483290012](https://github.com/Lengrowth/crm/actions/runs/35188091170/artifacts/10483290012); flag `false`, but candidate changed and production restarted |
 | Final enablement on `c2b923a…` | [35189173434](https://github.com/Lengrowth/crm/actions/runs/35189173434) | [readback artifact 10483861183](https://github.com/Lengrowth/crm/actions/runs/35189173434/artifacts/10483861183); authenticated shell smoke passed, flag `true` |
 
-The final readback recorded:
+The final readback recorded for the currently serving candidate:
 
 - `current`: `/opt/saas-control/releases/c2b923a5550923749b4f4ade7599b4a96a8943f1`
 - `previous`: `/opt/saas-control/releases/15268f8dad1187994f89256f5dc55a7e3c982586`
@@ -111,7 +118,8 @@ Post-release observation produced three consecutive samples with the public
 root and canonical API at HTTP `200`, the runtime release fixed at the final
 candidate with `platform_phase1_shell=true`, and the retired
 `api.lenerp.lengrowth.com` unavailable. The final production promotion's shell
-smoke covered 8 authenticated operator routes. Local browser evidence covered
+smoke covered 8 static authenticated operator routes; dynamic detail-route
+coverage and durable browser evidence were not retained. Local browser evidence covered
 the full dynamic route matrix, desktop/mobile shell states, keyboard Escape,
 breadcrumbs, compact mode, theme, session menu, access denied, and the no-build
 legacy-shell fallback. Automated component coverage now includes persistent
@@ -121,10 +129,11 @@ semantics, breadcrumbs, and keyboard close behavior (8 frontend tests total).
 ## Gate checklist
 
 The generic checklist in `docs/champion_execution/PHASE_DEPLOYMENT_GATE.md`
-applies. The new shell is the production default, the protected smoke and
-observation passed, flag fallback was demonstrated without a rebuild, cleanup
-is complete, and this record plus the risk and handover records are being
-committed on `main` by the evidence PR that follows the deployed candidate.
+applies. The production candidate is healthy, but the P1 gate is not closed:
+server-side restricted-route authorization, candidate-bound CI/browser/WCAG
+artifacts, runtime fail-closed behavior, mobile focus management, legacy
+permission filtering, and same-candidate flag-only off/on evidence must all be
+verified on the final candidate before this record can return to PASS.
 
 ## Accepted waivers and follow-up
 
@@ -132,4 +141,8 @@ The existing credential-rotation waiver from Phase 0 remains explicitly
 accepted. No credentials were rotated or invalidated, no production Frappe or
 ERPNext worktree was modified, and no database migration or business API change
 was introduced. The GitHub Actions Node.js 20 deprecation annotation is an
-upstream runner warning only; it did not affect the passing release checks.
+upstream runner warning only. The inherited frontend dependency audit finding
+(currently 8 vulnerabilities after adding the browser-test tooling, including a
+critical advisory in the existing Next dependency chain) is tracked separately
+and is not silently treated as a release pass; it requires dependency-owner
+review before the final P1 gate is closed.

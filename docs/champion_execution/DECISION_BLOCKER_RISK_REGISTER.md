@@ -19,9 +19,10 @@
 
 | ID | Type | Status | Owner | Required action |
 |---|---|---|---|---|
-| P1-D01 | Decision | Resolved | Delivery owner / release owner | The operator shell is enabled as the production default behind `platform_phase1_shell`; the prior shell remains available through the server-controlled flag for the next platform phase. |
-| P1-R01 | Risk | Resolved | Release owner | Typed grouped navigation, nested active states, breadcrumbs, responsive sidebar/drawer, preferences, session actions, route states, and configuration-driven labeling passed local/browser, staging, and protected production checks. |
-| P1-R02 | Risk | Resolved | Release owner / backend owner | Existing backend authorization and tenant isolation were preserved; staging smoke verified unauthenticated denial and authenticated API access, while the restricted implementation route remained platform-admin-only in the shell and direct-access behavior. |
-| P1-R03 | Risk | Resolved | Release owner | Server flag fallback was verified on protected run `35188091170` with the same immutable candidate and flag `false`; final protected run `35189173434` restored the flag to `true`. |
-| P1-R04 | Risk | Resolved | Release owner | Final candidate `c2b923a5550923749b4f4ade7599b4a96a8943f1` was staging-tested in run `35189053400`, promoted through protected run `35189173434`, and observed healthy with current/previous pointers and zero temporary smoke identities in artifact `10483861183`. |
-| P1-B01 | Blocker | Resolved | Delivery owner / GitHub administrator | Required production approvals were recorded for the enablement, fallback, and final restoration runs; no approval bypass was used. |
+| P1-D01 | Decision | Open pending remediation | Delivery owner / release owner | Keep the operator shell enabled on the current healthy candidate only while remediation closes the authorization, evidence, and rollback-proof gaps. |
+| P1-R01 | Risk | Open | Release owner | Final-main candidate-bound browser/WCAG artifacts are not yet retained; the new staging workflow must publish route results and screenshots. |
+| P1-R02 | Risk | Open | Release owner / backend owner | The implementation page previously relied on client-side role replacement; server-side role authorization is now implemented but requires final candidate direct-navigation verification. |
+| P1-R03 | Risk | Open | Release owner | Run `35188091170` changed the production candidate, so it is not same-candidate flag-only evidence. The new protected flag-only workflow must prove off/on with an unchanged pointer. |
+| P1-R04 | Risk | Open | Release owner | Current candidate `c2b923a…` is healthy, but final remediation code has not yet completed staging and protected production promotion. |
+| P1-B01 | Blocker | Open | Delivery owner / GitHub administrator | P1 cannot return to PASS until final-main staging artifacts and same-candidate flag-only production readbacks are attached to the release record. |
+| P1-R05 | Risk | Tracked separately | Release owner / dependency owner | `npm audit` reports inherited frontend dependency vulnerabilities, including a critical advisory in the existing Next chain; browser tooling added additional audit findings. Review and upgrade under a separate dependency work item. |

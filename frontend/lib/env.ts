@@ -5,6 +5,7 @@ export const env = {
     (process.env.NODE_ENV === "production" ? "Production" : "Development"),
   supportUrl: process.env.NEXT_PUBLIC_SUPPORT_URL ?? "/contact",
   statusUrl: process.env.NEXT_PUBLIC_STATUS_URL ?? "",
+  statusLabel: process.env.NEXT_PUBLIC_STATUS_LABEL ?? "Operational",
   apiBaseUrl:
     process.env.NEXT_PUBLIC_API_BASE_URL ??
     (process.env.NODE_ENV === "production"

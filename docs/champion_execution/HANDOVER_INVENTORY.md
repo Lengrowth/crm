@@ -1,6 +1,6 @@
 # Phase 0 and Phase 1 Handover Inventory
 
-Status: `PLAT-P0` and `PLAT-P1` complete; no secret values belong here.
+Status: `PLAT-P0` complete; `PLAT-P1` remediation in progress; no secret values belong here.
 
 ## Repositories and source
 
@@ -19,7 +19,7 @@ Status: `PLAT-P0` and `PLAT-P1` complete; no secret values belong here.
 - AWS EC2 and Cloudflare zone are verified; the temporary application hostnames are proxied through Cloudflare to the EC2 origin. Canonical public API `lenerp-api.lengrowth.com` resolves through Cloudflare and `/health` returned HTTP `200` on 2026-09-15 and again after retirement verification on 2026-09-16. The old deep hostname `api.lenerp.lengrowth.com` is retired, must not be used, and its old DNS record was deleted from Cloudflare on 2026-09-16.
 - Final non-secret production readback artifact from workflow `35108238557` reports Frappe and ERPNext source trees clean at the recorded production heads; no upstream source was changed by this run.
 - Reproducible staging-lane contract: `ops/staging/`; control-plane and ERP staging host/service/database/file evidence is established on the EC2 with private host-header checks.
-- `PLAT-P1` production default is the responsive operator shell from candidate `c2b923a5550923749b4f4ade7599b4a96a8943f1`; `platform_phase1_shell=true` is server-controlled and the old shell remains available with the flag disabled.
+- `PLAT-P1` production currently serves candidate `c2b923a5550923749b4f4ade7599b4a96a8943f1`; its shell flag is on, but the same-candidate flag-only fallback gate and final durable browser evidence remain open.
 - Final Phase 1 protected production promotion is run [35189173434](https://github.com/Lengrowth/crm/actions/runs/35189173434) with non-secret readback artifact [10483861183](https://github.com/Lengrowth/crm/actions/runs/35189173434/artifacts/10483861183). Fallback evidence is run [35188091170](https://github.com/Lengrowth/crm/actions/runs/35188091170) with artifact [10483290012](https://github.com/Lengrowth/crm/actions/runs/35188091170/artifacts/10483290012).
 
 ## Release artifacts

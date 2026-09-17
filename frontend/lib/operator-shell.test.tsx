@@ -71,11 +71,11 @@ describe("operator shell interaction and accessibility", () => {
     );
 
     const closeButtons = screen.getAllByRole("button", { name: "Close navigation" });
-    expect(closeButtons).toHaveLength(2);
-    expect(closeButtons[1]).toHaveAttribute("type", "button");
-    expect(screen.getAllByRole("link", { name: "Companies" }).filter((link) => link.getAttribute("aria-current") === "page")).toHaveLength(2);
+    expect(closeButtons).toHaveLength(1);
+    expect(closeButtons[0]).toHaveAttribute("type", "button");
+    expect(screen.getAllByRole("link", { name: "Companies" }).filter((link) => link.getAttribute("aria-current") === "page")).toHaveLength(1);
     expect(screen.getAllByRole("link", { name: "ERP Sites" }).every((link) => link.getAttribute("aria-current") !== "page")).toBe(true);
-    fireEvent.click(closeButtons[1]);
+    fireEvent.click(closeButtons[0]);
     expect(onCloseMobile).toHaveBeenCalledTimes(1);
   });
 
@@ -98,5 +98,26 @@ describe("operator shell interaction and accessibility", () => {
     expect(openButton).toHaveAttribute("aria-expanded", "true");
     fireEvent.keyDown(document, { key: "Escape" });
     expect(openButton).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("traps mobile focus and restores it to the opener", () => {
+    render(
+      <OperatorShellFrame groups={groups} runtime={{ release_id: "test", commit: "test", environment: "production", feature_flags: { platform_phase1_shell: true } }} user={{ full_name: "Test Operator", email: "operator@example.test", is_platform_admin: true } as never}>
+        <p>Page content</p>
+      </OperatorShellFrame>,
+    );
+
+    const openButton = screen.getByRole("button", { name: "Open navigation" });
+    fireEvent.click(openButton);
+    const drawer = screen.getByRole("dialog", { name: "Mobile navigation" });
+    const closeButton = screen.getByRole("button", { name: "Close navigation" });
+    expect(document.activeElement).toBe(closeButton);
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Compact sidebar" }));
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(document.activeElement).toBe(closeButton);
+    expect(drawer).toHaveAttribute("aria-modal", "true");
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(document.activeElement).toBe(openButton);
   });
 });

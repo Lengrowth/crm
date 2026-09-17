@@ -57,5 +57,8 @@ describe("operator navigation", () => {
     expect(isPhaseOneShellEnabled(null)).toBe(false);
     expect(isPhaseOneShellEnabled({ release_id: "test", commit: "test", environment: "staging", feature_flags: {} })).toBe(false);
     expect(isPhaseOneShellEnabled({ release_id: "test", commit: "test", environment: "staging", feature_flags: { platform_phase1_shell: true } })).toBe(true);
+    expect(isPhaseOneShellEnabled({ release_id: "", commit: "test", environment: "staging", feature_flags: { platform_phase1_shell: true } })).toBe(false);
+    expect(isPhaseOneShellEnabled({ release_id: "test", commit: "test", environment: "staging", feature_flags: { platform_phase1_shell: "true" } } as never)).toBe(false);
+    expect(isPhaseOneShellEnabled({ release_id: "test", commit: "test", environment: "", feature_flags: { platform_phase1_shell: true } })).toBe(false);
   });
 });
