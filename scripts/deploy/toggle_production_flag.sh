@@ -74,6 +74,11 @@ sudo "$SYSTEMCTL_BIN" daemon-reload
 sudo "$SYSTEMCTL_BIN" restart "$BACKEND_SERVICE"
 loaded_flags="$(sudo "$SYSTEMCTL_BIN" show "$BACKEND_SERVICE" --property=Environment --value | tr ' ' '\n' | sed -n 's/^FEATURE_FLAGS=//p' | paste -sd ',' -)"
 echo "Loaded backend feature flags: $loaded_flags"
+backend_pid="$(pgrep -f 'uvicorn app.main:app --host 127.0.0.1 --port 8001' | head -n 1 || true)"
+if [[ -n "$backend_pid" ]]; then
+  process_flags="$(sudo tr '\0' '\n' < "/proc/$backend_pid/environ" | sed -n 's/^FEATURE_FLAGS=//p' | paste -sd ',' -)"
+  echo "Backend process feature flags: $process_flags"
+fi
 ready=false
 for _ in {1..30}; do
   if curl -fsS -o /dev/null --max-time 3 "${PRODUCTION_BACKEND_LOCAL_URL:-http://127.0.0.1:8001}/health"; then ready=true; break; fi
