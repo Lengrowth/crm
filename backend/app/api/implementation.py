@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
 from app.db.session import get_db_session
 from app.models.domain import SaaSUser
+from app.models.domain import ImplementationProject, ImplementationTask, ImplementationTaskStatus, Organization, Tenant
+from app.schemas.portfolio import ImplementationPortfolio, PortfolioProject, PortfolioTask
+from app.api.dependencies import require_platform_admin
+from datetime import datetime, timezone
 from app.schemas.implementation import (
     ImplementationProjectCreateRequest,
     ImplementationProjectRead,
@@ -30,6 +35,74 @@ from app.services.implementation_service import (
 
 router = APIRouter(tags=["implementation"])
 implementation_service = ImplementationService()
+
+
+@router.get("/implementation/portfolio", response_model=ImplementationPortfolio)
+def get_portfolio(
+    session: Session = Depends(get_db_session),
+    _: SaaSUser = Depends(require_platform_admin),
+) -> ImplementationPortfolio:
+    """Return a bounded portfolio read model for the platform operator page."""
+    projects = session.execute(
+        select(ImplementationProject, Organization.name, Tenant.tenant_slug)
+        .join(Organization, Organization.id == ImplementationProject.organization_id)
+        .join(Tenant, Tenant.id == ImplementationProject.tenant_id)
+        .order_by(ImplementationProject.created_at.desc())
+        .limit(250)
+    ).all()
+    project_ids = [project.id for project, _, _ in projects]
+    task_rows = session.execute(
+        select(ImplementationTask)
+        .where(ImplementationTask.implementation_project_id.in_(project_ids))
+        .order_by(ImplementationTask.sort_order.asc(), ImplementationTask.created_at.asc())
+    ).scalars().all() if project_ids else []
+    tasks_by_project: dict[str, list[ImplementationTask]] = {}
+    for task in task_rows:
+        tasks_by_project.setdefault(task.implementation_project_id, []).append(task)
+    terminal_statuses = set(session.execute(
+        select(ImplementationTaskStatus.code).where(ImplementationTaskStatus.is_terminal.is_(True))
+    ).scalars().all())
+    now = datetime.now(timezone.utc)
+    portfolio: list[PortfolioProject] = []
+    total_blockers = 0
+    total_overdue = 0
+    for project, organization_name, tenant_slug in projects:
+        tasks = tasks_by_project.get(project.id, [])
+        blockers = [task for task in tasks if task.status in {"blocked", "blocked_by_dependency"}]
+        overdue = [task for task in tasks if task.due_date is not None and _is_before_now(task.due_date, now) and task.status not in terminal_statuses]
+        completed = sum(1 for task in tasks if task.status in terminal_statuses)
+        total = len(tasks)
+        total_blockers += len(blockers)
+        total_overdue += len(overdue)
+        portfolio.append(PortfolioProject(
+            id=project.id,
+            organization_id=project.organization_id,
+            organization_name=organization_name,
+            tenant_id=project.tenant_id,
+            tenant_slug=tenant_slug,
+            status=project.status,
+            target_go_live_date=project.target_go_live_date,
+            task_count=total,
+            completed_task_count=completed,
+            progress_percent=int((completed / total) * 100) if total else 0,
+            blocker_count=len(blockers),
+            overdue_task_count=len(overdue),
+            tasks=[PortfolioTask(id=task.id, title=task.title, status=task.status, due_date=task.due_date) for task in tasks[:100]],
+        ))
+    return ImplementationPortfolio(
+        generated_at=now,
+        project_count=len(portfolio),
+        blocker_count=total_blockers,
+        overdue_task_count=total_overdue,
+        truncated=len(projects) >= 250,
+        projects=portfolio,
+    )
+
+
+def _is_before_now(value: datetime, now: datetime) -> bool:
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value < now
 
 
 def _raise_implementation_error(exc: ImplementationError) -> None:

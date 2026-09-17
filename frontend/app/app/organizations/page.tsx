@@ -1,165 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Search, SlidersHorizontal } from "lucide-react";
+import { Badge, StatusBadge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState, ErrorState, Skeleton } from "@/components/ui/feedback";
+import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { fetchOrganizations } from "@/lib/api";
+import type { OrganizationRecord, OrganizationStatus } from "@/features/organizations/types";
 
-export default function AppOrganizationsPage() {
-  const [orgs, setOrgs] = useState<any[]>([]);
+const statuses: Array<OrganizationStatus | "all"> = ["all", "lead", "trial", "active", "suspended", "cancelled", "archived"];
+
+export default function OrganizationsPage() {
+  const [organizations, setOrganizations] = useState<OrganizationRecord[]>([]);
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState<OrganizationStatus | "all">("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const load = useCallback(async () => { setLoading(true); setError(null); try { setOrganizations(await fetchOrganizations()); } catch (cause) { setError(cause instanceof Error ? cause.message : "Companies are unavailable."); } finally { setLoading(false); } }, []);
+  useEffect(() => { void load(); }, [load]);
+  const filtered = useMemo(() => organizations.filter((organization) => { const haystack = [organization.name, organization.legal_name, organization.industry, organization.country].filter(Boolean).join(" ").toLowerCase(); return (!query || haystack.includes(query.toLowerCase())) && (status === "all" || organization.status === status); }), [organizations, query, status]);
 
-  useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-    fetchOrganizations()
-      .then((data) => {
-        if (!mounted) return;
-        setOrgs(data || []);
-      })
-      .catch((err: any) =>
-        setError(err?.message ?? "Failed to load organizations"),
-      )
-      .finally(() => mounted && setLoading(false));
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  return (
-    <div className="space-y-6">
-      <section
-        className="rounded-[2rem] border p-8 lg:p-10"
-        style={{
-          borderColor: "var(--border)",
-          backgroundColor: "var(--surface)",
-          boxShadow: "0 24px 60px var(--shadow)",
-        }}
-      >
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <p
-              className="text-xs font-semibold uppercase tracking-[0.24em]"
-              style={{ color: "var(--muted)" }}
-            >
-              Organizations
-            </p>
-            <h1
-              className="mt-4 text-4xl font-semibold tracking-tight"
-              style={{ color: "var(--text)" }}
-            >
-              Customer accounts live here, with tenant work hanging off each
-              organization.
-            </h1>
-            <p
-              className="mt-4 text-sm leading-7"
-              style={{ color: "var(--muted)" }}
-            >
-              This view is wired to the protected organization APIs so operators
-              can review account status, open details, and move directly into
-              tenant-level work.
-            </p>
-          </div>
-          <Link
-            href="/app/organizations/new"
-            className="inline-flex rounded-full px-5 py-3 text-sm font-semibold transition hover:translate-y-[-1px]"
-            style={{
-              backgroundColor: "var(--accent)",
-              color: "var(--accent-foreground)",
-              boxShadow: "0 16px 32px var(--shadow)",
-            }}
-          >
-            Create organization
-          </Link>
-        </div>
-      </section>
-
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <div className="space-y-4">
-          {loading ? (
-            <p style={{ color: "var(--muted)" }}>Loading organizations...</p>
-          ) : error ? (
-            <p className="text-sm text-red-500">{error}</p>
-          ) : orgs.length === 0 ? (
-            <p style={{ color: "var(--muted)" }}>No organizations found.</p>
-          ) : (
-            orgs.map((organization) => (
-              <article
-                key={organization.id}
-                className="rounded-2xl border p-6"
-                style={{
-                  borderColor: "var(--border)",
-                  backgroundColor: "var(--surface-strong)",
-                  boxShadow: "0 18px 40px var(--shadow)",
-                }}
-              >
-                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                  <div>
-                    <p
-                      className="text-xs font-semibold uppercase tracking-[0.18em]"
-                      style={{ color: "var(--muted)" }}
-                    >
-                      {organization.industry ?? "-"}
-                    </p>
-                    <h2
-                      className="mt-2 text-2xl font-semibold"
-                      style={{ color: "var(--text)" }}
-                    >
-                      {organization.name}
-                    </h2>
-                    <p
-                      className="mt-2 text-sm leading-6"
-                      style={{ color: "var(--muted)" }}
-                    >
-                      Status: {organization.status}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-3">
-                    <Link
-                      href={`/app/organizations/${organization.id}`}
-                      className="rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition hover:translate-y-[-1px]"
-                      style={{
-                        borderColor: "var(--border)",
-                        backgroundColor: "var(--surface)",
-                        color: "var(--text)",
-                      }}
-                    >
-                      Open detail
-                    </Link>
-                    <Link
-                      href={`/app/organizations/${organization.id}/tenants`}
-                      className="rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition hover:translate-y-[-1px]"
-                      style={{
-                        borderColor: "var(--border)",
-                        backgroundColor: "var(--surface)",
-                        color: "var(--text)",
-                      }}
-                    >
-                      View tenants
-                    </Link>
-                  </div>
-                </div>
-              </article>
-            ))
-          )}
-        </div>
-
-        <div className="space-y-6">
-          <div
-            className="rounded-2xl border p-6"
-            style={{
-              borderColor: "var(--border)",
-              backgroundColor: "var(--surface-strong)",
-            }}
-          >
-            <p className="text-sm leading-7" style={{ color: "var(--muted)" }}>
-              Authenticated access is required for this view. Use a valid SaaS
-              control-plane session to review customer accounts and their linked
-              tenant work.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  return <div className="space-y-6"><PageHeader eyebrow="Customers" title="Companies" description="Review customer accounts and move into site and delivery work." actions={<Link className="ui-button ui-button-primary" href="/app/organizations/new">Create company</Link>} /><Card><CardContent><div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"><div className="relative flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: "var(--color-muted)" }} aria-hidden="true" /><Input aria-label="Search companies" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by name, industry, or country" className="pl-9" /></div><div className="flex items-center gap-2"><SlidersHorizontal className="h-4 w-4" style={{ color: "var(--color-muted)" }} aria-hidden="true" /><Select value={status} onValueChange={(value) => setStatus(value as OrganizationStatus | "all")}><SelectTrigger aria-label="Filter by company status" className="w-44"><SelectValue /></SelectTrigger><SelectContent>{statuses.map((item) => <SelectItem key={item} value={item}>{item === "all" ? "All statuses" : item}</SelectItem>)}</SelectContent></Select></div></div></CardContent></Card>{loading ? <Skeleton className="h-72" /> : error ? <ErrorState description={error} onRetry={() => void load()} /> : !filtered.length ? <EmptyState title={organizations.length ? "No companies match" : "No companies yet"} description={organizations.length ? "Try a different search or status filter." : "Create a company record to begin a customer rollout."} action={!organizations.length ? { label: "Create company", href: "/app/organizations/new" } : undefined} /> : <Table><TableHeader><TableRow><TableHead>Company</TableHead><TableHead>Industry</TableHead><TableHead>Location</TableHead><TableHead>Status</TableHead><TableHead><span className="sr-only">Actions</span></TableHead></TableRow></TableHeader><TableBody>{filtered.map((organization) => <TableRow key={organization.id}><TableCell><Link className="font-bold hover:underline" href={`/app/organizations/${organization.id}`}>{organization.name}</Link><p className="mt-1 text-xs" style={{ color: "var(--color-muted)" }}>{organization.legal_name ?? "Legal name not set"}</p></TableCell><TableCell className="capitalize">{organization.industry ?? "—"}</TableCell><TableCell>{[organization.country, organization.timezone].filter(Boolean).join(" · ") || "—"}</TableCell><TableCell><StatusBadge status={organization.status} /></TableCell><TableCell><div className="flex flex-wrap justify-end gap-2"><Link className="ui-button ui-button-secondary" href={`/app/organizations/${organization.id}`}>Open</Link><Link className="ui-button ui-button-ghost" href={`/app/organizations/${organization.id}/tenants`}>Sites</Link></div></TableCell></TableRow>)}</TableBody></Table>}<div className="flex items-center justify-between text-xs" style={{ color: "var(--color-muted)" }}><span>{filtered.length} of {organizations.length} companies</span><Button variant="ghost" onClick={() => void load()}>Refresh</Button></div></div>;
 }

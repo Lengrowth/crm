@@ -191,6 +191,25 @@ jobs:
           rm -f -- "$GITHUB_WORKSPACE/frontend/scripts/current_capture_browser_evidence.mjs" /tmp/saas-control-prepare-staging-smoke-auth.py
           sudo rm -f -- /opt/saas-control-staging/current/frontend/scripts/current_capture_browser_evidence.mjs
 
+      - name: Remove exact Phase 2 synthetic browser records
+        if: always()
+        run: |
+          cleanup_file="$GITHUB_WORKSPACE/staging-browser-evidence/phase2-cleanup.json"
+          if [[ -f "$cleanup_file" ]]; then
+            cleanup_copy="/tmp/saas-control-phase2-cleanup-${GITHUB_RUN_ID}.json"
+            sudo install -m 644 -o saas-staging -g saas-staging "$cleanup_file" "$cleanup_copy"
+            set -a
+            . /opt/saas-control-staging/shared/env/staging-backend.env
+            set +a
+            sudo -n -E -u saas-staging env PYTHONPATH=/opt/saas-control-staging/current/backend \
+              /opt/saas-control-staging/shared/backend-venv/bin/python \
+              /opt/saas-control-staging/current/scripts/release/cleanup_phase2_synthetic.py \
+              --file "$cleanup_copy"
+            sudo rm -f -- "$cleanup_copy"
+          else
+            echo "No Phase 2 synthetic cleanup manifest was produced"
+          fi
+
       - name: Upload durable staging browser evidence
         if: success()
         uses: actions/upload-artifact@v4

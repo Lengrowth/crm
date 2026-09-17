@@ -14,7 +14,7 @@ npm --prefix "$FRONTEND_DIR" ci --include=dev --ignore-scripts --no-audit --no-f
 npm --prefix "$FRONTEND_DIR" test
 npm --prefix "$FRONTEND_DIR" run typecheck
 npm --prefix "$FRONTEND_DIR" run build
-"$BACKEND_PYTHON" -m pytest "$SOURCE_REPO/backend/tests" -q
+PYTHONPATH="$SOURCE_REPO/backend${PYTHONPATH:+:$PYTHONPATH}" "$BACKEND_PYTHON" -m pytest "$SOURCE_REPO/backend/tests" -q
 "$BACKEND_PYTHON" -m compileall -q "$SOURCE_REPO/backend"
 "$BACKEND_PYTHON" "$SOURCE_REPO/scripts/release/secret_scan.py"
 

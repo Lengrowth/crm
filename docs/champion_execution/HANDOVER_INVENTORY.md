@@ -49,3 +49,14 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; no secret values belong here.
 
 - Phase 2 starts from production candidate `851302efc617f8a6587b30694a5c65a3e06de20a` with previous candidate `12bc548056c59341d3ccc492a5353a696a7c0661`, the operator shell enabled, and the old shell retained behind the same global server flag. The runtime manifest may continue to report `environment: staging` because the immutable artifact is staging-built and promoted unchanged.
 - The next release must continue to use staging-first immutable candidates and the protected production workflow; no Phase 2 page redesign or Champion data import is implied by this handover.
+
+## Phase 2 baseline
+
+- Phase 2 implementation is isolated on branch `codex/plat-p2` from verified
+  remote `main` `edb3f463ed50e1009a13e8e96b95b563ddc6f6b9`.
+- The release adds reusable operator primitives and bounded protected read
+  models at `/dashboard/summary` and `/implementation/portfolio`; no database
+  revision or production Frappe/ERPNext change is required.
+- Local validation is recorded in `releases/PLAT-P2.md`; staging and production
+  pointers remain the Phase 1 candidate until the exact Phase 2 candidate passes
+  its protected lifecycle.
