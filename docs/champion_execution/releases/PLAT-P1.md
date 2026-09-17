@@ -84,7 +84,7 @@ separate procedure and is not implied by this release.
 | Diff whitespace | PASS | `git diff --check` |
 | Authenticated route matrix | PASS | Exact post-merge candidate browser artifact [10498661711](https://github.com/Lengrowth/crm/actions/runs/35223932797/artifacts/10498661711); 11 routes returned HTTP 200 |
 | Mobile drawer/breadcrumb evidence | PASS | Exact post-merge candidate run [35223932797](https://github.com/Lengrowth/crm/actions/runs/35223932797) used shell `on`, retained desktop/mobile screenshots, and recorded zero serious/critical violations and zero serious/critical incomplete checks |
-| Runtime flag fallback | PASS | Protected flag-only off run [35204249048](https://github.com/Lengrowth/crm/actions/runs/35204249048) and on run [35211232762](https://github.com/Lengrowth/crm/actions/runs/35211232762) verified pointer-preserving fallback on the prior serving candidate; the production promotion above serves the corrected candidate |
+| Runtime flag fallback | PASS | Current-candidate protected flag-only off run [35227147798](https://github.com/Lengrowth/crm/actions/runs/35227147798) with [readback 10499287799](https://github.com/Lengrowth/crm/actions/runs/35227147798/artifacts/10499287799), followed by on run [35227246158](https://github.com/Lengrowth/crm/actions/runs/35227246158) with [readback 10499237979](https://github.com/Lengrowth/crm/actions/runs/35227246158/artifacts/10499237979), preserved the exact current release pointer |
 
 ## Staging and production evidence
 
@@ -92,7 +92,8 @@ The authoritative post-merge candidate-bound staging run [35223932797](https://g
 retained artifact [10498661711](https://github.com/Lengrowth/crm/actions/runs/35223932797/artifacts/10498661711).
 It tested the exact `main` candidate `12bc548056c59341d3ccc492a5353a696a7c0661`
 with the shell explicitly enabled. The artifact records runtime release and
-commit identity equal to that candidate, operator-validation provenance, 11
+commit identity equal to that candidate, synthetic operator-validation
+provenance using a disposable authenticated platform-admin fixture, 11
 authenticated routes, desktop/mobile screenshots, zero serious/critical axe
 violations and zero serious/critical incomplete checks, plus non-admin
 implementation denial.
@@ -106,9 +107,10 @@ Protected production evidence and fallback evidence:
 
 | Action | Run | Artifact / result |
 |---|---|---|
-| Flag-only fallback to legacy shell | [35204249048](https://github.com/Lengrowth/crm/actions/runs/35204249048) | [readback artifact 10489067913](https://github.com/Lengrowth/crm/actions/runs/35204249048/artifacts/10489067913); exact release pointer preserved, flag `false` |
-| Exact candidate staging evidence with shell enabled | [35223932797](https://github.com/Lengrowth/crm/actions/runs/35223932797) | [browser artifact 10498661711](https://github.com/Lengrowth/crm/actions/runs/35223932797/artifacts/10498661711); exact candidate/runtime identity matched, operator-validation provenance recorded, strict desktop/mobile axe gate passed |
+| Prior-candidate flag-only fallback | [35204249048](https://github.com/Lengrowth/crm/actions/runs/35204249048) | [readback artifact 10489067913](https://github.com/Lengrowth/crm/actions/runs/35204249048/artifacts/10489067913); prior exact release pointer preserved, flag `false` |
+| Exact candidate staging evidence with shell enabled | [35223932797](https://github.com/Lengrowth/crm/actions/runs/35223932797) | [browser artifact 10498661711](https://github.com/Lengrowth/crm/actions/runs/35223932797/artifacts/10498661711); exact candidate/runtime identity matched, synthetic operator-validation provenance recorded, strict desktop/mobile axe gate passed |
 | Protected production promotion of `12bc548…` | [35224283218](https://github.com/Lengrowth/crm/actions/runs/35224283218) | [production readback artifact 10498031884](https://github.com/Lengrowth/crm/actions/runs/35224283218/artifacts/10498031884); exact release promoted, shell flag `true`, authenticated production smoke and cleanup passed |
+| Current-candidate flag-only fallback | [35227147798](https://github.com/Lengrowth/crm/actions/runs/35227147798) then [35227246158](https://github.com/Lengrowth/crm/actions/runs/35227246158) | [off readback 10499287799](https://github.com/Lengrowth/crm/actions/runs/35227147798/artifacts/10499287799) showed current/previous unchanged and flag `false`; [on readback 10499237979](https://github.com/Lengrowth/crm/actions/runs/35227246158/artifacts/10499237979) restored flag `true` with current/previous unchanged |
 
 The final readback recorded for the currently serving candidate:
 
