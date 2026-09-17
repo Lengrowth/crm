@@ -59,6 +59,7 @@ if not updated:
 path.write_text("\n".join(output) + "\n", encoding="utf-8")
 PY
 
+sudo "$SYSTEMCTL_BIN" daemon-reload
 sudo "$SYSTEMCTL_BIN" restart "$BACKEND_SERVICE"
 ready=false
 for _ in {1..30}; do
@@ -67,7 +68,7 @@ for _ in {1..30}; do
 done
 if [[ "$ready" != true ]]; then restore; exit 1; fi
 
-if ! AUTH_TOKEN_FILE="$AUTH_TOKEN_FILE" BASE_URL="$BASE_URL" BACKEND_URL="$BACKEND_URL" EXPECTED_RELEASE="$EXPECTED_CURRENT_RELEASE" EXPECTED_PHASE_ONE_SHELL="$PHASE1_SHELL_STATE" bash "$APP_ROOT/current/scripts/release/shell_smoke.sh"; then
+if ! AUTH_TOKEN_FILE="$AUTH_TOKEN_FILE" BASE_URL="$BASE_URL" BACKEND_URL="${PRODUCTION_BACKEND_LOCAL_URL:-http://127.0.0.1:8001}" EXPECTED_RELEASE="$EXPECTED_CURRENT_RELEASE" EXPECTED_PHASE_ONE_SHELL="$PHASE1_SHELL_STATE" bash "$APP_ROOT/current/scripts/release/shell_smoke.sh"; then
   restore
   exit 1
 fi
