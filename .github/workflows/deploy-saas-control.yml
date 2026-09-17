@@ -63,7 +63,9 @@ jobs:
         env:
           SOURCE_REPO: ${{ github.workspace }}
           BACKEND_PYTHON: /opt/saas-control-staging/shared/backend-venv/bin/python
-        run: ./scripts/release/validate_candidate.sh
+        run: |
+          /opt/saas-control-staging/shared/backend-venv/bin/pip install --disable-pip-version-check --no-input --no-deps 'pytest>=8,<9'
+          ./scripts/release/validate_candidate.sh
 
       - name: Set staging-only shell flag for this candidate
         env:
@@ -115,7 +117,7 @@ jobs:
           rm -f -- "$token_file"
 
       - name: Upload durable staging browser evidence
-        if: always()
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: staging-browser-evidence-${{ github.sha }}
