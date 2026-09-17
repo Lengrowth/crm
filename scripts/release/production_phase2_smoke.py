@@ -36,7 +36,12 @@ def api_call(base_url: str, token: str, path: str, method: str = "GET", payload:
     request = urllib.request.Request(
         f"{base_url.rstrip('/')}{path}",
         data=body,
-        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "lenerp-phase2-production-smoke/1.0",
+        },
         method=method,
     )
     try:
