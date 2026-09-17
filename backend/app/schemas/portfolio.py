@@ -26,6 +26,7 @@ class PortfolioProject(BaseModel):
     blocker_count: int
     overdue_task_count: int
     tasks: list[PortfolioTask]
+    tasks_truncated: bool = False
 
 
 class ImplementationPortfolio(BaseModel):

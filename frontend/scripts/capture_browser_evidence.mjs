@@ -70,8 +70,9 @@ for (const route of routes) {
 const emptySummary = {
   generated_at: new Date().toISOString(), organization_count: 0, organization_status_counts: {},
   tenant_count: 0, tenant_status_counts: {}, provisioning_status_counts: {}, failed_job_count: 0,
-  provisioning_failures: [], implementation_blocker_count: 0, overdue_task_count: 0,
-  domain_warning_count: 0, domain_warnings: [], next_actions: [],
+  provisioning_failures: [], provisioning_failures_truncated: false,
+  implementation_blocker_count: 0, overdue_task_count: 0,
+  domain_warning_count: 0, domain_warnings: [], domain_warnings_truncated: false, next_actions: [],
 };
 const emptyStatePage = await context.newPage();
 await emptyStatePage.route("**/*", async (route) => {
@@ -189,6 +190,46 @@ phase2Crud.records = [{ organization_id: orgA.body.id, tenant_id: tenantA.body.i
 report.phase2_crud = phase2Crud;
 report.phase2_tenant_isolation = { second_company_id: orgB.body.id, admin_can_read_both: true, cleanup_required: true };
 await writeFile(path.join(outputDir, "phase2-cleanup.json"), `${JSON.stringify(phase2Cleanup, null, 2)}\n`, "utf8");
+
+const uiPage = await context.newPage();
+await uiPage.goto(`${baseUrl}/app/organizations/new`, { waitUntil: "networkidle", timeout: 30000 });
+await uiPage.getByRole("button", { name: "Create company" }).click();
+await uiPage.getByText("Company name is required.", { exact: true }).waitFor({ state: "visible", timeout: 10000 });
+const uiCompanyName = `Phase 2 Browser UI Company ${syntheticSuffix}`;
+const companyNameInput = uiPage.locator("label").filter({ hasText: "Company name" }).locator("input").first();
+await companyNameInput.fill(uiCompanyName);
+await uiPage.getByRole("button", { name: "Create company" }).click();
+await uiPage.waitForURL(/\/app\/organizations\/[0-9a-f-]{36}(?:\/)?$/i, { timeout: 30000 });
+const uiOrganizationId = new URL(uiPage.url()).pathname.split("/").pop();
+if (!uiOrganizationId) throw new Error("UI company create did not produce an organization id");
+addUnique(phase2Cleanup.organization_ids, uiOrganizationId);
+await uiPage.getByText("Edit company", { exact: true }).waitFor({ state: "visible", timeout: 10000 });
+const updatedUiCompanyName = `${uiCompanyName} Updated`;
+await uiPage.locator("label").filter({ hasText: "Company name" }).locator("input").first().fill(updatedUiCompanyName);
+await uiPage.getByRole("button", { name: "Save changes" }).click();
+await uiPage.getByText("Company details saved.", { exact: true }).waitFor({ state: "visible", timeout: 10000 });
+
+await uiPage.goto(`${baseUrl}/app/organizations/${uiOrganizationId}/tenants`, { waitUntil: "networkidle", timeout: 30000 });
+await uiPage.getByRole("button", { name: "Create ERP site" }).click();
+await uiPage.getByText("Site slug is required.", { exact: true }).waitFor({ state: "visible", timeout: 10000 });
+const uiTenantSlug = `p2-ui-${syntheticSuffix}`.toLowerCase();
+await uiPage.locator("label").filter({ hasText: "Site slug" }).locator("input").fill(uiTenantSlug);
+await uiPage.locator("label").filter({ hasText: "Primary domain" }).locator("input").fill(`${uiTenantSlug}.example.test`);
+await uiPage.getByRole("button", { name: "Create ERP site" }).click();
+await uiPage.waitForURL(/\/app\/tenants\/[0-9a-f-]{36}(?:\/)?$/i, { timeout: 30000 });
+const uiTenantId = new URL(uiPage.url()).pathname.split("/").pop();
+if (!uiTenantId) throw new Error("UI site create did not produce a tenant id");
+addUnique(phase2Cleanup.tenant_ids, uiTenantId);
+report.phase2_ui_crud = {
+  validation_failure: true,
+  company_created: uiOrganizationId,
+  company_updated: true,
+  site_created: uiTenantId,
+  post_save_navigation: true,
+};
+await writeFile(path.join(outputDir, "phase2-cleanup.json"), `${JSON.stringify(phase2Cleanup, null, 2)}\n`, "utf8");
+await uiPage.close();
+
 const runtimeResponse = await fetch(runtimeReleaseUrl, { cache: "no-store" });
 if (!runtimeResponse.ok) throw new Error(`runtime release endpoint returned HTTP ${runtimeResponse.status}`);
 const runtimePayload = await runtimeResponse.json();
@@ -223,7 +264,11 @@ if (nonAdminTokenFile) {
   report.authorization = { route: "/app/implementation", status: nonAdminResponse?.status() ?? null, non_admin_access_denied: accessDenied, restricted_navigation_links: restrictedLinkCount };
   const secondCompanyResponse = await phase2Api(`/organizations/${orgB.body.id}`, "GET", undefined, nonAdminToken);
   if (![403, 404].includes(secondCompanyResponse.status)) throw new Error(`non-admin second-company isolation check failed with HTTP ${secondCompanyResponse.status}`);
+  const secondCompanyMutation = await phase2Api(`/organizations/${orgB.body.id}`, "PATCH", { name: `Unauthorized Phase 2 Browser Mutation ${syntheticSuffix}` }, nonAdminToken);
+  const secondCompanyTenantMutation = await phase2Api(`/organizations/${orgB.body.id}/tenants`, "POST", { tenant_slug: `unauthorized-browser-${syntheticSuffix}`.toLowerCase(), environment: "staging", status: "planned" }, nonAdminToken);
+  if (![403, 404].includes(secondCompanyMutation.status) || ![403, 404].includes(secondCompanyTenantMutation.status)) throw new Error(`non-admin cross-company mutation check failed: organization=${secondCompanyMutation.status}, tenant=${secondCompanyTenantMutation.status}`);
   report.phase2_tenant_isolation.non_admin_second_company_denied = true;
+  report.phase2_tenant_isolation.non_admin_cross_company_mutations_denied = true;
   await nonAdminContext.close();
 }
 const seriousViolations = [...desktopA11y.violations, ...mobileA11y.violations].filter((violation) => ["critical", "serious"].includes(violation.impact));

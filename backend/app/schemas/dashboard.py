@@ -20,8 +20,10 @@ class DashboardSummary(BaseModel):
     provisioning_status_counts: dict[str, int]
     failed_job_count: int
     provisioning_failures: list[dict[str, str | None]]
+    provisioning_failures_truncated: bool = False
     implementation_blocker_count: int
     overdue_task_count: int
     domain_warning_count: int
     domain_warnings: list[dict[str, str | None]]
+    domain_warnings_truncated: bool = False
     next_actions: list[DashboardAction]

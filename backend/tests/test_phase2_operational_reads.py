@@ -76,3 +76,24 @@ def test_dashboard_read_model_is_tenant_scoped_and_safe():
     assert portfolio.projects[0].organization_name == "Synthetic Alpha"
     assert portfolio.projects[0].blocker_count == 1
     assert portfolio.projects[0].progress_percent == 0
+
+
+def test_dashboard_domain_warning_total_is_independent_of_detail_cap():
+    session = make_session()
+    auth = AuthService()
+    control = ControlPlaneService()
+    response = auth.register(session, AuthRegisterRequest(email="warning-admin@example.test", full_name="Warning Admin", password="local-password-123", organization_name="Warning Workspace", membership_role="owner", is_platform_admin=True))
+    admin = auth.get_context(session, response.access_token).user
+    organization = control.create_organization(session, admin, OrganizationCreateRequest(name="Warning Company"))
+    tenant = control.create_tenant(session, admin, TenantCreateRequest(organization_id=organization.id, tenant_slug="warning-site", environment="demo"), organization.id)
+    session.add_all([
+        DomainMapping(tenant_id=tenant.id, domain=f"warning-{index}.example.test", status="pending_dns", ssl_status="unknown", manual_activation_required=True)
+        for index in range(26)
+    ])
+    session.commit()
+
+    summary = DashboardService().build_summary(session, admin)
+
+    assert summary.domain_warning_count == 26
+    assert len(summary.domain_warnings) == 25
+    assert summary.domain_warnings_truncated is True
