@@ -67,6 +67,7 @@ await desktop.screenshot({ path: path.join(outputDir, "app-desktop.png"), fullPa
 
 await desktop.setViewportSize({ width: 390, height: 844 });
 await desktop.reload({ waitUntil: "networkidle", timeout: 30000 });
+await desktop.addScriptTag({ content: axe.source });
 let mobileA11y;
 const shellMarker = await desktop.locator("nav[aria-label='Primary navigation']").count() ? "on" : await desktop.locator("nav[aria-label='Dashboard navigation']").count() ? "off" : "unknown";
 if (shellMarker !== expectedShell) throw new Error(`expected shell ${expectedShell}, observed ${shellMarker}`);
