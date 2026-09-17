@@ -44,7 +44,12 @@ def api_call(base_url: str, token: str, path: str, method: str = "GET", payload:
             raw = response.read()
             return response.status, json.loads(raw.decode("utf-8")) if raw else None
     except urllib.error.HTTPError as error:
-        return error.code, None
+        raw = error.read()
+        try:
+            detail = json.loads(raw.decode("utf-8")) if raw else None
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            detail = None
+        return error.code, detail
 
 
 def cleanup(session, organization_ids: list[str], tenant_ids: list[str], user_id: str | None) -> None:
@@ -84,10 +89,14 @@ def main() -> int:
     tenant_ids: list[str] = []
     non_admin_user_id: str | None = None
     try:
+        status_me, me_payload = api_call(base_url, admin_token, "/auth/me")
+        if status_me != 200 or not isinstance(me_payload, dict) or not me_payload.get("user", {}).get("is_platform_admin"):
+            raise RuntimeError(f"production Phase 2 smoke identity is not platform admin: {status_me}/{me_payload}")
+
         status_a, org_a = api_call(base_url, admin_token, "/organizations", "POST", {"name": f"Phase 2 Production Alpha {suffix}", "status": "trial"})
         status_b, org_b = api_call(base_url, admin_token, "/organizations", "POST", {"name": f"Phase 2 Production Beta {suffix}", "status": "lead"})
         if status_a != 201 or status_b != 201 or not isinstance(org_a, dict) or not isinstance(org_b, dict):
-            raise RuntimeError(f"production Phase 2 organization CRUD setup failed: {status_a}/{status_b}")
+            raise RuntimeError(f"production Phase 2 organization CRUD setup failed: {status_a}/{org_a}; {status_b}/{org_b}")
         organization_ids.extend([str(org_a["id"]), str(org_b["id"])])
 
         status_ta, tenant_a = api_call(base_url, admin_token, f"/organizations/{org_a['id']}/tenants", "POST", {"tenant_slug": f"p2-production-alpha-{suffix}".lower(), "environment": "staging", "status": "planned"})
