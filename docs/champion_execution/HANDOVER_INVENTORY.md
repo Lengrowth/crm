@@ -6,7 +6,7 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; no secret values belong here.
 
 | Component | Repository/remotes | Current evidence |
 |---|---|---|
-| CRM control plane | Local `https://github.com/BuildGrowthNow/crm.git`; requested destination `https://github.com/Lengrowth/crm` | production current `0db050931933f7d8f0a4295121f3337edc135778`, previous `c2b923a5550923749b4f4ade7599b4a96a8943f1`; protected flag-only enablement and readback passed |
+| CRM control plane | Local `https://github.com/BuildGrowthNow/crm.git`; requested destination `https://github.com/Lengrowth/crm` | production current `12bc548056c59341d3ccc492a5353a696a7c0661`, previous `0db050931933f7d8f0a4295121f3337edc135778`; protected promotion and readback passed |
 | Champion forecast / commercial plan | `https://github.com/guerra2fernando/champion-forecast.git` | local checkout has unrelated dirty changes; preserve them |
 | Frappe upstream | `https://github.com/frappe/frappe.git` | production `edae775dd36b6c4ad7acab10230262bd74040765`; clean detached clone at `C:\Users\smikl\Desktop\Work\phase0-upstreams\frappe` |
 | ERPNext upstream | `https://github.com/frappe/erpnext.git` | production `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`; clean detached clone at `C:\Users\smikl\Desktop\Work\phase0-upstreams\erpnext` |
@@ -19,8 +19,9 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; no secret values belong here.
 - AWS EC2 and Cloudflare zone are verified; the temporary application hostnames are proxied through Cloudflare to the EC2 origin. Canonical public API `lenerp-api.lengrowth.com` resolves through Cloudflare and `/health` returned HTTP `200` on 2026-09-15 and again after retirement verification on 2026-09-16. The old deep hostname `api.lenerp.lengrowth.com` is retired, must not be used, and its old DNS record was deleted from Cloudflare on 2026-09-16.
 - Final non-secret production readback artifact from workflow `35108238557` reports Frappe and ERPNext source trees clean at the recorded production heads; no upstream source was changed by this run.
 - Reproducible staging-lane contract: `ops/staging/`; control-plane and ERP staging host/service/database/file evidence is established on the EC2 with private host-header checks.
-- `PLAT-P1` production currently serves candidate `0db050931933f7d8f0a4295121f3337edc135778`; its shell flag is on and the old shell was verified as a same-candidate flag-only fallback.
-- Final-main candidate-bound browser/WCAG evidence is run [35210899381](https://github.com/Lengrowth/crm/actions/runs/35210899381) with artifact [10491986933](https://github.com/Lengrowth/crm/actions/runs/35210899381/artifacts/10491986933). Production flag-only fallback is run [35204249048](https://github.com/Lengrowth/crm/actions/runs/35204249048) with artifact [10489067913](https://github.com/Lengrowth/crm/actions/runs/35204249048/artifacts/10489067913); enablement is run [35211232762](https://github.com/Lengrowth/crm/actions/runs/35211232762) with artifact [10491683776](https://github.com/Lengrowth/crm/actions/runs/35211232762/artifacts/10491683776).
+- `PLAT-P1` production currently serves candidate `12bc548056c59341d3ccc492a5353a696a7c0661`; its shell flag is on and the old shell remains available through the same global server-controlled flag.
+- Exact post-merge enabled-shell browser/WCAG evidence is run [35223932797](https://github.com/Lengrowth/crm/actions/runs/35223932797) with artifact [10498661711](https://github.com/Lengrowth/crm/actions/runs/35223932797/artifacts/10498661711). Protected production promotion/readback is run [35224283218](https://github.com/Lengrowth/crm/actions/runs/35224283218) with artifact [10498031884](https://github.com/Lengrowth/crm/actions/runs/35224283218/artifacts/10498031884). The prior `0db0509…` candidate remains the previous pointer and is rejected for future promotion because its exact enabled-shell run failed the serious-incomplete accessibility gate.
+- The final production readback reports local health `200`, active backend/frontend/nginx/R2 timer services, enabled R2 lifecycle rules, 17 R2 objects, shell flag `true`, and zero temporary smoke users, organizations, or sessions. Public root, canonical API health, and runtime release endpoints each returned `200` in three consecutive post-release samples with release and commit identity `12bc548…`.
 
 ## Release artifacts
 
@@ -43,5 +44,5 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; no secret values belong here.
 
 ## Next-phase baseline
 
-- Phase 2 starts from production candidate `0db050931933f7d8f0a4295121f3337edc135778` with the operator shell enabled and the old shell retained behind its server flag.
+- Phase 2 starts from production candidate `12bc548056c59341d3ccc492a5353a696a7c0661` with the operator shell enabled and the old shell retained behind the same global server flag. The runtime manifest may continue to report `environment: staging` because the immutable artifact is staging-built and promoted unchanged.
 - The next release must continue to use staging-first immutable candidates and the protected production workflow; no Phase 2 page redesign or Champion data import is implied by this handover.
