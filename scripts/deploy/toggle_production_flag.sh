@@ -59,8 +59,21 @@ if not updated:
 path.write_text("\n".join(output) + "\n", encoding="utf-8")
 PY
 
+configured_flags="$(sudo python3 - "$BACKEND_ENV_FILE" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+path = Path(sys.argv[1])
+pattern = re.compile(r"^\s*(?:export\s+)?FEATURE_FLAGS=(.*)$")
+print(",".join(match.group(1) for line in path.read_text(encoding="utf-8").splitlines() if (match := pattern.match(line))))
+PY
+)"
+echo "Configured production feature flags: $configured_flags"
 sudo "$SYSTEMCTL_BIN" daemon-reload
 sudo "$SYSTEMCTL_BIN" restart "$BACKEND_SERVICE"
+loaded_flags="$(sudo "$SYSTEMCTL_BIN" show "$BACKEND_SERVICE" --property=Environment --value | tr ' ' '\n' | sed -n 's/^FEATURE_FLAGS=//p' | paste -sd ',' -)"
+echo "Loaded backend feature flags: $loaded_flags"
 ready=false
 for _ in {1..30}; do
   if curl -fsS -o /dev/null --max-time 3 "${PRODUCTION_BACKEND_LOCAL_URL:-http://127.0.0.1:8001}/health"; then ready=true; break; fi
