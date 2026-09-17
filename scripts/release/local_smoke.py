@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 import time
+from datetime import datetime, timedelta, timezone
 from urllib.error import HTTPError
 from pathlib import Path
 from urllib.request import Request, urlopen
@@ -74,6 +75,42 @@ def alembic_command(*args: str) -> list[str]:
     return [str(ALEMBIC), *args]
 
 
+def create_platform_admin_session(email: str, database_path: Path) -> str:
+    """Create a disposable platform-admin fixture for admin-only smoke routes."""
+    if str(BACKEND) not in sys.path:
+        sys.path.insert(0, str(BACKEND))
+    from app.core.security import generate_session_token, hash_session_token
+    from app.models.domain import AuthSession, SaaSUser
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    token = generate_session_token()
+    now = datetime.now(timezone.utc)
+    engine = create_engine(f"sqlite:///{database_path.as_posix()}", connect_args={"check_same_thread": False}, future=True)
+    Session = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
+    with Session() as session:
+        user = SaaSUser(
+            email=email,
+            full_name="Phase 2 Local Smoke Admin",
+            password_hash=None,
+            status="active",
+            is_platform_admin=True,
+            email_verified_at=now,
+        )
+        session.add(user)
+        session.flush()
+        session.add(
+            AuthSession(
+                user_id=user.id,
+                session_token_hash=hash_session_token(token),
+                expires_at=now + timedelta(hours=1),
+            )
+        )
+        session.commit()
+    engine.dispose()
+    return token
+
+
 def main() -> int:
     required = (BACKEND_PYTHON, GIT_BASH, NODE, NEXT_ENTRY, FRONTEND / ".next")
     if not ALEMBIC_AS_MODULE:
@@ -84,11 +121,14 @@ def main() -> int:
 
     db_path = BACKEND / "plat_p0_local_smoke.db"
     auth_file = BACKEND / "plat_p0_local_smoke_auth.token"
+    admin_auth_file = BACKEND / "plat_p2_local_smoke_admin.token"
     manifest_path = BACKEND / "plat_p0_local_smoke_manifest.json"
     if db_path.exists():
         db_path.unlink()
     if auth_file.exists():
         auth_file.unlink()
+    if admin_auth_file.exists():
+        admin_auth_file.unlink()
     if manifest_path.exists():
         manifest_path.unlink()
     manifest_path.write_text(
@@ -132,6 +172,7 @@ def main() -> int:
             "FEATURE_FLAGS": "future_menu=off",
         }
     )
+    os.environ.update(env)
     backend_process: subprocess.Popen[bytes] | None = None
     frontend_process: subprocess.Popen[bytes] | None = None
     try:
@@ -195,6 +236,18 @@ def main() -> int:
         auth_file.write_text(str(login_payload["access_token"]), encoding="utf-8")
         print("authenticated register/login/application route checks passed")
 
+        admin_token = create_platform_admin_session(
+            f"phase2-local-admin-{secrets.token_urlsafe(10)}@example.test",
+            db_path,
+        )
+        admin_auth_file.write_text(admin_token, encoding="utf-8")
+        admin_me_status, admin_me_payload = json_request(
+            f"http://127.0.0.1:{BACKEND_PORT}/auth/me", host_header, token=admin_token
+        )
+        if admin_me_status != 200 or not admin_me_payload.get("user", {}).get("is_platform_admin"):
+            raise RuntimeError(f"platform-admin fixture failed with HTTP {admin_me_status}")
+        print("platform-admin implementation route fixture passed")
+
         membership = register_payload.get("user", {}).get("memberships", [])[0]
         organization_id = str(membership["organization_id"])
         tenant_status, tenant_payload = json_request(
@@ -239,7 +292,7 @@ def main() -> int:
             "PYTHON_BIN": git_bash_path(BACKEND_PYTHON),
             "HOST_HEADER": host_header,
             "REQUIRE_AUTH_SMOKE": "true",
-            "AUTH_TOKEN_FILE": git_bash_path(auth_file),
+            "AUTH_TOKEN_FILE": git_bash_path(admin_auth_file),
         }
         result = subprocess.run(
             [str(GIT_BASH), "scripts/release/smoke.sh"],
@@ -274,6 +327,8 @@ def main() -> int:
                     time.sleep(0.5)
         if auth_file.exists():
             auth_file.unlink()
+        if admin_auth_file.exists():
+            admin_auth_file.unlink()
         if manifest_path.exists():
             manifest_path.unlink()
 

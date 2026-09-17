@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
@@ -43,37 +43,77 @@ def get_portfolio(
     _: SaaSUser = Depends(require_platform_admin),
 ) -> ImplementationPortfolio:
     """Return a bounded portfolio read model for the platform operator page."""
+    project_limit = 250
+    task_limit = 100
+    project_count = int(session.scalar(select(func.count()).select_from(ImplementationProject)) or 0)
     projects = session.execute(
         select(ImplementationProject, Organization.name, Tenant.tenant_slug)
         .join(Organization, Organization.id == ImplementationProject.organization_id)
         .join(Tenant, Tenant.id == ImplementationProject.tenant_id)
         .order_by(ImplementationProject.created_at.desc())
-        .limit(250)
+        .limit(project_limit)
     ).all()
     project_ids = [project.id for project, _, _ in projects]
-    task_rows = session.execute(
-        select(ImplementationTask)
-        .where(ImplementationTask.implementation_project_id.in_(project_ids))
-        .order_by(ImplementationTask.sort_order.asc(), ImplementationTask.created_at.asc())
-    ).scalars().all() if project_ids else []
-    tasks_by_project: dict[str, list[ImplementationTask]] = {}
-    for task in task_rows:
-        tasks_by_project.setdefault(task.implementation_project_id, []).append(task)
+
     terminal_statuses = set(session.execute(
         select(ImplementationTaskStatus.code).where(ImplementationTaskStatus.is_terminal.is_(True))
     ).scalars().all())
     now = datetime.now(timezone.utc)
+    blocker_clause = ImplementationTask.status.in_({"blocked", "blocked_by_dependency"})
+    overdue_clause = (
+        ImplementationTask.due_date.is_not(None)
+        & (ImplementationTask.due_date < now)
+        & ~ImplementationTask.status.in_(terminal_statuses)
+    )
+    aggregate_rows = session.execute(
+        select(
+            ImplementationTask.implementation_project_id,
+            func.count(ImplementationTask.id).label("task_count"),
+            func.coalesce(func.sum(case((ImplementationTask.status.in_(terminal_statuses), 1), else_=0)), 0).label("completed_task_count"),
+            func.coalesce(func.sum(case((blocker_clause, 1), else_=0)), 0).label("blocker_count"),
+            func.coalesce(func.sum(case((overdue_clause, 1), else_=0)), 0).label("overdue_task_count"),
+        )
+        .where(ImplementationTask.implementation_project_id.in_(project_ids))
+        .group_by(ImplementationTask.implementation_project_id)
+    ).all() if project_ids else []
+    aggregate_by_project = {row[0]: row for row in aggregate_rows}
+
+    global_counts = session.execute(
+        select(
+            func.coalesce(func.sum(case((blocker_clause, 1), else_=0)), 0),
+            func.coalesce(func.sum(case((overdue_clause, 1), else_=0)), 0),
+        ).select_from(ImplementationTask)
+    ).one()
+    total_blockers, total_overdue = (int(value or 0) for value in global_counts)
+
+    task_rank = func.row_number().over(
+        partition_by=ImplementationTask.implementation_project_id,
+        order_by=(ImplementationTask.sort_order.asc(), ImplementationTask.created_at.asc()),
+    ).label("task_rank")
+    task_detail = select(
+        ImplementationTask.id.label("id"),
+        ImplementationTask.implementation_project_id.label("project_id"),
+        ImplementationTask.title.label("title"),
+        ImplementationTask.status.label("status"),
+        ImplementationTask.due_date.label("due_date"),
+        task_rank,
+    ).where(ImplementationTask.implementation_project_id.in_(project_ids)).subquery() if project_ids else None
+    task_rows = session.execute(
+        select(task_detail)
+        .where(task_detail.c.task_rank <= task_limit)
+        .order_by(task_detail.c.project_id.asc(), task_detail.c.task_rank.asc())
+    ).all() if task_detail is not None else []
+    tasks_by_project: dict[str, list[ImplementationTask]] = {}
+    for task in task_rows:
+        tasks_by_project.setdefault(task.project_id, []).append(task)
     portfolio: list[PortfolioProject] = []
-    total_blockers = 0
-    total_overdue = 0
     for project, organization_name, tenant_slug in projects:
+        aggregate = aggregate_by_project.get(project.id)
+        total = int(aggregate.task_count) if aggregate else 0
+        completed = int(aggregate.completed_task_count) if aggregate else 0
+        blocker_count = int(aggregate.blocker_count) if aggregate else 0
+        overdue_count = int(aggregate.overdue_task_count) if aggregate else 0
         tasks = tasks_by_project.get(project.id, [])
-        blockers = [task for task in tasks if task.status in {"blocked", "blocked_by_dependency"}]
-        overdue = [task for task in tasks if task.due_date is not None and _is_before_now(task.due_date, now) and task.status not in terminal_statuses]
-        completed = sum(1 for task in tasks if task.status in terminal_statuses)
-        total = len(tasks)
-        total_blockers += len(blockers)
-        total_overdue += len(overdue)
         portfolio.append(PortfolioProject(
             id=project.id,
             organization_id=project.organization_id,
@@ -85,16 +125,17 @@ def get_portfolio(
             task_count=total,
             completed_task_count=completed,
             progress_percent=int((completed / total) * 100) if total else 0,
-            blocker_count=len(blockers),
-            overdue_task_count=len(overdue),
-            tasks=[PortfolioTask(id=task.id, title=task.title, status=task.status, due_date=task.due_date) for task in tasks[:100]],
+            blocker_count=blocker_count,
+            overdue_task_count=overdue_count,
+            tasks=[PortfolioTask(id=task.id, title=task.title, status=task.status, due_date=task.due_date) for task in tasks],
+            tasks_truncated=total > len(tasks),
         ))
     return ImplementationPortfolio(
         generated_at=now,
-        project_count=len(portfolio),
+        project_count=project_count,
         blocker_count=total_blockers,
         overdue_task_count=total_overdue,
-        truncated=len(projects) >= 250,
+        truncated=project_count > project_limit,
         projects=portfolio,
     )
 

@@ -95,9 +95,11 @@ class ControlPlaneService:
         )
         return tenant
 
-    def list_organizations(self, session: Session, current_user: SaaSUser) -> list[Organization]:
+    def list_organizations(self, session: Session, current_user: SaaSUser, limit: int | None = None) -> list[Organization]:
         if current_user.is_platform_admin:
             statement = select(Organization).order_by(Organization.created_at.desc())
+            if limit is not None:
+                statement = statement.limit(limit)
             return session.execute(statement).scalars().all()
 
         statement = (
@@ -106,6 +108,8 @@ class ControlPlaneService:
             .where(OrganizationMembership.user_id == current_user.id)
             .order_by(Organization.created_at.desc())
         )
+        if limit is not None:
+            statement = statement.limit(limit)
         return session.execute(statement).scalars().all()
 
     def create_organization(
@@ -169,6 +173,7 @@ class ControlPlaneService:
         session: Session,
         current_user: SaaSUser,
         organization_id: Optional[str] = None,
+        limit: int | None = None,
     ) -> list[Tenant]:
         statement = select(Tenant).order_by(Tenant.created_at.desc())
 
@@ -183,6 +188,8 @@ class ControlPlaneService:
                 .where(OrganizationMembership.user_id == current_user.id)
             )
 
+        if limit is not None:
+            statement = statement.limit(limit)
         return session.execute(statement).scalars().all()
 
     def create_tenant(

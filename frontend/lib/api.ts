@@ -42,13 +42,13 @@ export function trackMarketingEvent(payload: Record<string, unknown>) { return f
 
 export function fetchDashboardSummary() { return requestJson<DashboardSummary>("/dashboard/summary"); }
 export function fetchImplementationPortfolio() { return requestJson<ImplementationPortfolio>("/implementation/portfolio"); }
-export function fetchOrganizations() { return requestJson<OrganizationRecord[]>("/organizations"); }
+export function fetchOrganizations(limit?: number) { return requestJson<OrganizationRecord[]>(`/organizations${limit ? `?limit=${limit}` : ""}`); }
 export function createOrganization(payload: Record<string, unknown>) { return requestJson<OrganizationRecord>("/organizations", { method: "POST", body: JSON.stringify(payload) }); }
 export function fetchOrganization(organizationId: string) { return requestJson<OrganizationRecord>(`/organizations/${organizationId}`); }
 export function updateOrganization(organizationId: string, payload: Record<string, unknown>) { return requestJson<OrganizationRecord>(`/organizations/${organizationId}`, { method: "PATCH", body: JSON.stringify(payload) }); }
 export function fetchOrganizationTenants(organizationId: string) { return requestJson<TenantRecord[]>(`/organizations/${organizationId}/tenants`); }
 export function createOrganizationTenant(organizationId: string, payload: Record<string, unknown>) { return requestJson<TenantRecord>(`/organizations/${organizationId}/tenants`, { method: "POST", body: JSON.stringify(payload) }); }
-export function fetchTenants() { return requestJson<TenantRecord[]>("/tenants"); }
+export function fetchTenants(limit?: number) { return requestJson<TenantRecord[]>(`/tenants${limit ? `?limit=${limit}` : ""}`); }
 export function createTenant(payload: Record<string, unknown>) { return requestJson<TenantRecord>("/tenants", { method: "POST", body: JSON.stringify(payload) }); }
 export function fetchTenant(tenantId: string) { return requestJson<TenantRecord>(`/tenants/${tenantId}`); }
 export function updateTenant(tenantId: string, payload: Record<string, unknown>) { return requestJson<TenantRecord>(`/tenants/${tenantId}`, { method: "PATCH", body: JSON.stringify(payload) }); }

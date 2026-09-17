@@ -106,6 +106,30 @@ def database_counts() -> dict[str, int | None]:
     }
 
 
+def phase2_cleanup_evidence() -> dict[str, object]:
+    path = Path(os.environ.get("PHASE2_CLEANUP_MANIFEST", "/run/saas-control/smoke/phase2-cleanup.json"))
+    if not path.is_file():
+        return {"available": False}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {"available": False}
+    created = payload.get("created", {})
+    remaining = payload.get("post_cleanup_remaining", {})
+    return {
+        "available": True,
+        "schema_version": payload.get("schema_version"),
+        "status": payload.get("status"),
+        "run_id": payload.get("run_id"),
+        "created_counts": {
+            key: len(value) if isinstance(value, list) else 0
+            for key, value in created.items()
+        },
+        "post_cleanup_remaining": remaining,
+        "all_remaining_counts_zero": payload.get("all_remaining_counts_zero") is True,
+    }
+
+
 lifecycle_raw = subprocess.run(
     ["aws", "s3api", "get-bucket-lifecycle-configuration", "--bucket", bucket, "--endpoint-url", endpoint, "--output", "json"],
     check=False,
@@ -154,6 +178,7 @@ data = {
     "r2_backup_timer_enabled": command("systemctl", "is-enabled", "saas-control-r2-backup.timer") or "unknown",
     "local_health_http": command("curl", "-sS", "-o", "/dev/null", "-w", "%{http_code}", "http://127.0.0.1:8001/health"),
     "smoke_cleanup": database_counts(),
+    "phase2_cleanup": phase2_cleanup_evidence(),
     "source_trees": [
         git_state(Path("/home/frappe/frappe-bench/apps/frappe")),
         git_state(Path("/home/frappe/frappe-bench/apps/erpnext")),

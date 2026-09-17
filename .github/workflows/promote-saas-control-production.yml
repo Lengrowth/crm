@@ -125,6 +125,7 @@ jobs:
         env:
           PRODUCTION_BACKEND_URL: https://lenerp-api.lengrowth.com
           TOKEN_FILE: /run/saas-control/smoke/auth-token
+          PHASE2_CLEANUP_MANIFEST: /run/saas-control/smoke/phase2-cleanup.json
         run: |
           set -a
           . /opt/saas-control/shared/env/backend.env
@@ -132,7 +133,8 @@ jobs:
           PYTHONPATH=/opt/saas-control/current/backend \
             /opt/saas-control/shared/backend-venv/bin/python \
             scripts/release/production_phase2_smoke.py \
-            --token-file "$TOKEN_FILE"
+            --token-file "$TOKEN_FILE" \
+            --cleanup-manifest "$PHASE2_CLEANUP_MANIFEST"
 
       - name: Remove disposable authenticated smoke identity
         if: always()
@@ -140,6 +142,7 @@ jobs:
           SMOKE_EMAIL: phase0-production-smoke-${{ github.run_id }}@example.test
           SMOKE_ORGANIZATION: Phase 0 Production Smoke ${{ github.run_id }}
           TOKEN_FILE: /run/saas-control/smoke/auth-token
+          PHASE2_CLEANUP_MANIFEST: /run/saas-control/smoke/phase2-cleanup.json
         run: |
           set -a
           . /opt/saas-control/shared/env/backend.env
@@ -166,3 +169,7 @@ jobs:
           path: production-readback.json
           if-no-files-found: error
           retention-days: 30
+
+      - name: Remove Phase 2 cleanup manifest
+        if: always()
+        run: rm -f -- /run/saas-control/smoke/phase2-cleanup.json
