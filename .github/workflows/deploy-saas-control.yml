@@ -64,7 +64,7 @@ jobs:
           SOURCE_REPO: ${{ github.workspace }}
           BACKEND_PYTHON: /opt/saas-control-staging/shared/backend-venv/bin/python
         run: |
-          /opt/saas-control-staging/shared/backend-venv/bin/pip install --disable-pip-version-check --no-input --no-deps 'pytest>=8,<9'
+          /opt/saas-control-staging/shared/backend-venv/bin/pip install --disable-pip-version-check --no-input 'pytest>=8,<9'
           ./scripts/release/validate_candidate.sh
 
       - name: Set staging-only shell flag for this candidate
