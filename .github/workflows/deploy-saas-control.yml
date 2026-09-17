@@ -162,7 +162,10 @@ jobs:
           browser_path="$(find "$HOME/.cache/ms-playwright" -type f -path '*/chrome-linux/chrome' -print -quit 2>/dev/null || true)"
           [[ -n "$browser_path" ]] || { echo "Installed Chromium executable was not found" >&2; exit 1; }
           evidence_script="/opt/saas-control-staging/current/frontend/scripts/capture_browser_evidence.mjs"
-          if [[ -f "$GITHUB_WORKSPACE/frontend/scripts/current_capture_browser_evidence.mjs" ]]; then evidence_script="$GITHUB_WORKSPACE/frontend/scripts/current_capture_browser_evidence.mjs"; fi
+          if [[ -f "$GITHUB_WORKSPACE/frontend/scripts/current_capture_browser_evidence.mjs" ]]; then
+            sudo install -m 644 "$GITHUB_WORKSPACE/frontend/scripts/current_capture_browser_evidence.mjs" /opt/saas-control-staging/current/frontend/scripts/current_capture_browser_evidence.mjs
+            evidence_script="/opt/saas-control-staging/current/frontend/scripts/current_capture_browser_evidence.mjs"
+          fi
           AUTH_TOKEN_FILE="$token_file" NON_ADMIN_AUTH_TOKEN_FILE="$non_admin_token_file" BROWSER_EXECUTABLE_PATH="$browser_path" node "$evidence_script"
           rm -f -- "$token_file" "$non_admin_token_file"
 
@@ -185,6 +188,7 @@ jobs:
             --cleanup
           sudo rm -f -- /run/saas-control-staging/smoke/non-admin-auth-token
           rm -f -- "$GITHUB_WORKSPACE/frontend/scripts/current_capture_browser_evidence.mjs" /tmp/saas-control-prepare-staging-smoke-auth.py
+          sudo rm -f -- /opt/saas-control-staging/current/frontend/scripts/current_capture_browser_evidence.mjs
 
       - name: Upload durable staging browser evidence
         if: success()
