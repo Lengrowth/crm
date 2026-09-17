@@ -5,6 +5,7 @@ import path from "node:path";
 
 let baseUrl = (process.env.BASE_URL ?? "").replace(/\/$/, "");
 const tokenFile = process.env.AUTH_TOKEN_FILE;
+const nonAdminTokenFile = process.env.NON_ADMIN_AUTH_TOKEN_FILE;
 const outputDir = process.env.OUTPUT_DIR ?? "browser-evidence";
 const expectedShell = process.env.EXPECTED_PHASE_ONE_SHELL ?? "on";
 const cookieName = process.env.AUTH_COOKIE_NAME ?? "crm-auth-token";
@@ -90,6 +91,24 @@ const report = {
   routes: results,
   accessibility: { desktop: desktopA11y, mobile: mobileA11y },
 };
+if (nonAdminTokenFile) {
+  const nonAdminToken = (await readFile(nonAdminTokenFile, "utf8")).trim();
+  if (!nonAdminToken) throw new Error("NON_ADMIN_AUTH_TOKEN_FILE is empty");
+  const nonAdminContext = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: "reduce" });
+  await nonAdminContext.addCookies([{ name: cookieName, value: nonAdminToken, url: `${baseUrl}/` }]);
+  const nonAdminPage = await nonAdminContext.newPage();
+  const nonAdminResponse = await nonAdminPage.goto(`${baseUrl}/app/implementation`, { waitUntil: "networkidle", timeout: 30000 });
+  await nonAdminPage.locator("main").waitFor({ state: "attached", timeout: 10000 });
+  const nonAdminBody = await nonAdminPage.locator("body").innerText();
+  const accessDenied = nonAdminBody.toLowerCase().includes("access denied") && nonAdminBody.includes("You do not have access to this area.");
+  const restrictedLinkCount = await nonAdminPage.getByRole("link", { name: "Implementations" }).count();
+  if (!accessDenied || restrictedLinkCount !== 0 || nonAdminBody.includes("Track rollout readiness from discovery through go-live.")) {
+    throw new Error(`non-admin implementation access check failed: denied=${accessDenied}, restricted_links=${restrictedLinkCount}, body=${nonAdminBody.replace(/\s+/g, " ").slice(0, 500)}`);
+  }
+  await nonAdminPage.screenshot({ path: path.join(outputDir, "non-admin-implementation-denied.png"), fullPage: true });
+  report.authorization = { route: "/app/implementation", status: nonAdminResponse?.status() ?? null, non_admin_access_denied: accessDenied, restricted_navigation_links: restrictedLinkCount };
+  await nonAdminContext.close();
+}
 const seriousViolations = [...desktopA11y.violations, ...mobileA11y.violations].filter((violation) => ["critical", "serious"].includes(violation.impact));
 if (seriousViolations.length) throw new Error(`serious accessibility violations: ${seriousViolations.map((violation) => violation.id).join(", ")}`);
 await writeFile(path.join(outputDir, "browser-evidence.json"), `${JSON.stringify(report, null, 2)}\n`, "utf8");
