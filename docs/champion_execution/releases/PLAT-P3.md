@@ -5,8 +5,8 @@ Release identity: `PLAT-P3`
 Record date: 2026-09-18
 Operator: Codex, working with the delivery owner
 Approver: GitHub `production` environment reviewer; approvals recorded on protected runs
-Production candidate: `68926c22aab01079f17c2cebe21edeeff8ca2c75`
-Previous production candidate: `41ac76500a6a502ac78f22d6dbefbf90996ee46a`
+Production candidate: `86fcde5b822b06e40980f904d81b87854903dfc6`
+Previous production candidate: `68926c22aab01079f17c2cebe21edeeff8ca2c75`
 
 ## Scope and safety decision
 
@@ -94,8 +94,8 @@ normal browser action has no ERP verification control.
 
 | Check | Result | Evidence |
 |---|---|---|
-| Backend suite | PASS | `python -m pytest backend/tests -q` — 45 passed |
-| Phase 3 service/API tests | PASS | 6 passed: catalog/seed, safe default, dependencies, disable safety, retry, reversal, authorization/isolation, rules, and bundle audit |
+| Backend suite | PASS | `python -m pytest backend/tests -q` — 48 passed |
+| Phase 3 service/API tests | PASS | 10 focused tests: catalog/seed immutability, safe default, status-derived legacy state, dependencies, explicit-disable conflict, stale preview, retry, reversal, authorization/isolation, rules, and bundle audit |
 | Python compilation | PASS | `python -m compileall -q backend/app backend/tests scripts/release/production_phase3_smoke.py` |
 | Frontend tests | PASS | `npm test` — 12 passed |
 | Frontend typecheck | PASS | `npm run typecheck` |
@@ -103,68 +103,61 @@ normal browser action has no ERP verification control.
 | Dependency audit | PASS | `npm audit --omit=optional --audit-level=low` — 0 vulnerabilities |
 | Secret scan | PASS | `python scripts/release/secret_scan.py` |
 | Diff whitespace | PASS | `git diff --check` |
-| Migration upgrade/downgrade rehearsal | PASS | exact current revision `20260528_0007` upgraded to `20260917_0008`, downgraded, and upgraded again on disposable SQLite |
-| Seed synchronization | PASS | Phase 3 test seeds twice; second module/catalog sync is zero-change |
+| Migration upgrade/downgrade rehearsal | PASS | exact current revision `20260528_0007` upgraded through `20260918_0009`, downgraded, and upgraded again on disposable SQLite; enabled and disabled legacy assignments preserve state |
+| Seed synchronization | PASS | Released catalog and bundle versions are insert-only; operator-owned metadata and bundle membership are not overwritten; second sync is zero-change |
 
 ## Staging and production evidence
 
-- Exact candidate and ancestry: `68926c22aab01079f17c2cebe21edeeff8ca2c75`; it is the
-  protected merge of PRs [#49](https://github.com/Lengrowth/crm/pull/49) and
-  [#50](https://github.com/Lengrowth/crm/pull/50), and the verified baseline
+- Exact candidate and ancestry: `86fcde5b822b06e40980f904d81b87854903dfc6`; it is
+  the protected merge of remediation PR [#54](https://github.com/Lengrowth/crm/pull/54)
+  on top of the earlier Phase 3 implementation/tooling PRs [#49](https://github.com/Lengrowth/crm/pull/49),
+  [#50](https://github.com/Lengrowth/crm/pull/50), and documentation PRs
+  [#51](https://github.com/Lengrowth/crm/pull/51), [#52](https://github.com/Lengrowth/crm/pull/52),
+  [#53](https://github.com/Lengrowth/crm/pull/53). The verified baseline
   `7cd9c2d2cc3e5a4507e380f8b122983a3ad76d9d` is an ancestor.
-- Final-main staging: run
-  [35267218039](https://github.com/Lengrowth/crm/actions/runs/35267218039),
+- Final-main staging for the actual final remote `main`: run
+  [35278665942](https://github.com/Lengrowth/crm/actions/runs/35278665942),
   browser artifact
-  [10517640727](https://github.com/Lengrowth/crm/actions/runs/35267218039/artifacts/10517640727).
+  [10521149490](https://github.com/Lengrowth/crm/actions/runs/35278665942/artifacts/10521149490).
   Runtime identity matched the candidate. The Phase 3 artifact records backend
   catalog loading, public/internal identity agreement, module search/detail,
   bundle preview/apply/retry, invalid and dependent-disable rejection, company
   Modules view, audit before/after, reversal, non-admin denial, and cleanup
   manifest; accessibility reported zero violations.
-  The final documentation-bearing `main` reconciliation also passed in run
-  [35273517251](https://github.com/Lengrowth/crm/actions/runs/35273517251),
-  browser artifact
-  [10519664593](https://github.com/Lengrowth/crm/actions/runs/35273517251/artifacts/10519664593).
 - Database migration: staging rehearsal upgraded representative legacy schema
-  `20260528_0007` to `20260917_0008`, downgraded, and upgraded again while
+  `20260528_0007` through `20260918_0009`, downgraded, and upgraded again while
   preserving a legacy `inventory` assignment. The protected production
-  promotion run applied the same additive `upgrade head` from `20260528_0007`
-  to `20260917_0008`; catalog seed then completed successfully.
+  promotion run applied `20260917_0008 -> 20260918_0009`; catalog seed then
+  completed with zero existing catalog/bundle mutations.
 - Protected production promotion: run
-  [35267738908](https://github.com/Lengrowth/crm/actions/runs/35267738908),
+  [35279102175](https://github.com/Lengrowth/crm/actions/runs/35279102175),
   readback artifact
-  [10518265800](https://github.com/Lengrowth/crm/actions/runs/35267738908/artifacts/10518265800).
-  It reports current `/opt/saas-control/releases/68926c22...`, previous
-  `/opt/saas-control/releases/41ac765...`, active backend/frontend/nginx/R2
-  timer services, local health `200`, clean upstream trees, and zero Phase 0
+  [10522240159](https://github.com/Lengrowth/crm/actions/runs/35279102175/artifacts/10522240159).
+  It reports current `/opt/saas-control/releases/86fcde5b...`, previous
+  `/opt/saas-control/releases/68926c22...`, active backend/frontend/nginx/R2
+  timer services, local health `200`, `platform_phase1_shell=true`, clean upstream trees, and zero Phase 0
   smoke records.
 - Rollout evidence: protected read-only run
-  [35271204673](https://github.com/Lengrowth/crm/actions/runs/35271204673) was
-  followed by live readback `writes=false`, `operator_only=false`,
-  `general=false`; operator-only run
-  [35271298344](https://github.com/Lengrowth/crm/actions/runs/35271298344)
+  [35279338775](https://github.com/Lengrowth/crm/actions/runs/35279338775) was
+  followed by operator-only run
+  [35279271616](https://github.com/Lengrowth/crm/actions/runs/35279271616)
   passed with artifact
-  [10518545982](https://github.com/Lengrowth/crm/actions/runs/35271298344/artifacts/10518545982);
+  [10522300063](https://github.com/Lengrowth/crm/actions/runs/35279271616/artifacts/10522300063);
   general rollout run
-  [35271386799](https://github.com/Lengrowth/crm/actions/runs/35271386799)
+  [35279384713](https://github.com/Lengrowth/crm/actions/runs/35279384713)
   passed and restored the final authorized-role state.
-- Production synthetic verification: earlier operator-only run
-  [35270280179](https://github.com/Lengrowth/crm/actions/runs/35270280179)
-  artifact
-  [10518550049](https://github.com/Lengrowth/crm/actions/runs/35270280179/artifacts/10518550049)
-  and final operator-only artifact
-  [10518545982](https://github.com/Lengrowth/crm/actions/runs/35271298344/artifacts/10518545982)
-  both report catalog counts `21/17`, preview/apply/retry/reversal success,
+- Production synthetic verification: artifact
+  [10522300063](https://github.com/Lengrowth/crm/actions/runs/35279271616/artifacts/10522300063)
+  reports catalog counts `21/17`, preview/apply/retry/reversal success,
   authorization isolation, no untrusted verification, and zero remaining
-  organizations, users, assignments, or audits.
-- Observation: four samples from 2026-09-17T20:34:57Z through
-  2026-09-17T20:35:58Z returned health `200`, the exact candidate release, and
-  stable flags `module_entitlement_writes=true`,
-  `module_entitlement_operator_only=false`,
+  organizations, users, memberships, tenants, sessions, assignments,
+  entitlement requests, audits, application statuses, or token files.
+- Observation: final live samples returned health `200`, exact candidate
+  release `86fcde5b...`, `platform_phase1_shell=true`, and stable final flags
+  `module_entitlement_writes=true`, `module_entitlement_operator_only=false`,
   `module_entitlement_general=true`.
-- Cleanup: production artifact reports zero residual synthetic organizations,
-  users, module assignments, and module audits; staging cleanup completed in
-  the final-main workflow. Legitimate catalog/reference data was preserved.
+- Cleanup: the protected production artifact and staging workflow both report
+  complete synthetic cleanup; legitimate catalog/reference data was preserved.
 
 ## C03 and limitations
 
@@ -175,7 +168,7 @@ verification decisions remain unresolved. The Phase 0 credential-rotation
 waiver remains accepted; no Champion confidential data may enter the
 environment under that waiver.
 
-Final verdict: **PLAT-P3: PASS**. Exact-candidate staging, migration rehearsal,
+Final verdict: **PLAT-P3: PASS**. Exact-final-main staging, migration rehearsal,
 protected production promotion, read-only/operator-only/general rollout,
 synthetic production preview/apply/retry/reversal, authorization and
 tenant-isolation checks, ERP-state separation, cleanup, observation, and
