@@ -99,7 +99,9 @@ for _ in {1..30}; do
 done
 if [[ "$ready" != true ]]; then restore; exit 1; fi
 
-if ! AUTH_TOKEN_FILE="$AUTH_TOKEN_FILE" BASE_URL="$BASE_URL" BACKEND_URL="${PRODUCTION_BACKEND_LOCAL_URL:-http://127.0.0.1:8001}" EXPECTED_RELEASE="$EXPECTED_CURRENT_RELEASE" EXPECTED_PHASE_ONE_SHELL="$PHASE1_SHELL_STATE" bash "$APP_ROOT/current/scripts/release/shell_smoke.sh"; then
+expected_phase_one_shell="false"
+[[ "$PHASE1_SHELL_STATE" == "on" ]] && expected_phase_one_shell="true"
+if ! AUTH_TOKEN_FILE="$AUTH_TOKEN_FILE" BASE_URL="$BASE_URL" BACKEND_URL="${PRODUCTION_BACKEND_LOCAL_URL:-http://127.0.0.1:8001}" EXPECTED_RELEASE="$EXPECTED_CURRENT_RELEASE" EXPECTED_PHASE_ONE_SHELL="$expected_phase_one_shell" bash "$APP_ROOT/current/scripts/release/shell_smoke.sh"; then
   restore
   exit 1
 fi
