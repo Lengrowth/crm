@@ -14,3 +14,14 @@
 | P0-B06 | Resolved | Cloudflare/infrastructure owner | `lenerp-api.lengrowth.com` is the only supported API hostname and passes public verification. The retired `api.lenerp.lengrowth.com` DNS record was deleted; no certificate or compatibility route is required. |
 | P0-R04 | Resolved | Release owner | Non-secret readback artifact from protected run `35108238557` confirmed immutable `current` `7e30e40b2e601567419c97debee7e6d43fc89f1c` and `previous` `31f6d90d7f131e5beb9f2c976e95b391abebc200`, active services, active/enabled R2 timer, zero temporary smoke users/organizations/sessions, clean Frappe/ERPNext heads, and local-origin health `200`. |
 | P0-B07 | Resolved | Release owner / GitHub administrator | GitHub `production` environment/reviewer protection and `main` branch protection are configured; protected run `35108238557` succeeded for the exact candidate with authenticated smoke, cleanup, and uploaded readback. |
+
+# PLAT-P1 Decision, Blocker, and Risk Register
+
+| ID | Type | Status | Owner | Required action |
+|---|---|---|---|---|
+| P1-D01 | Decision | Resolved | Delivery owner / release owner | The operator shell is enabled as the production default behind `platform_phase1_shell`; the prior shell remains available through the server-controlled flag for the next platform phase. |
+| P1-R01 | Risk | Resolved | Release owner | Typed grouped navigation, nested active states, breadcrumbs, responsive sidebar/drawer, preferences, session actions, route states, and configuration-driven labeling passed local/browser, staging, and protected production checks. |
+| P1-R02 | Risk | Resolved | Release owner / backend owner | Existing backend authorization and tenant isolation were preserved; staging smoke verified unauthenticated denial and authenticated API access, while the restricted implementation route remained platform-admin-only in the shell and direct-access behavior. |
+| P1-R03 | Risk | Resolved | Release owner | Server flag fallback was verified on protected run `35188091170` with the same immutable candidate and flag `false`; final protected run `35189173434` restored the flag to `true`. |
+| P1-R04 | Risk | Resolved | Release owner | Final candidate `c2b923a5550923749b4f4ade7599b4a96a8943f1` was staging-tested in run `35189053400`, promoted through protected run `35189173434`, and observed healthy with current/previous pointers and zero temporary smoke identities in artifact `10483861183`. |
+| P1-B01 | Blocker | Resolved | Delivery owner / GitHub administrator | Required production approvals were recorded for the enablement, fallback, and final restoration runs; no approval bypass was used. |

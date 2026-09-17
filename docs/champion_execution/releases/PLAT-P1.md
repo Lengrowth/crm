@@ -1,10 +1,11 @@
 # PLAT-P1 — Phase 1 UX Shell and Menu Release Record
 
-Status: **IN PROGRESS — implementation and local validation complete; staging and protected production gate pending**
+Status: **PASS — production default enabled and post-release observation complete**
 Release identity: `PLAT-P1`
-Record date: 2026-09-16
+Record date: 2026-09-17
 Operator: Codex, working with the delivery owner
 Approver: Required GitHub `production` environment reviewer; delivery owner acceptance recorded at the protected promotion gate
+Production candidate: `c2b923a5550923749b4f4ade7599b4a96a8943f1`
 
 ## Scope and safety decision
 
@@ -79,16 +80,56 @@ separate procedure and is not implied by this release.
 
 ## Staging and production evidence
 
-Pending isolated branch review, exact-candidate staging deployment, operator-only
-validation, general enablement, protected production promotion, observation,
-and cleanup. Record exact commits, workflow URLs, artifact IDs, host-header
-results, screenshots, current/previous pointers, and final flag state here as
-they are produced.
+The final follow-up was reviewed and merged through PR [#17](https://github.com/Lengrowth/crm/pull/17).
+The exact post-merge `main` candidate was tested in staging by run
+[35189053400](https://github.com/Lengrowth/crm/actions/runs/35189053400), with
+the existing staging workflow's secret scan, immutable candidate build,
+preflight, public/API/authenticated smoke, and deployment checks passing. The
+workflow does not emit a staging artifact; its immutable candidate ID and run
+log are the staging evidence. Earlier UI candidate staging evidence is retained
+in run [35117700699](https://github.com/Lengrowth/crm/actions/runs/35117700699).
+Operator validation also covered the non-`lengrowth.com` host-header lane
+(`staging.example.test`) and the temporary implementation lane.
+
+Protected production evidence for the same release family:
+
+| Action | Run | Artifact / result |
+|---|---|---|
+| Initial enablement on candidate `15268f8…` | [35186693396](https://github.com/Lengrowth/crm/actions/runs/35186693396) | [readback artifact 10483045169](https://github.com/Lengrowth/crm/actions/runs/35186693396/artifacts/10483045169); authenticated shell smoke passed, flag `true` |
+| Flag fallback on the same candidate | [35188091170](https://github.com/Lengrowth/crm/actions/runs/35188091170) | [readback artifact 10483290012](https://github.com/Lengrowth/crm/actions/runs/35188091170/artifacts/10483290012); authenticated shell smoke passed, flag `false` |
+| Final enablement on `c2b923a…` | [35189173434](https://github.com/Lengrowth/crm/actions/runs/35189173434) | [readback artifact 10483861183](https://github.com/Lengrowth/crm/actions/runs/35189173434/artifacts/10483861183); authenticated shell smoke passed, flag `true` |
+
+The final readback recorded:
+
+- `current`: `/opt/saas-control/releases/c2b923a5550923749b4f4ade7599b4a96a8943f1`
+- `previous`: `/opt/saas-control/releases/15268f8dad1187994f89256f5dc55a7e3c982586`
+- backend, frontend, nginx, and R2 backup timer active; R2 timer enabled
+- local production health HTTP `200`; clean Frappe/ERPNext source trees
+- zero temporary smoke users, organizations, or active sessions
+
+Post-release observation produced three consecutive samples with the public
+root and canonical API at HTTP `200`, the runtime release fixed at the final
+candidate with `platform_phase1_shell=true`, and the retired
+`api.lenerp.lengrowth.com` unavailable. The final production promotion's shell
+smoke covered 8 authenticated operator routes. Local browser evidence covered
+the full dynamic route matrix, desktop/mobile shell states, keyboard Escape,
+breadcrumbs, compact mode, theme, session menu, access denied, and the no-build
+legacy-shell fallback. Automated component coverage now includes persistent
+preferences, mobile drawer behavior, active links, skip-link/main focus
+semantics, breadcrumbs, and keyboard close behavior (8 frontend tests total).
 
 ## Gate checklist
 
 The generic checklist in `docs/champion_execution/PHASE_DEPLOYMENT_GATE.md`
-applies. The release is not PASS until the new shell is the production default,
-all routes and access checks pass in production, fallback is demonstrated
-without redeployment, observation is complete, cleanup is complete, and this
-record plus the risk and handover records are committed on `main`.
+applies. The new shell is the production default, the protected smoke and
+observation passed, flag fallback was demonstrated without a rebuild, cleanup
+is complete, and this record plus the risk and handover records are being
+committed on `main` by the evidence PR that follows the deployed candidate.
+
+## Accepted waivers and follow-up
+
+The existing credential-rotation waiver from Phase 0 remains explicitly
+accepted. No credentials were rotated or invalidated, no production Frappe or
+ERPNext worktree was modified, and no database migration or business API change
+was introduced. The GitHub Actions Node.js 20 deprecation annotation is an
+upstream runner warning only; it did not affect the passing release checks.
