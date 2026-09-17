@@ -196,6 +196,7 @@ jobs:
         run: |
           cleanup_file="$GITHUB_WORKSPACE/staging-browser-evidence/phase2-cleanup.json"
           if [[ -f "$cleanup_file" ]]; then
+            chmod 755 "$GITHUB_WORKSPACE/staging-browser-evidence"
             chmod 644 "$cleanup_file"
             set -a
             . /opt/saas-control-staging/shared/env/staging-backend.env
