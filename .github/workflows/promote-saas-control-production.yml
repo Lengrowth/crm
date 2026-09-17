@@ -121,6 +121,19 @@ jobs:
           EXPECTED_PHASE_ONE_SHELL: ${{ inputs.phase1_shell_state == 'on' }}
         run: ./scripts/deploy/promote_saas_control.sh
 
+      - name: Run authorized Phase 2 production CRUD and tenant-isolation smoke
+        env:
+          PRODUCTION_BACKEND_URL: https://lenerp-api.lengrowth.com
+          TOKEN_FILE: /run/saas-control/smoke/auth-token
+        run: |
+          set -a
+          . /opt/saas-control/shared/env/backend.env
+          set +a
+          PYTHONPATH=/opt/saas-control/current/backend \
+            /opt/saas-control/shared/backend-venv/bin/python \
+            scripts/release/production_phase2_smoke.py \
+            --token-file "$TOKEN_FILE"
+
       - name: Remove disposable authenticated smoke identity
         if: always()
         env:
