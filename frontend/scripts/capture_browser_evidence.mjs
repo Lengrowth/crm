@@ -100,7 +100,7 @@ if (nonAdminTokenFile) {
   const nonAdminResponse = await nonAdminPage.goto(`${baseUrl}/app/implementation`, { waitUntil: "networkidle", timeout: 30000 });
   await nonAdminPage.locator("main").waitFor({ state: "attached", timeout: 10000 });
   const nonAdminBody = await nonAdminPage.locator("body").innerText();
-  const accessDenied = nonAdminBody.includes("Access denied") && nonAdminBody.includes("You do not have access to this area.");
+  const accessDenied = nonAdminBody.toLowerCase().includes("access denied") && nonAdminBody.includes("You do not have access to this area.");
   const restrictedLinkCount = await nonAdminPage.getByRole("link", { name: "Implementations" }).count();
   if (!accessDenied || restrictedLinkCount !== 0 || nonAdminBody.includes("Track rollout readiness from discovery through go-live.")) {
     throw new Error(`non-admin implementation access check failed: denied=${accessDenied}, restricted_links=${restrictedLinkCount}, body=${nonAdminBody.replace(/\s+/g, " ").slice(0, 500)}`);
