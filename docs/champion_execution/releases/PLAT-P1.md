@@ -36,8 +36,10 @@ Recorded before implementation:
    session menu, and reduced-motion behavior remain usable.
 5. Turning `platform_phase1_shell` off on the server restores the old shell
    without rebuilding or redeploying.
-6. The temporary implementation hostname and the non-`lengrowth.com` staging
-   host-header lane return the same route and flag behavior.
+6. The canonical SaaS hostname `lenerp.lengrowth.com` and the non-`lengrowth.com`
+   staging host-header lane return the same route and flag behavior. The
+   separate ERPNext hostname `erp.lengrowth.com` is not a SaaS-shell acceptance
+   target.
 
 Rollback immediately if login/authenticated access is unavailable, any existing
 critical route fails, repeated 5xx/health failures appear, authorization or
@@ -62,6 +64,9 @@ separate procedure and is not implied by this release.
   children while session resolution is pending.
 - Added mobile drawer focus trapping, focus restoration, modal semantics, and
   inert background navigation.
+- Reconciled the hostname acceptance wording with the deployed topology:
+  `lenerp.lengrowth.com` is the SaaS control-plane hostname, while
+  `erp.lengrowth.com` is intentionally reserved for Frappe/ERPNext.
 - Added candidate-bound validation and durable staging browser/WCAG evidence
   workflows; production flag transitions now have a pointer-preserving,
   protected flag-only workflow.
@@ -85,6 +90,30 @@ separate procedure and is not implied by this release.
 | Authenticated route matrix | PASS | Exact post-merge candidate browser artifact [10498661711](https://github.com/Lengrowth/crm/actions/runs/35223932797/artifacts/10498661711); 11 routes returned HTTP 200 |
 | Mobile drawer/breadcrumb evidence | PASS | Exact post-merge candidate run [35223932797](https://github.com/Lengrowth/crm/actions/runs/35223932797) used shell `on`, retained desktop/mobile screenshots, and recorded zero serious/critical violations and zero serious/critical incomplete checks |
 | Runtime flag fallback | PASS | Current-candidate protected flag-only off run [35227147798](https://github.com/Lengrowth/crm/actions/runs/35227147798) with [readback 10499287799](https://github.com/Lengrowth/crm/actions/runs/35227147798/artifacts/10499287799), followed by on run [35227246158](https://github.com/Lengrowth/crm/actions/runs/35227246158) with [readback 10499237979](https://github.com/Lengrowth/crm/actions/runs/35227246158/artifacts/10499237979), preserved the exact current release pointer |
+| Hostname routing interpretation | PASS | Live checks on 2026-09-17 confirmed `erp.lengrowth.com/` is the Frappe login surface and `/app` redirects to Frappe `/login`; `lenerp.lengrowth.com/` is the SaaS surface and unauthenticated `/app` redirects to its SaaS `/login`; `lenerp-api.lengrowth.com/health` returned HTTP 200. The staging browser artifact uses `staging.example.test`. | The Phase 1 shell hostname requirement is explicitly interpreted as the SaaS hostname plus staging lane; no ERP hostname reroute is required. |
+
+## Hostname acceptance reconciliation
+
+The earlier phrase “temporary implementation hostname” was ambiguous in the
+Phase 1 acceptance text. The deployed architecture intentionally separates the
+two applications:
+
+- `erp.lengrowth.com` is the temporary ERPNext implementation hostname. A live
+  `curl -L` check on 2026-09-17 returned HTTP 200 with the Frappe `Login` page,
+  and `/app` resolved to `https://erp.lengrowth.com/login?redirect-to=%2Fapp`.
+- `lenerp.lengrowth.com` is the SaaS control-plane hostname. The same live
+  check returned HTTP 200 for `/` and `/app` resolved to
+  `https://lenerp.lengrowth.com/login?next=%2Fapp`; the canonical API health
+  endpoint returned HTTP 200.
+- The exact-candidate staging browser evidence [35223932797](https://github.com/Lengrowth/crm/actions/runs/35223932797)
+  uses `staging.example.test` and records the enabled shell, route matrix, and
+  accessibility results.
+
+Therefore the Phase 1 shell acceptance is now explicit: validate the SaaS
+shell under `lenerp.lengrowth.com` and the non-public staging lane, while
+validate ERPNext separately under `erp.lengrowth.com`. No DNS or nginx change
+is required, and routing the ERP hostname to the SaaS shell would violate the
+documented application separation.
 
 ## Staging and production evidence
 

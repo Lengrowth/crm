@@ -17,7 +17,7 @@ phase; see
 
 - The signed-agreement and cleared-payment dates must be recorded before contractual delivery is marked started.
 - Champion's migration files are expected after platform work begins.
-- `erp.lengrowth.com` is a temporary implementation hostname. The final production hostname will use a new domain bought and controlled for Champion.
+- `erp.lengrowth.com` is the temporary ERPNext implementation hostname; the SaaS control plane currently runs at `lenerp.lengrowth.com`. Phase 1 shell acceptance uses the SaaS hostname plus the non-public staging lane. The final production hostname will use a new domain bought and controlled for Champion.
 - The existing AWS/Cloudflare environment may be used during implementation, but final infrastructure, repository, DNS, SSL, backup, and administrative ownership must match the agreement at handover.
 - No application behavior, generated link, callback, cookie scope, email template, webhook, or monitoring rule may depend permanently on `lengrowth.com`.
 - Known exposed implementation credentials may remain temporarily only while the environment contains no Champion confidential data, by the delivery owner's recorded decision. They remain an open security item, must not be committed, and must be rotated before any Champion data is received or loaded.

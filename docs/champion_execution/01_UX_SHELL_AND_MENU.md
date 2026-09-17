@@ -42,7 +42,7 @@ The menu definition must support required role/permission metadata even before a
 - Sidebar, compact mode, mobile drawer, theme, and session actions work.
 - No API or database behavior changes in this phase.
 - Disabling the flag restores the old shell without a redeploy.
-- The shell operates correctly under both the temporary implementation hostname and a staging hostname representing the future Champion domain.
+- The SaaS shell operates correctly under the canonical SaaS hostname `lenerp.lengrowth.com` (the current temporary control-plane hostname) and a staging hostname representing the future Champion domain. The separate ERPNext hostname `erp.lengrowth.com` is not a SaaS-shell acceptance target.
 
 ## Deployment
 

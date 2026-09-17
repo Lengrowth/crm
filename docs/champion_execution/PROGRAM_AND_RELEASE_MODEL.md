@@ -78,7 +78,11 @@ Champion packages can be released as soon as their actual dependencies are prese
 
 ## Temporary and final domain model
 
-`erp.lengrowth.com` is an implementation hostname, not the permanent Champion ownership boundary.
+`erp.lengrowth.com` is the temporary ERPNext implementation hostname, not the
+SaaS control-plane hostname or the permanent Champion ownership boundary. The
+current SaaS control plane is served at `lenerp.lengrowth.com`; Phase 1 shell
+acceptance must test that hostname and the non-public staging lane separately
+from the ERPNext hostname.
 
 Domain transition stages:
 
