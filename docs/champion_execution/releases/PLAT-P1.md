@@ -1,11 +1,11 @@
 # PLAT-P1 — Phase 1 UX Shell and Menu Release Record
 
-Status: **REVIEW FAIL — remediation in progress; production gate not verified**
+Status: **PASS — reviewed, remediated, and verified in production**
 Release identity: `PLAT-P1`
 Record date: 2026-09-17
 Operator: Codex, working with the delivery owner
 Approver: Required GitHub `production` environment reviewer; delivery owner acceptance recorded at the protected promotion gate
-Production candidate: `c2b923a5550923749b4f4ade7599b4a96a8943f1`
+Production candidate: `0db050931933f7d8f0a4295121f3337edc135778`
 
 ## Scope and safety decision
 
@@ -17,11 +17,8 @@ migration or business API change is included.
 
 The existing shell remains available behind the same runtime flag. The flag is
 server-controlled through `FEATURE_FLAGS=platform_phase1_shell=on|off` and is
-read from `GET /runtime/release`. The earlier production fallback evidence is
-not valid for this gate: run `35188091170` also materialized/promoted a
-different candidate (`15268f8…`) and restarted production. Until the new
-flag-only workflow proves off/on while the exact current release remains
-unchanged, fallback is unverified.
+read from `GET /runtime/release`. The protected flag-only workflow proved both
+off and on while the exact current release remained unchanged.
 
 ## Acceptance scenarios and rollback triggers
 
@@ -85,31 +82,29 @@ separate procedure and is not implied by this release.
 | Backend suite | PASS | `python -m pytest backend/tests -q`; 36 passed |
 | Secret scan | PASS | `python scripts/release/secret_scan.py` |
 | Diff whitespace | PASS | `git diff --check` |
-| Authenticated route matrix | PARTIAL | Local direct-navigation evidence exists; candidate-bound staging browser artifact is required by the remediation workflow |
-| Mobile drawer/breadcrumb evidence | PARTIAL | Component tests pass; durable desktop/mobile screenshots and axe results are pending the final-main staging run |
-| Runtime flag fallback | FAIL / REOPENED | Prior production fallback run changed candidate and restarted services; same-candidate flag-only off/on evidence is required |
+| Authenticated route matrix | PASS | Candidate-bound main staging browser artifact [10491986933](https://github.com/Lengrowth/crm/actions/runs/35210899381/artifacts/10491986933); 11 routes returned HTTP 200 |
+| Mobile drawer/breadcrumb evidence | PASS | Main staging run [35210899381](https://github.com/Lengrowth/crm/actions/runs/35210899381) retained desktop/mobile screenshots and axe results; serious/critical violations were zero |
+| Runtime flag fallback | PASS | Protected flag-only off run [35204249048](https://github.com/Lengrowth/crm/actions/runs/35204249048) and on run [35211232762](https://github.com/Lengrowth/crm/actions/runs/35211232762) preserved the exact release pointer |
 
 ## Staging and production evidence
 
-The earlier final-main staging run [35189053400](https://github.com/Lengrowth/crm/actions/runs/35189053400)
-passed its then-current checks but emitted no durable artifact and did not run
-the new candidate-bound browser/WCAG suite. The post-merge documentation run
-[35189666162](https://github.com/Lengrowth/crm/actions/runs/35189666162) likewise
-did not close that evidence gap. The production candidate remains `c2b923a…`
-until a remediated candidate is tested and explicitly promoted.
+The final-main candidate-bound staging run [35210899381](https://github.com/Lengrowth/crm/actions/runs/35210899381)
+retained artifact [10491986933](https://github.com/Lengrowth/crm/actions/runs/35210899381/artifacts/10491986933).
+It covered 11 authenticated routes, desktop/mobile screenshots, axe WCAG 2A/AA
+results with zero serious/critical violations, and non-admin implementation
+denial with zero restricted navigation links.
 
-Protected production evidence for the same release family:
+Protected production evidence for the exact serving release:
 
 | Action | Run | Artifact / result |
 |---|---|---|
-| Initial enablement on candidate `15268f8…` | [35186693396](https://github.com/Lengrowth/crm/actions/runs/35186693396) | [readback artifact 10483045169](https://github.com/Lengrowth/crm/actions/runs/35186693396/artifacts/10483045169); authenticated shell smoke passed, flag `true` |
-| Claimed flag fallback (invalid for same-candidate gate) | [35188091170](https://github.com/Lengrowth/crm/actions/runs/35188091170) | [readback artifact 10483290012](https://github.com/Lengrowth/crm/actions/runs/35188091170/artifacts/10483290012); flag `false`, but candidate changed and production restarted |
-| Final enablement on `c2b923a…` | [35189173434](https://github.com/Lengrowth/crm/actions/runs/35189173434) | [readback artifact 10483861183](https://github.com/Lengrowth/crm/actions/runs/35189173434/artifacts/10483861183); authenticated shell smoke passed, flag `true` |
+| Flag-only fallback to legacy shell | [35204249048](https://github.com/Lengrowth/crm/actions/runs/35204249048) | [readback artifact 10489067913](https://github.com/Lengrowth/crm/actions/runs/35204249048/artifacts/10489067913); exact release pointer preserved, flag `false` |
+| Flag-only enablement on `0db0509…` | [35211232762](https://github.com/Lengrowth/crm/actions/runs/35211232762) | [readback artifact 10491683776](https://github.com/Lengrowth/crm/actions/runs/35211232762/artifacts/10491683776); exact release pointer preserved, authenticated shell smoke passed, flag `true` |
 
 The final readback recorded for the currently serving candidate:
 
-- `current`: `/opt/saas-control/releases/c2b923a5550923749b4f4ade7599b4a96a8943f1`
-- `previous`: `/opt/saas-control/releases/15268f8dad1187994f89256f5dc55a7e3c982586`
+- `current`: `/opt/saas-control/releases/0db050931933f7d8f0a4295121f3337edc135778`
+- `previous`: `/opt/saas-control/releases/c2b923a5550923749b4f4ade7599b4a96a8943f1`
 - backend, frontend, nginx, and R2 backup timer active; R2 timer enabled
 - local production health HTTP `200`; clean Frappe/ERPNext source trees
 - zero temporary smoke users, organizations, or active sessions
@@ -117,23 +112,22 @@ The final readback recorded for the currently serving candidate:
 Post-release observation produced three consecutive samples with the public
 root and canonical API at HTTP `200`, the runtime release fixed at the final
 candidate with `platform_phase1_shell=true`, and the retired
-`api.lenerp.lengrowth.com` unavailable. The final production promotion's shell
-smoke covered 8 static authenticated operator routes; dynamic detail-route
-coverage and durable browser evidence were not retained. Local browser evidence covered
-the full dynamic route matrix, desktop/mobile shell states, keyboard Escape,
-breadcrumbs, compact mode, theme, session menu, access denied, and the no-build
-legacy-shell fallback. Automated component coverage now includes persistent
-preferences, mobile drawer behavior, active links, skip-link/main focus
-semantics, breadcrumbs, and keyboard close behavior (8 frontend tests total).
+`api.lenerp.lengrowth.com` unavailable. The protected flag-only enablement
+readback recorded local health `200`, active backend/frontend/nginx/R2 timer,
+R2 lifecycle verification, and zero temporary smoke users, organizations, or
+sessions. The candidate-bound browser artifact covered the full dynamic route
+matrix, desktop/mobile shell states, authorization denial, and WCAG results.
+Automated component coverage includes persistent preferences, mobile drawer
+behavior, active links, skip-link/main focus semantics, breadcrumbs, and
+keyboard close behavior.
 
 ## Gate checklist
 
 The generic checklist in `docs/champion_execution/PHASE_DEPLOYMENT_GATE.md`
-applies. The production candidate is healthy, but the P1 gate is not closed:
-server-side restricted-route authorization, candidate-bound CI/browser/WCAG
-artifacts, runtime fail-closed behavior, mobile focus management, legacy
-permission filtering, and same-candidate flag-only off/on evidence must all be
-verified on the final candidate before this record can return to PASS.
+applies. The P1 gate is closed: server-side restricted-route authorization,
+candidate-bound CI/browser/WCAG artifacts, runtime fail-closed behavior, mobile
+focus management, legacy permission filtering, and same-candidate flag-only
+off/on evidence are recorded above.
 
 ## Accepted waivers and follow-up
 

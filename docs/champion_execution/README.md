@@ -1,13 +1,13 @@
 # Champion Execution Pack
 
-**Status:** Active — PLAT-P1 review fail; remediation and evidence closure required before Phase 2
+**Status:** Active — PLAT-P1 verified; Phase 2 baseline available
 **Started:** 2026-09-15  
 **Purpose:** Deliver the complete Champion purchase through safe production releases while allowing Champion-specific configuration and data work to enter when their inputs become available.
 
 This folder is the tactical implementation sequence for `../../../champion-forecast/docs/COMPLETE_LENERP_DELIVERY_PLAN.md`. The agreement and accepted proposal define the commercial obligation. The complete delivery plan defines the promised outcome. This pack defines how the work is built, released, validated, and handed over.
 
 The completed Phase 1 production baseline is candidate
-`c2b923a5550923749b4f4ade7599b4a96a8943f1`, with the responsive operator
+`0db050931933f7d8f0a4295121f3337edc135778`, with the responsive operator
 shell enabled by the server-controlled `platform_phase1_shell` flag. The old
 shell remains available for the next platform phase; see
 [`releases/PLAT-P1.md`](releases/PLAT-P1.md) for the evidence record.
