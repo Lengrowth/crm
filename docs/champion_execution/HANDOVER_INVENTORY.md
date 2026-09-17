@@ -1,12 +1,12 @@
 # Phase 0 and Phase 1 Handover Inventory
 
-Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; no secret values belong here.
+Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; `PLAT-P3` PASS; no secret values belong here.
 
 ## Repositories and source
 
 | Component | Repository/remotes | Current evidence |
 |---|---|---|
-| CRM control plane | Local `https://github.com/BuildGrowthNow/crm.git`; authoritative destination `https://github.com/Lengrowth/crm` | production current `41ac76500a6a502ac78f22d6dbefbf90996ee46a`, previous `f1d54e9af4fe620d4c565038f64f989c37e36d6f`; protected Phase 2 promotion/readback, UI/API CRUD, mutation isolation, and Phase 2 cleanup passed |
+| CRM control plane | Local `https://github.com/BuildGrowthNow/crm.git`; authoritative destination `https://github.com/Lengrowth/crm` | production current `68926c22aab01079f17c2cebe21edeeff8ca2c75`, previous `41ac76500a6a502ac78f22d6dbefbf90996ee46a`; protected Phase 3 promotion, rollout, synthetic verification/reversal, observation, and cleanup passed |
 | Champion forecast / commercial plan | `https://github.com/guerra2fernando/champion-forecast.git` | local checkout has unrelated dirty changes; preserve them |
 | Frappe upstream | `https://github.com/frappe/frappe.git` | production `edae775dd36b6c4ad7acab10230262bd74040765`; clean detached clone at `C:\Users\smikl\Desktop\Work\phase0-upstreams\frappe` |
 | ERPNext upstream | `https://github.com/frappe/erpnext.git` | production `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`; clean detached clone at `C:\Users\smikl\Desktop\Work\phase0-upstreams\erpnext` |
@@ -25,6 +25,8 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; no secret values
 - Live hostname reconciliation on 2026-09-17 confirmed `erp.lengrowth.com` serves the Frappe login surface and redirects `/app` to Frappe `/login`, while `lenerp.lengrowth.com` serves the SaaS surface and redirects unauthenticated `/app` to the SaaS `/login`; `lenerp-api.lengrowth.com/health` returned HTTP 200. This explicitly resolves the Phase 1 wording ambiguity without rerouting the ERP hostname.
 - Exact-current-candidate flag-only fallback is proven by off run [35238093438](https://github.com/Lengrowth/crm/actions/runs/35238093438) / artifact [10503643197](https://github.com/Lengrowth/crm/actions/runs/35238093438/artifacts/10503643197), followed by restore-on run [35238216926](https://github.com/Lengrowth/crm/actions/runs/35238216926) / artifact [10504491369](https://github.com/Lengrowth/crm/actions/runs/35238216926/artifacts/10504491369); both preserved the current and previous release pointers.
 - The final Phase 2 production readback artifact is [10513034032](https://github.com/Lengrowth/crm/actions/runs/35258252240/artifacts/10513034032) from run [35258252240](https://github.com/Lengrowth/crm/actions/runs/35258252240). It reports current `41ac765…`, previous `f1d54e9…`, local health `200`, active backend/frontend/nginx/R2 timer services, enabled R2 lifecycle rules, 17 R2 objects, shell flag `true`, clean Frappe/ERPNext heads, and zero temporary smoke users, organizations, or sessions. The authorized Phase 2 smoke passed create/read/update, tenant-isolation read/mutation denial, and exact dependent-record cleanup; the Phase 2 manifest reports zero remaining records for every created class. Runtime release observations returned `200` with release and commit identity `41ac765…`.
+- Phase 3 final-main staging run [35267218039](https://github.com/Lengrowth/crm/actions/runs/35267218039) produced browser artifact [10517640727](https://github.com/Lengrowth/crm/actions/runs/35267218039/artifacts/10517640727) for exact candidate `68926c22…`; the protected production promotion/readback is run [35267738908](https://github.com/Lengrowth/crm/actions/runs/35267738908) with artifact [10518265800](https://github.com/Lengrowth/crm/actions/runs/35267738908/artifacts/10518265800). It reports current `68926c22…`, previous `41ac765…`, active services, local health `200`, and clean upstream trees.
+- Phase 3 rollout evidence is complete: read-only run [35271204673](https://github.com/Lengrowth/crm/actions/runs/35271204673), operator-only synthetic verification run [35271298344](https://github.com/Lengrowth/crm/actions/runs/35271298344) / artifact [10518545982](https://github.com/Lengrowth/crm/actions/runs/35271298344/artifacts/10518545982), and general rollout run [35271386799](https://github.com/Lengrowth/crm/actions/runs/35271386799). Operator evidence reports zero synthetic cleanup counts, successful reversal, and no ERP verification without trusted evidence. Final live observation returned health `200` and stable `writes=true`, `operator_only=false`, `general=true` for four samples over one minute.
 
 ## Release artifacts
 
@@ -49,6 +51,18 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; no secret values
 
 - Phase 2 production now serves exact candidate `41ac76500a6a502ac78f22d6dbefbf90996ee46a` with previous candidate `f1d54e9af4fe620d4c565038f64f989c37e36d6f`, the operator shell enabled, and older rollback pointers `851302ef…` / `12bc548…` retained. The runtime manifest may continue to report `environment: staging` because the immutable artifact is staging-built and promoted unchanged.
 - The next release must continue to use staging-first immutable candidates and the protected production workflow; no Phase 2 page redesign or Champion data import is implied by this handover.
+
+## Phase 4 baseline
+
+- `PLAT-P3` is PASS on exact production candidate `68926c22…`; the persisted
+  module catalog, versioned bundle control, deterministic entitlement resolver,
+  organization audit/reversal path, and server-controlled general authorized-role
+  rollout are available to Phase 4 onboarding work.
+- Public module selections remain onboarding requests only. Phase 4 must keep
+  operator approval, durable idempotent provisioning, ERP application/verification
+  evidence, and tenant/domain isolation separate from entitlement selection.
+- C03 remains `defined` and synthetic-only; no Champion data, final domain, or
+  unresolved role/module decision is carried forward as accepted.
 
 ## Phase 2 baseline
 
