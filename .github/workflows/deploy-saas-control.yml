@@ -51,6 +51,9 @@ jobs:
       - name: Scan tracked and untracked candidate inputs for credential patterns
         run: python3 scripts/release/secret_scan.py
 
+      - name: Remove only prior generated workspace outputs
+        run: rm -rf -- "$GITHUB_WORKSPACE/frontend/node_modules" "$GITHUB_WORKSPACE/frontend/.next" "$GITHUB_WORKSPACE/staging-browser-evidence"
+
       - name: Run candidate-bound validation suite
         env:
           SOURCE_REPO: ${{ github.workspace }}
