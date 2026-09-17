@@ -30,10 +30,12 @@ def main() -> int:
     payload = json.loads(Path(args.file).read_text(encoding="utf-8"))
     organization_ids = [str(value) for value in payload.get("organization_ids", [])]
     tenant_ids = [str(value) for value in payload.get("tenant_ids", [])]
-    if not organization_ids or not tenant_ids or any(len(value) != 36 for value in [*organization_ids, *tenant_ids]):
-        raise SystemExit("Phase 2 cleanup requires exact UUID identifiers for organizations and tenants")
+    if not organization_ids or any(len(value) != 36 for value in [*organization_ids, *tenant_ids]):
+        raise SystemExit("Phase 2 cleanup requires exact UUID identifiers for organizations and optional tenants")
 
     with SessionLocal() as session:
+        discovered_tenant_ids = [row[0] for row in session.query(Tenant.id).filter(Tenant.organization_id.in_(organization_ids)).all()]
+        tenant_ids = list(dict.fromkeys([*tenant_ids, *discovered_tenant_ids]))
         project_ids = [row[0] for row in session.query(ImplementationProject.id).filter(ImplementationProject.organization_id.in_(organization_ids)).all()]
         if project_ids:
             session.execute(delete(ImplementationTask).where(ImplementationTask.implementation_project_id.in_(project_ids)))

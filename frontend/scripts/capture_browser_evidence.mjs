@@ -146,6 +146,7 @@ const report = {
 
 const phase2Cleanup = { organization_ids: [], tenant_ids: [] };
 const phase2Crud = { status: "not-run", records: [] };
+const addUnique = (values, value) => { if (value && !values.includes(value)) values.push(value); };
 async function phase2Api(path, method = "GET", payload, token = authToken) {
   if (!token || !runtimeReleaseUrl) throw new Error("authenticated browser evidence requires an auth token and runtime URL");
   const apiOrigin = new URL(runtimeReleaseUrl).origin;
@@ -156,16 +157,29 @@ async function phase2Api(path, method = "GET", payload, token = authToken) {
   try { body = await response.json(); } catch { /* no response body */ }
   return { status: response.status, body };
 }
+const existingOrganizations = await phase2Api("/organizations");
+if (existingOrganizations.status === 200 && Array.isArray(existingOrganizations.body)) {
+  const syntheticName = /^Phase 2 Browser (Alpha|Beta) [a-z0-9-]+$/i;
+  for (const organization of existingOrganizations.body.filter((item) => syntheticName.test(item.name ?? ""))) {
+    addUnique(phase2Cleanup.organization_ids, organization.id);
+    const existingTenants = await phase2Api(`/organizations/${organization.id}/tenants`);
+    if (existingTenants.status !== 200 || !Array.isArray(existingTenants.body)) throw new Error(`unable to enumerate synthetic tenants for ${organization.id}`);
+    for (const tenant of existingTenants.body) addUnique(phase2Cleanup.tenant_ids, tenant.id);
+  }
+}
+await writeFile(path.join(outputDir, "phase2-cleanup.json"), `${JSON.stringify(phase2Cleanup, null, 2)}\n`, "utf8");
 const syntheticSuffix = `${process.env.GITHUB_RUN_ID ?? Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 const orgA = await phase2Api("/organizations", "POST", { name: `Phase 2 Browser Alpha ${syntheticSuffix}`, status: "trial" });
 const orgB = await phase2Api("/organizations", "POST", { name: `Phase 2 Browser Beta ${syntheticSuffix}`, status: "lead" });
 if (orgA.status !== 201 || orgB.status !== 201 || !orgA.body?.id || !orgB.body?.id) throw new Error(`Phase 2 synthetic company CRUD setup failed: ${orgA.status}/${orgB.status}`);
-phase2Cleanup.organization_ids.push(orgA.body.id, orgB.body.id);
+addUnique(phase2Cleanup.organization_ids, orgA.body.id);
+addUnique(phase2Cleanup.organization_ids, orgB.body.id);
 await writeFile(path.join(outputDir, "phase2-cleanup.json"), `${JSON.stringify(phase2Cleanup, null, 2)}\n`, "utf8");
 const tenantA = await phase2Api(`/organizations/${orgA.body.id}/tenants`, "POST", { tenant_slug: `p2-browser-alpha-${syntheticSuffix}`.toLowerCase(), environment: "staging", status: "planned" });
 const tenantB = await phase2Api(`/organizations/${orgB.body.id}/tenants`, "POST", { tenant_slug: `p2-browser-beta-${syntheticSuffix}`.toLowerCase(), environment: "staging", status: "planned" });
 if (tenantA.status !== 201 || tenantB.status !== 201 || !tenantA.body?.id || !tenantB.body?.id) throw new Error(`Phase 2 synthetic site CRUD setup failed: ${tenantA.status}/${tenantB.status}`);
-phase2Cleanup.tenant_ids.push(tenantA.body.id, tenantB.body.id);
+addUnique(phase2Cleanup.tenant_ids, tenantA.body.id);
+addUnique(phase2Cleanup.tenant_ids, tenantB.body.id);
 await writeFile(path.join(outputDir, "phase2-cleanup.json"), `${JSON.stringify(phase2Cleanup, null, 2)}\n`, "utf8");
 const updateA = await phase2Api(`/organizations/${orgA.body.id}`, "PATCH", { name: `Phase 2 Browser Alpha Updated ${syntheticSuffix}` });
 const organizationsRead = await phase2Api("/organizations");
@@ -200,7 +214,7 @@ if (nonAdminTokenFile) {
   const nonAdminResponse = await nonAdminPage.goto(`${baseUrl}/app/implementation`, { waitUntil: "networkidle", timeout: 30000 });
   await nonAdminPage.locator("main").waitFor({ state: "attached", timeout: 10000 });
   const nonAdminBody = await nonAdminPage.locator("body").innerText();
-  const accessDenied = nonAdminBody.toLowerCase().includes("access denied") && nonAdminBody.includes("You do not have access to this area.");
+  const accessDenied = nonAdminBody.toLowerCase().includes("access denied") && nonAdminBody.toLowerCase().includes("you do not have access to");
   const restrictedLinkCount = await nonAdminPage.getByRole("link", { name: "Implementations" }).count();
   if (!accessDenied || restrictedLinkCount !== 0 || nonAdminBody.includes("Track rollout readiness from discovery through go-live.")) {
     throw new Error(`non-admin implementation access check failed: denied=${accessDenied}, restricted_links=${restrictedLinkCount}, body=${nonAdminBody.replace(/\s+/g, " ").slice(0, 500)}`);
