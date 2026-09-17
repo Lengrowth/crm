@@ -52,6 +52,13 @@ class ModuleEntitlementValidationError(ModuleEntitlementError):
     pass
 
 
+class ModuleDependencyConflictError(ModuleEntitlementValidationError):
+    def __init__(self, conflicts: list[tuple[str, str]]) -> None:
+        self.conflicts = conflicts
+        details = ", ".join(f"{root} depends on {dependency} (requires {dependency})" for root, dependency in conflicts)
+        super().__init__(f"Dependency conflict: explicit disable cannot be applied because {details}.")
+
+
 MODULE_WRITE_ROLES = {"owner", "admin", "implementation_manager"}
 
 
@@ -119,11 +126,15 @@ class ModuleEntitlementService:
         for code in requested_clear:
             selected.discard(code)
 
+        disabled = {
+            self._canonical_code(catalog, code)
+            for code, state in explicit.items()
+            if state[0] == "disabled"
+        } | set(requested_disable)
+        dependency_conflicts = self._dependency_conflicts(catalog, selected, disabled)
+        if dependency_conflicts:
+            raise ModuleDependencyConflictError(dependency_conflicts)
         effective = self._close_dependencies(catalog, selected)
-        blocked_dependencies = set(requested_disable) & effective
-        if blocked_dependencies:
-            blocked = ", ".join(sorted(blocked_dependencies))
-            raise ModuleEntitlementValidationError(f"Cannot disable {blocked}; another selected module depends on it.")
         self._validate_selection(catalog, effective)
         ordered = sorted(canonical, key=lambda code: (canonical[code].display_order, code))
         effective_codes = [code for code in ordered if code in effective]
@@ -147,19 +158,31 @@ class ModuleEntitlementService:
             items.append(ModuleEffectiveItem(code=code, name=module.name, category=module.category, requested=code in selected, entitled=entitled, marketed=bool(module.is_marketed), explicit=explicit_record is not None, source=sorted(set(explanation)), explanation=sorted(set(explanation)), application_state=app_state, verification_state=verification_state, tenant_states=tenant_states))
         return ModuleEffectiveRead(organization_id=organization_id, requested_codes=requested_codes, effective_codes=effective_codes, items=items, warnings=warnings, generated_at=datetime.now(timezone.utc))
 
-    def preview(self, session: Session, payload: ModuleChangeRequest) -> ModulePreviewRead:
+    def preview(self, session: Session, payload: ModuleChangeRequest, *, actor: Optional[SaaSUser] = None) -> ModulePreviewRead:
         current = self.resolve(session, payload.organization_id)
         proposed = self.resolve(session, payload.organization_id, enable_codes=payload.enable_codes, disable_codes=payload.disable_codes, clear_codes=payload.clear_codes, bundle_key=payload.bundle_key, bundle_version=payload.bundle_version)
         current_set, proposed_set = set(current.effective_codes), set(proposed.effective_codes)
         catalog = self._catalog(session)
         direct_enable = {self._canonical_code(catalog, code) for code in payload.enable_codes}
-        identity = {"organization_id": payload.organization_id, "enable_codes": sorted(set(payload.enable_codes)), "disable_codes": sorted(set(payload.disable_codes)), "clear_codes": sorted(set(payload.clear_codes)), "bundle_key": payload.bundle_key, "bundle_version": payload.bundle_version, "current_effective_codes": current.effective_codes}
+        identity = {
+            "organization_id": payload.organization_id,
+            "actor_user_id": actor.id if actor else None,
+            "enable_codes": sorted(set(payload.enable_codes)),
+            "disable_codes": sorted(set(payload.disable_codes)),
+            "clear_codes": sorted(set(payload.clear_codes)),
+            "bundle_key": payload.bundle_key,
+            "bundle_version": payload.bundle_version,
+            "catalog_revision": self._catalog_revision(session),
+            "current_entitlement_revision": self._entitlement_revision(session, payload.organization_id, current),
+        }
         preview_hash = hashlib.sha256(json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
         return ModulePreviewRead(organization_id=payload.organization_id, requested_enable_codes=sorted(set(payload.enable_codes)), requested_disable_codes=sorted(set(payload.disable_codes)), requested_clear_codes=sorted(set(payload.clear_codes)), dependency_additions=sorted((proposed_set - current_set) - direct_enable), dependency_removals=sorted(current_set - proposed_set), conflicts=[], effective=proposed, warnings=sorted(set(current.warnings + proposed.warnings)), preview_hash=preview_hash, is_current=True)
 
     def apply(self, session: Session, actor: SaaSUser, payload: ModuleChangeRequest, *, operation: str = "apply", source_type_override: Optional[str] = None, source_ref_override: Optional[str] = None) -> ModuleChangeResult:
         request_fingerprint = self._request_fingerprint(payload)
         idempotency_key = payload.idempotency_key or f"auto-{request_fingerprint}"
+        if not payload.preview_hash:
+            raise ModuleEntitlementValidationError("A server-issued preview_hash is required before apply.")
         prior = session.execute(select(ModuleEntitlementRequest).where(ModuleEntitlementRequest.organization_id == payload.organization_id, ModuleEntitlementRequest.idempotency_key == idempotency_key)).scalar_one_or_none()
         if prior is not None:
             if prior.request_hash != request_fingerprint:
@@ -167,8 +190,8 @@ class ModuleEntitlementService:
             result = ModuleChangeResult.model_validate(prior.response_json)
             result.replayed = True
             return result
-        preview = self.preview(session, payload)
-        if payload.preview_hash and payload.preview_hash != preview.preview_hash:
+        preview = self.preview(session, payload, actor=actor)
+        if payload.preview_hash != preview.preview_hash:
             raise ModuleEntitlementValidationError("The preview is stale. Generate a new preview before applying.")
 
         before = self.resolve(session, payload.organization_id)
@@ -233,6 +256,11 @@ class ModuleEntitlementService:
         desired_codes = desired_enabled | desired_disabled
         current_codes = current_enabled | current_disabled
         request = ModuleChangeRequest(organization_id=payload.organization_id, enable_codes=sorted(desired_enabled - current_enabled) + sorted(current_disabled & desired_enabled), disable_codes=sorted(desired_disabled - current_disabled) + sorted(current_enabled & desired_disabled), clear_codes=sorted(current_codes - desired_codes), reason=payload.reason or f"Reversal of module audit {audit.id}", preview_hash=payload.preview_hash, idempotency_key=payload.idempotency_key)
+        if request.preview_hash is None:
+            # Reversal is itself an apply operation.  Generate a server-bound
+            # preview at the point of reversal so it cannot bypass the same
+            # stale-state guard as a normal apply.
+            request.preview_hash = self.preview(session, request, actor=actor).preview_hash
         return self.apply(session, actor, request, operation="reverse", source_type_override="reversal", source_ref_override=audit.id)
 
     def list_audit(self, session: Session, organization_id: str, limit: int = 100) -> list[ModuleAuditRead]:
@@ -258,6 +286,74 @@ class ModuleEntitlementService:
 
     def _catalog(self, session: Session) -> dict[str, Module]:
         return {module.code: module for module in session.execute(select(Module).order_by(Module.display_order.asc(), Module.code.asc())).scalars().all()}
+
+    def _catalog_revision(self, session: Session) -> str:
+        catalog = self._catalog(session)
+        payload = [
+            {
+                "code": code,
+                "name": module.name,
+                "description": module.description,
+                "category": module.category,
+                "is_active": module.is_active,
+                "is_marketed": module.is_marketed,
+                "public_description": module.public_description,
+                "internal_description": module.internal_description,
+                "display_order": module.display_order,
+                "dependencies": sorted(module.dependency_codes_json or []),
+                "incompatibilities": sorted(module.incompatibility_codes_json or []),
+                "required_app": module.required_app,
+                "minimum_app_version": module.minimum_app_version,
+                "compatible_app_version": module.compatible_app_version,
+                "default_roles": sorted(module.default_roles_json or []),
+                "default_workspaces": sorted(module.default_workspaces_json or []),
+                "configuration_schema": module.configuration_schema_json or {},
+                "administrative_visibility": module.administrative_visibility,
+                "alias_of": module.alias_of,
+                "deprecated_at": module.deprecated_at.isoformat() if module.deprecated_at else None,
+                "metadata_version": module.metadata_version,
+            }
+            for code, module in catalog.items()
+        ]
+        bundles = session.execute(select(ModuleBundle).order_by(ModuleBundle.bundle_key.asc(), ModuleBundle.version.asc())).scalars().all()
+        for bundle in bundles:
+            payload.append({
+                "bundle_key": bundle.bundle_key,
+                "version": bundle.version,
+                "name": bundle.name,
+                "description": bundle.description,
+                "is_active": bundle.is_active,
+                "source": bundle.source,
+                "items": [{"code": item.code, "sort_order": item.sort_order} for item in self._bundle_items(session, bundle.id)],
+            })
+        return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+    def _entitlement_revision(self, session: Session, organization_id: str, current: ModuleEffectiveRead) -> str:
+        rows = session.execute(
+            select(OrganizationModule).where(OrganizationModule.organization_id == organization_id).order_by(OrganizationModule.module_id.asc())
+        ).scalars().all()
+        return hashlib.sha256(
+            json.dumps(
+                {
+                    "requested": self._requested_state_snapshot(session, organization_id),
+                    "effective": current.effective_codes,
+                    "rows": [
+                        {
+                            "id": row.id,
+                            "module_id": row.module_id,
+                            "status": row.status,
+                            "explicit_state": row.explicit_state,
+                            "requested_state": row.requested_state,
+                            "entitled_state": row.entitled_state,
+                            "updated_at": row.updated_at.isoformat() if row.updated_at else None,
+                        }
+                        for row in rows
+                    ],
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode()
+        ).hexdigest()
 
     def _canonical_code(self, catalog: dict[str, Module], code: str) -> str:
         normalized = code.strip().lower()
@@ -302,6 +398,27 @@ class ModuleEntitlementService:
             visiting.remove(code); result.add(code)
         for code in sorted(selected): visit(self._canonical_code(catalog, code))
         return result
+
+    def _dependency_conflicts(self, catalog: dict[str, Module], selected: set[str], disabled: set[str]) -> list[tuple[str, str]]:
+        canonical = {code: module for code, module in catalog.items() if module.alias_of is None}
+        conflicts: list[tuple[str, str]] = []
+        for root in sorted(selected):
+            seen: set[str] = set()
+            pending = [root]
+            while pending:
+                code = pending.pop()
+                if code in seen:
+                    continue
+                seen.add(code)
+                module = canonical.get(code)
+                if module is None:
+                    continue
+                for dependency in module.dependency_codes_json or []:
+                    dependency_code = self._canonical_code(catalog, dependency)
+                    if dependency_code in disabled:
+                        conflicts.append((root, dependency_code))
+                    pending.append(dependency_code)
+        return sorted(set(conflicts))
 
     def _validate_selection(self, catalog: dict[str, Module], selected: set[str]) -> None:
         for code in sorted(selected):

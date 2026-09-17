@@ -58,6 +58,21 @@ def upgrade() -> None:
     for column in org_module_columns:
         op.add_column("organization_modules", column)
 
+    # Existing organization_modules rows predate the Phase 3 state model.  The
+    # server defaults above are only for new rows; legacy rows must derive their
+    # new state from the old status or a disabled assignment could be silently
+    # entitled after upgrade.
+    op.execute(
+        sa.text(
+            """
+            UPDATE organization_modules
+            SET explicit_state = CASE WHEN lower(status) = 'enabled' THEN 'enabled' ELSE 'disabled' END,
+                requested_state = CASE WHEN lower(status) = 'enabled' THEN 'enabled' ELSE 'disabled' END,
+                entitled_state = CASE WHEN lower(status) = 'enabled' THEN 'entitled' ELSE 'not_entitled' END
+            """
+        )
+    )
+
     op.create_table(
         "module_bundles",
         sa.Column("id", sa.String(length=36), nullable=False),
