@@ -3,7 +3,7 @@ import axe from "axe-core";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-const baseUrl = (process.env.BASE_URL ?? "").replace(/\/$/, "");
+let baseUrl = (process.env.BASE_URL ?? "").replace(/\/$/, "");
 const tokenFile = process.env.AUTH_TOKEN_FILE;
 const outputDir = process.env.OUTPUT_DIR ?? "browser-evidence";
 const expectedShell = process.env.EXPECTED_PHASE_ONE_SHELL ?? "on";
@@ -29,8 +29,18 @@ const routes = [
   "/app/settings",
 ];
 
-const browser = await chromium.launch({ headless: process.env.HEADLESS !== "false", args: process.env.HEADLESS === "false" ? ["--headless=new", "--no-sandbox"] : undefined, executablePath: process.env.BROWSER_EXECUTABLE_PATH || undefined });
-const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: "reduce", extraHTTPHeaders: hostHeader ? { Host: hostHeader } : undefined });
+const browserArgs = process.env.HEADLESS === "false" ? ["--headless=new", "--no-sandbox"] : [];
+if (hostHeader) {
+  const requestedUrl = new URL(baseUrl);
+  const hostName = hostHeader.split(":", 1)[0];
+  if (requestedUrl.hostname === "127.0.0.1" || requestedUrl.hostname === "localhost") {
+    requestedUrl.hostname = hostName;
+    baseUrl = requestedUrl.toString().replace(/\/$/, "");
+    browserArgs.push(`--host-resolver-rules=MAP ${hostName} 127.0.0.1`);
+  }
+}
+const browser = await chromium.launch({ headless: process.env.HEADLESS !== "false", args: browserArgs, executablePath: process.env.BROWSER_EXECUTABLE_PATH || undefined });
+const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: "reduce" });
 if (tokenFile) {
   const token = (await readFile(tokenFile, "utf8")).trim();
   if (!token) throw new Error("AUTH_TOKEN_FILE is empty");
