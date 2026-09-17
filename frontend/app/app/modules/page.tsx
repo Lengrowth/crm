@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, EmptyState, ErrorState, Skeleton } from "@/components/ui/feedback";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ export default function AppModulesPage() {
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const viewVersion = useRef(0);
 
   useEffect(() => {
     void Promise.all([fetchModuleCatalog(), fetchOrganizations(), fetchModuleBundles()])
@@ -39,27 +40,35 @@ export default function AppModulesPage() {
 
   useEffect(() => {
     if (!organizationId) return;
+    const version = ++viewVersion.current;
     setPreview(null); setMessage(null);
     void fetchOrganizationModules(organizationId)
-      .then((result) => { setEffective(result); setSelectedCodes(result.requested_codes); })
+      .then((result) => { if (version !== viewVersion.current) return; setEffective(result); setSelectedCodes(result.requested_codes); })
       .catch((cause) => setError(cause instanceof Error ? cause.message : "The company modules could not be loaded."));
   }, [organizationId]);
 
   const categories = useMemo(() => Array.from(new Set(catalog.map((item) => item.category).filter(Boolean))).sort() as string[], [catalog]);
   const visible = useMemo(() => catalog.filter((item) => item.name.toLowerCase().includes(query.toLowerCase()) && (category === "all" || item.category === category)), [catalog, category, query]);
 
-  function toggle(code: string) { setSelectedCodes((current) => current.includes(code) ? current.filter((item) => item !== code) : [...current, code]); setPreview(null); }
+  function toggle(code: string) { viewVersion.current += 1; setSelectedCodes((current) => current.includes(code) ? current.filter((item) => item !== code) : [...current, code]); setPreview(null); }
   async function previewSelection() {
     if (!organizationId) return;
+    const version = viewVersion.current;
+    const requestedOrganization = organizationId;
+    const requestedCodes = [...selectedCodes];
+    const requestedBundle = bundleKey;
     setWorking(true); setError(null); setMessage(null);
-    try { setPreview(await previewOrganizationModules(organizationId, { enable_codes: selectedCodes, disable_codes: (effective?.requested_codes ?? []).filter((code) => !selectedCodes.includes(code)), bundle_key: bundleKey === "none" ? undefined : bundleKey })); }
+    try { const result = await previewOrganizationModules(requestedOrganization, { enable_codes: requestedCodes, disable_codes: (effective?.requested_codes ?? []).filter((code) => !requestedCodes.includes(code)), bundle_key: requestedBundle === "none" ? undefined : requestedBundle }); if (version === viewVersion.current && requestedOrganization === organizationId && requestedBundle === bundleKey && requestedCodes.join("\u0000") === selectedCodes.join("\u0000")) setPreview(result); }
     catch (cause) { setError(cause instanceof Error ? cause.message : "The module preview could not be created."); }
     finally { setWorking(false); }
   }
   async function applyPreview() {
     if (!preview || !organizationId || !window.confirm("Apply this entitlement change? ERP application and verification remain separate.")) return;
+    const version = viewVersion.current;
+    const applyingOrganization = organizationId;
+    const applyingPreviewHash = preview.preview_hash;
     setWorking(true); setError(null);
-    try { const result = await applyOrganizationModules(organizationId, { enable_codes: preview.requested_enable_codes, disable_codes: preview.requested_disable_codes, clear_codes: preview.requested_clear_codes, bundle_key: bundleKey === "none" ? undefined : bundleKey, preview_hash: preview.preview_hash, idempotency_key: `modules-${preview.preview_hash}` }); setEffective(result.effective); setPreview(null); setSelectedCodes(result.effective.requested_codes); setMessage(result.replayed ? "The identical request was safely replayed." : "Entitlements saved. ERP application is still pending trusted integration evidence."); }
+    try { const result = await applyOrganizationModules(applyingOrganization, { enable_codes: preview.requested_enable_codes, disable_codes: preview.requested_disable_codes, clear_codes: preview.requested_clear_codes, bundle_key: bundleKey === "none" ? undefined : bundleKey, preview_hash: applyingPreviewHash, idempotency_key: `modules-${applyingPreviewHash}` }); if (version === viewVersion.current && applyingOrganization === organizationId && preview?.preview_hash === applyingPreviewHash) { setEffective(result.effective); setPreview(null); setSelectedCodes(result.effective.requested_codes); setMessage(result.replayed ? "The identical request was safely replayed." : "Entitlements saved. ERP application is still pending trusted integration evidence."); } }
     catch (cause) { setError(cause instanceof Error ? cause.message : "The module change could not be applied."); }
     finally { setWorking(false); }
   }
@@ -75,7 +84,7 @@ export default function AppModulesPage() {
     {error ? <Alert tone="danger">{error}</Alert> : null}{message ? <Alert tone="success">{message}</Alert> : null}
     <Card><CardHeader><CardTitle>Organization assignment</CardTitle></CardHeader><CardContent className="grid gap-4 md:grid-cols-3">
       <Field label="Organization"><Select value={organizationId} onValueChange={setOrganizationId}><SelectTrigger><SelectValue placeholder="Choose an organization" /></SelectTrigger><SelectContent>{organizations.map((organization) => <SelectItem key={organization.id} value={organization.id}>{organization.name}</SelectItem>)}</SelectContent></Select></Field>
-      <Field label="Bundle proposal"><Select value={bundleKey} onValueChange={(value) => { setBundleKey(value); setPreview(null); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">No bundle</SelectItem>{bundles.map((bundle) => <SelectItem key={`${bundle.bundle_key}-${bundle.version}`} value={bundle.bundle_key}>{bundle.name} v{bundle.version}</SelectItem>)}</SelectContent></Select></Field>
+      <Field label="Bundle proposal"><Select value={bundleKey} onValueChange={(value) => { viewVersion.current += 1; setBundleKey(value); setPreview(null); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">No bundle</SelectItem>{bundles.map((bundle) => <SelectItem key={`${bundle.bundle_key}-${bundle.version}`} value={bundle.bundle_key}>{bundle.name} v{bundle.version}</SelectItem>)}</SelectContent></Select></Field>
       <div className="flex items-end gap-3"><Button onClick={() => void previewSelection()} loading={working} disabled={!organizationId}>Preview</Button><Button variant="secondary" onClick={() => void applyPreview()} disabled={!preview || working}>Apply preview</Button></div>
     </CardContent></Card>
     {preview ? <Card><CardHeader><CardTitle>Preview and validation</CardTitle></CardHeader><CardContent className="space-y-3 text-sm"><p>Enable: {preview.requested_enable_codes.join(", ") || "none"}</p><p>Disable: {preview.requested_disable_codes.join(", ") || "none"}</p><p>Dependency additions: {preview.dependency_additions.join(", ") || "none"}</p><p>Dependency removals: {preview.dependency_removals.join(", ") || "none"}</p><p className="font-mono text-xs">Preview {preview.preview_hash}</p><p style={{ color: "var(--muted)" }}>Applying changes the control plane only. No browser action can mark ERP state applied or verified.</p></CardContent></Card> : null}

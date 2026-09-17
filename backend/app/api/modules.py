@@ -25,6 +25,7 @@ from app.services.module_entitlement_service import (
     ModuleEntitlementError,
     ModuleEntitlementNotFound,
     ModuleEntitlementValidationError,
+    ModuleDependencyConflictError,
     module_entitlement_service,
 )
 
@@ -64,6 +65,8 @@ def _raise_module_error(exc: ModuleEntitlementError) -> None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Module resource not found.") from exc
     if isinstance(exc, ModuleEntitlementAccessError):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Module administration access denied.") from exc
+    if isinstance(exc, ModuleDependencyConflictError):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"code": "dependency_conflict", "conflicts": [{"module": root, "dependency": dependency} for root, dependency in exc.conflicts], "message": str(exc)}) from exc
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
 
@@ -86,7 +89,7 @@ def get_effective_modules(organization_id: str, session: Session = Depends(get_d
 def preview_modules(organization_id: str, payload: ModuleChangeRequest, session: Session = Depends(get_db_session), current_user: SaaSUser = Depends(get_current_user)):
     _organization_access(session, current_user, organization_id, write=True, preview=True)
     try:
-        return module_entitlement_service.preview(session, _path_payload(organization_id, payload))
+        return module_entitlement_service.preview(session, _path_payload(organization_id, payload), actor=current_user)
     except ModuleEntitlementError as exc:
         _raise_module_error(exc)
 

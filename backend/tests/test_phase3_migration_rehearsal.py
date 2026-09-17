@@ -34,6 +34,11 @@ def test_phase3_upgrade_preserves_legacy_assignment_and_reupgrade_is_safe():
         connection.execute("insert into organizations (id, created_at, updated_at, name, status) values (?, ?, ?, ?, ?)", (organization_id, now, now, "Legacy Company", "active"))
         connection.execute("insert into modules (id, created_at, updated_at, code, name, category, is_active) values (?, ?, ?, ?, ?, ?, ?)", (module_id, now, now, "inventory", "Inventory", "core", 1))
         connection.execute("insert into organization_modules (id, created_at, updated_at, organization_id, module_id, status, settings_json) values (?, ?, ?, ?, ?, ?, ?)", ("legacy-assignment-0000-0000-0000-000000000001", now, now, organization_id, module_id, "enabled", "{}"))
+        disabled_org_id = "legacy-org-00000000-0000-0000-0000-000000000002"
+        disabled_module_id = "legacy-module-0000-0000-0000-000000000002"
+        connection.execute("insert into organizations (id, created_at, updated_at, name, status) values (?, ?, ?, ?, ?)", (disabled_org_id, now, now, "Legacy Disabled Company", "active"))
+        connection.execute("insert into modules (id, created_at, updated_at, code, name, category, is_active) values (?, ?, ?, ?, ?, ?, ?)", (disabled_module_id, now, now, "legacy_disabled", "Legacy Disabled", "core", 1))
+        connection.execute("insert into organization_modules (id, created_at, updated_at, organization_id, module_id, status, settings_json) values (?, ?, ?, ?, ?, ?, ?)", ("legacy-assignment-0000-0000-0000-000000000002", now, now, disabled_org_id, disabled_module_id, "disabled", "{}"))
         connection.commit()
         connection.close()
         run_alembic(db_url, "upgrade", "head")
@@ -45,6 +50,11 @@ def test_phase3_upgrade_preserves_legacy_assignment_and_reupgrade_is_safe():
             legacy = session.execute(select(Module).where(Module.code == "inventory")).scalar_one()
             assignment = session.execute(select(OrganizationModule).where(OrganizationModule.organization_id == organization_id, OrganizationModule.module_id == legacy.id)).scalar_one()
             assert assignment.status == "enabled"
+            disabled = session.execute(select(OrganizationModule).where(OrganizationModule.organization_id == disabled_org_id, OrganizationModule.module_id == disabled_module_id)).scalar_one()
+            assert disabled.status == "disabled"
+            assert disabled.explicit_state == "disabled"
+            assert disabled.requested_state == "disabled"
+            assert disabled.entitled_state == "not_entitled"
             assert legacy.alias_of == "stock"
             assert session.execute(select(Organization).where(Organization.id == organization_id)).scalar_one().name == "Legacy Company"
         finally:
@@ -54,5 +64,5 @@ def test_phase3_upgrade_preserves_legacy_assignment_and_reupgrade_is_safe():
         run_alembic(db_url, "upgrade", "head")
         connection = sqlite3.connect(db_path)
         assert connection.execute("select count(*) from organization_modules where organization_id = ?", (organization_id,)).fetchone()[0] == 1
-        assert connection.execute("select version_num from alembic_version").fetchone()[0] == "20260917_0008"
+        assert connection.execute("select version_num from alembic_version").fetchone()[0] == "20260918_0009"
         connection.close()

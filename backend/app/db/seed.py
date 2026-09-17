@@ -121,9 +121,13 @@ def _ensure_module(session: Session, repository: CatalogRepository, payload: dic
     if module is None:
         repository.add_and_refresh(session, Module(**payload))
         return True
-    for key, value in payload.items():
-        if key != "code":
-            setattr(module, key, value)
+    # Released catalog rows are immutable.  Metadata or lifecycle changes must
+    # arrive as an explicit, reviewed migration or a new module version; a
+    # routine seed must never overwrite operator-owned state.
+    # The legacy inventory alias is the one approved structural migration: it
+    # canonicalizes an old code without changing its operator-owned metadata.
+    if payload.get("alias_of") and module.alias_of is None:
+        module.alias_of = payload["alias_of"]
     return False
 
 
@@ -135,9 +139,9 @@ def _ensure_bundle(session: Session, repository: CatalogRepository, payload: dic
         session.flush()
         changed = True
     else:
-        changed = False
-        bundle.name = payload["name"]
-        bundle.description = payload["description"]
+        # A released (bundle_key, version) is an immutable proposal.  Publish a
+        # new version for any metadata or membership change.
+        return False
     module_by_code = {item.code: item for item in session.query(Module).all()}
     desired = list(payload["modules"])
     existing = {item.module_id: item for item in session.query(ModuleBundleItem).filter_by(bundle_id=bundle.id).all()}

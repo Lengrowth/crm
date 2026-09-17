@@ -173,11 +173,24 @@ def main() -> int:
             session.execute(delete(SaaSUser).where(SaaSUser.id.in_([ids["admin_id"], ids["member_id"], ids["other_id"]])))
             session.execute(delete(Organization).where(Organization.id.in_(target_ids)))
             session.commit()
-            evidence["cleanup"] = {"organizations": session.execute(select(Organization.id).where(Organization.id.in_(target_ids))).scalars().all(), "users": session.execute(select(SaaSUser.id).where(SaaSUser.id.in_([ids["admin_id"], ids["member_id"], ids["other_id"]]))).scalars().all(), "module_audits": session.execute(select(ModuleEntitlementAudit.id).where(ModuleEntitlementAudit.organization_id.in_(target_ids))).scalars().all(), "module_assignments": session.execute(select(OrganizationModule.id).where(OrganizationModule.organization_id.in_(target_ids))).scalars().all()}
-        Path(parsed.output).write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         for path in token_paths:
             try: Path(path).unlink()
             except FileNotFoundError: pass
+        user_ids = [ids["admin_id"], ids["member_id"], ids["other_id"]]
+        with SessionLocal() as session:
+            evidence["cleanup"] = {
+                "organizations": session.execute(select(Organization.id).where(Organization.id.in_(target_ids))).scalars().all(),
+                "users": session.execute(select(SaaSUser.id).where(SaaSUser.id.in_(user_ids))).scalars().all(),
+                "memberships": session.execute(select(OrganizationMembership.id).where(OrganizationMembership.organization_id.in_(target_ids))).scalars().all(),
+                "tenants": session.execute(select(Tenant.id).where(Tenant.organization_id.in_(target_ids))).scalars().all(),
+                "sessions": session.execute(select(AuthSession.id).where(AuthSession.user_id.in_(user_ids))).scalars().all(),
+                "module_assignments": session.execute(select(OrganizationModule.id).where(OrganizationModule.organization_id.in_(target_ids))).scalars().all(),
+                "entitlement_requests": session.execute(select(ModuleEntitlementRequest.id).where(ModuleEntitlementRequest.organization_id.in_(target_ids))).scalars().all(),
+                "module_audits": session.execute(select(ModuleEntitlementAudit.id).where(ModuleEntitlementAudit.organization_id.in_(target_ids))).scalars().all(),
+                "application_statuses": session.execute(select(ModuleApplicationStatus.id).where(ModuleApplicationStatus.tenant_id.in_(tenant_ids))).scalars().all() if tenant_ids else [],
+                "token_files": [path for path in token_paths if Path(path).exists()],
+            }
+        Path(parsed.output).write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":

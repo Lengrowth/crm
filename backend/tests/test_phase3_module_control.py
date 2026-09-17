@@ -49,7 +49,7 @@ def test_resolution_dependency_source_and_safe_existing_default():
     service = ModuleEntitlementService()
     empty = service.resolve(session, organization.id)
     assert empty.effective_codes == []
-    preview = service.preview(session, ModuleChangeRequest(organization_id=organization.id, enable_codes=["selling"], idempotency_key="preview-selling"))
+    preview = service.preview(session, ModuleChangeRequest(organization_id=organization.id, enable_codes=["selling"], idempotency_key="preview-selling"), actor=actor)
     assert preview.dependency_additions == ["accounting"]
     assert preview.effective.effective_codes == ["accounting", "selling"]
     assert "organization override" in next(item for item in preview.effective.items if item.code == "selling").explanation
@@ -64,7 +64,7 @@ def test_transactional_apply_retry_dependency_disable_and_reversal():
     organization = control.create_organization(session, actor, OrganizationCreateRequest(name="Synthetic Apply"))
     service = ModuleEntitlementService()
     request = ModuleChangeRequest(organization_id=organization.id, enable_codes=["selling"], reason="synthetic apply", idempotency_key="apply-selling-1")
-    preview = service.preview(session, request)
+    preview = service.preview(session, request, actor=actor)
     request.preview_hash = preview.preview_hash
     result = service.apply(session, actor, request)
     replay = service.apply(session, actor, request)
@@ -72,6 +72,8 @@ def test_transactional_apply_retry_dependency_disable_and_reversal():
     assert result.effective.effective_codes == ["accounting", "selling"]
     assert session.query(ModuleEntitlementAudit).filter_by(organization_id=organization.id).count() == 1
     assert session.query(OrganizationModule).filter_by(organization_id=organization.id).count() == 1
+    with __import__("pytest").raises(ModuleEntitlementValidationError, match="preview_hash"):
+        service.apply(session, actor, ModuleChangeRequest(organization_id=organization.id, enable_codes=["crm"], idempotency_key="missing-preview"))
     bad = ModuleChangeRequest(organization_id=organization.id, disable_codes=["accounting"], idempotency_key="disable-accounting")
     try:
         service.preview(session, bad)
@@ -158,6 +160,39 @@ def test_dependency_cycles_and_incompatibilities_fail_closed():
         session.commit()
 
 
+def test_explicit_disable_cannot_be_reintroduced_by_dependency_closure():
+    session = make_session()
+    auth = AuthService()
+    control = ControlPlaneService()
+    response = auth.register(session, AuthRegisterRequest(email="p3-disable@example.test", full_name="P3 Disable", password="local-password-123", organization_name="Disable Workspace", membership_role="owner", is_platform_admin=True))
+    actor = auth.get_context(session, response.access_token).user
+    organization = control.create_organization(session, actor, OrganizationCreateRequest(name="Disable Company"))
+    accounting = session.execute(select(_models.Module).where(_models.Module.code == "accounting")).scalar_one()
+    session.add(OrganizationModule(organization_id=organization.id, module_id=accounting.id, status="disabled", explicit_state="disabled", requested_state="disabled", entitled_state="not_entitled"))
+    session.commit()
+    with __import__("pytest").raises(ModuleEntitlementValidationError, match="Dependency conflict"):
+        ModuleEntitlementService().preview(session, ModuleChangeRequest(organization_id=organization.id, enable_codes=["selling"], idempotency_key="disable-conflict"), actor=actor)
+
+
+def test_stale_actor_bound_preview_is_rejected():
+    session = make_session()
+    auth = AuthService()
+    control = ControlPlaneService()
+    response = auth.register(session, AuthRegisterRequest(email="p3-stale@example.test", full_name="P3 Stale", password="local-password-123", organization_name="Stale Workspace", membership_role="owner", is_platform_admin=True))
+    actor = auth.get_context(session, response.access_token).user
+    organization = control.create_organization(session, actor, OrganizationCreateRequest(name="Stale Company"))
+    service = ModuleEntitlementService()
+    first = ModuleChangeRequest(organization_id=organization.id, enable_codes=["crm"], idempotency_key="stale-first")
+    preview = service.preview(session, first, actor=actor)
+    second = ModuleChangeRequest(organization_id=organization.id, enable_codes=["stock"], idempotency_key="stale-second")
+    second_preview = service.preview(session, second, actor=actor)
+    second.preview_hash = second_preview.preview_hash
+    service.apply(session, actor, second)
+    first.preview_hash = preview.preview_hash
+    with __import__("pytest").raises(ModuleEntitlementValidationError, match="stale"):
+        service.apply(session, actor, first)
+
+
 def test_bundle_is_versioned_proposal_and_persists_source():
     session = make_session()
     auth = AuthService()
@@ -169,9 +204,28 @@ def test_bundle_is_versioned_proposal_and_persists_source():
     bundles = service.list_bundles(session)
     assert any(bundle.bundle_key == "champion-drilling" and bundle.version == 1 for bundle in bundles)
     request = ModuleChangeRequest(organization_id=organization.id, bundle_key="generic-field-service", bundle_version=1, idempotency_key="bundle-apply-1")
-    service.preview(session, request)
+    preview = service.preview(session, request, actor=actor)
+    request.preview_hash = preview.preview_hash
     result = service.apply(session, actor, request)
     assert result.effective.effective_codes
     audit = session.execute(select(ModuleEntitlementAudit).where(ModuleEntitlementAudit.organization_id == organization.id)).scalar_one()
     assert audit.source_type == "bundle"
     assert audit.source_ref == "generic-field-service@1"
+
+
+def test_released_catalog_and_bundle_versions_are_seed_immutable():
+    session = make_session()
+    module = session.execute(select(_models.Module).where(_models.Module.code == "stock")).scalar_one()
+    bundle = session.execute(select(_models.ModuleBundle).where(_models.ModuleBundle.bundle_key == "champion-drilling", _models.ModuleBundle.version == 1)).scalar_one()
+    item = session.execute(select(_models.ModuleBundleItem).where(_models.ModuleBundleItem.bundle_id == bundle.id)).scalars().first()
+    module.name = "Operator-owned Stock Metadata"
+    module.is_active = False
+    if item is not None:
+        session.delete(item)
+    session.commit()
+    seed_reference_data(session)
+    session.expire_all()
+    assert session.execute(select(_models.Module).where(_models.Module.code == "stock")).scalar_one().name == "Operator-owned Stock Metadata"
+    assert session.execute(select(_models.Module).where(_models.Module.code == "stock")).scalar_one().is_active is False
+    if item is not None:
+        assert session.execute(select(_models.ModuleBundleItem).where(_models.ModuleBundleItem.id == item.id)).scalar_one_or_none() is None

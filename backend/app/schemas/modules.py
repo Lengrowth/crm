@@ -70,7 +70,7 @@ class ModuleChangeRequest(BaseModel):
     bundle_key: Optional[str] = None
     bundle_version: Optional[int] = Field(default=None, ge=1)
     reason: Optional[str] = Field(default=None, max_length=500)
-    preview_hash: Optional[str] = None
+    preview_hash: Optional[str] = Field(default=None, min_length=64, max_length=64)
     idempotency_key: Optional[str] = Field(default=None, min_length=8, max_length=128)
 
 
