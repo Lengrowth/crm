@@ -16,6 +16,12 @@ Release safety scripts are intentionally split by responsibility:
   unauthenticated ERP API behavior.
 - Set `REQUIRE_AUTH_SMOKE=true` and provide an operator token through `AUTH_TOKEN_FILE` for authenticated `/auth/me` and API checks; the token contents are never printed.
 - `release/local_smoke.py` runs that smoke contract against disposable local frontend/backend services and a temporary SQLite database.
+  When the repository-local `backend/.venv` is unavailable, pass an explicit
+  valid environment with `LOCAL_SMOKE_PYTHON=<python.exe>` and
+  `LOCAL_SMOKE_ALEMBIC_AS_MODULE=true`; the smoke remains disposable and does
+  not silently claim the missing default environment.
+- `release/cleanup_phase2_synthetic.py` removes only the exact company/site IDs
+  emitted by the candidate-bound Phase 2 browser artifact.
 - `release/rehearse_slots.py` proves candidate idempotency, preflight rejection, failed-health rollback including a first-deploy-without-known-good case, manual rollback, and production-pointer isolation in a disposable filesystem rehearsal.
 - `release/rehearse_backup_restore.py --self-test` upgrades a restored disposable control-plane database to Alembic head and verifies database, site-config, public-file, and private-file recovery without using production data.
 - `release/verify_upstream_clean.sh` fails on dirty or unpinned upstream Frappe/ERPNext trees, including when an expected SHA is missing.

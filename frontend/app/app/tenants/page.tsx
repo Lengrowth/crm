@@ -1,182 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Search } from "lucide-react";
+import { StatusBadge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState, ErrorState, Skeleton } from "@/components/ui/feedback";
+import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { fetchTenants } from "@/lib/api";
+import type { TenantRecord } from "@/features/tenants/types";
 
-export default function AppTenantsPage() {
-  const [tenants, setTenants] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-    fetchTenants()
-      .then((data) => {
-        if (!mounted) return;
-        setTenants(data || []);
-      })
-      .catch((err: any) => setError(err?.message ?? "Failed to load tenants"))
-      .finally(() => mounted && setLoading(false));
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  return (
-    <div className="space-y-6">
-      <section
-        className="rounded-[2rem] border p-8 lg:p-10"
-        style={{
-          borderColor: "var(--border)",
-          backgroundColor: "var(--surface)",
-          boxShadow: "0 24px 60px var(--shadow)",
-        }}
-      >
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <p
-              className="text-xs font-semibold uppercase tracking-[0.24em]"
-              style={{ color: "var(--muted)" }}
-            >
-              Tenants
-            </p>
-            <h1
-              className="mt-4 text-4xl font-semibold tracking-tight"
-              style={{ color: "var(--text)" }}
-            >
-              Tenant records stay in the SaaS layer, even before live ERPNext
-              cutover begins.
-            </h1>
-            <p
-              className="mt-4 text-sm leading-7"
-              style={{ color: "var(--muted)" }}
-            >
-              Review environments, provisioning posture, and domain planning
-              from a protected control-plane view.
-            </p>
-          </div>
-          <Link
-            href="/app/tenants/new"
-            className="inline-flex rounded-full px-5 py-3 text-sm font-semibold transition hover:translate-y-[-1px]"
-            style={{
-              backgroundColor: "var(--accent)",
-              color: "var(--accent-foreground)",
-              boxShadow: "0 16px 32px var(--shadow)",
-            }}
-          >
-            Create tenant
-          </Link>
-        </div>
-      </section>
-
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <div className="space-y-4">
-          {loading ? (
-            <p style={{ color: "var(--muted)" }}>Loading tenants...</p>
-          ) : error ? (
-            <p className="text-sm text-red-500">{error}</p>
-          ) : tenants.length === 0 ? (
-            <p style={{ color: "var(--muted)" }}>No tenants found.</p>
-          ) : (
-            tenants.map((tenant) => (
-              <article
-                key={tenant.id}
-                className="rounded-2xl border p-6"
-                style={{
-                  borderColor: "var(--border)",
-                  backgroundColor: "var(--surface-strong)",
-                  boxShadow: "0 18px 40px var(--shadow)",
-                }}
-              >
-                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                  <div>
-                    <p
-                      className="text-xs font-semibold uppercase tracking-[0.18em]"
-                      style={{ color: "var(--muted)" }}
-                    >
-                      {tenant.environment} • org {tenant.organization_id}
-                    </p>
-                    <h2
-                      className="mt-2 text-2xl font-semibold"
-                      style={{ color: "var(--text)" }}
-                    >
-                      {tenant.tenant_slug}
-                    </h2>
-                    <p
-                      className="mt-2 text-sm leading-6"
-                      style={{ color: "var(--muted)" }}
-                    >
-                      Status: {tenant.status} • Provisioning:{" "}
-                      {tenant.provisioning_status}
-                    </p>
-                    {tenant.primary_domain ? (
-                      <p
-                        className="mt-1 text-sm leading-6"
-                        style={{ color: "var(--muted)" }}
-                      >
-                        Primary domain: {tenant.primary_domain}
-                      </p>
-                    ) : null}
-                  </div>
-                  <Link
-                    href={`/app/tenants/${tenant.id}`}
-                    className="rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition hover:translate-y-[-1px]"
-                    style={{
-                      borderColor: "var(--border)",
-                      backgroundColor: "var(--surface)",
-                      color: "var(--text)",
-                    }}
-                  >
-                    Open detail
-                  </Link>
-                </div>
-              </article>
-            ))
-          )}
-        </div>
-
-        <div className="space-y-6">
-          {[
-            [
-              "Environment mapping",
-              "Each tenant should map cleanly to one target environment and, later, one explicit ERPNext site reference.",
-            ],
-            [
-              "Provisioning visibility",
-              "Provisioning status belongs in the SaaS layer so operators can see readiness before and after cutover.",
-            ],
-            [
-              "Boundary safety",
-              "The production path should never rely on hidden mock defaults; the product boundary stays explicit.",
-            ],
-          ].map(([title, description]) => (
-            <div
-              key={title}
-              className="rounded-2xl border p-6"
-              style={{
-                borderColor: "var(--border)",
-                backgroundColor: "var(--surface-strong)",
-              }}
-            >
-              <h2
-                className="text-xl font-semibold"
-                style={{ color: "var(--text)" }}
-              >
-                {title}
-              </h2>
-              <p
-                className="mt-3 text-sm leading-7"
-                style={{ color: "var(--muted)" }}
-              >
-                {description}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+export default function TenantsPage() {
+  const [tenants, setTenants] = useState<TenantRecord[]>([]); const [query, setQuery] = useState(""); const [status, setStatus] = useState("all"); const [loading, setLoading] = useState(true); const [error, setError] = useState<string | null>(null);
+  const load = useCallback(async () => { setLoading(true); setError(null); try { setTenants(await fetchTenants()); } catch (cause) { setError(cause instanceof Error ? cause.message : "ERP sites are unavailable."); } finally { setLoading(false); } }, []); useEffect(() => { void load(); }, [load]);
+  const filtered = useMemo(() => tenants.filter((tenant) => (!query || `${tenant.tenant_slug} ${tenant.primary_domain ?? ""} ${tenant.organization_id}`.toLowerCase().includes(query.toLowerCase())) && (status === "all" || tenant.status === status || tenant.provisioning_status === status)), [tenants, query, status]);
+  return <div className="space-y-6"><PageHeader eyebrow="Customers" title="ERP sites" description="Review environment, provisioning, domain, and runtime status for each site." actions={<Link className="ui-button ui-button-primary" href="/app/tenants/new">Create ERP site</Link>} /><Card><CardContent><div className="flex flex-col gap-3 md:flex-row"><div className="relative flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: "var(--color-muted)" }} aria-hidden="true" /><Input className="pl-9" aria-label="Search ERP sites" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by slug, domain, or company" /></div><Select value={status} onValueChange={setStatus}><SelectTrigger aria-label="Filter sites by status" className="w-48"><SelectValue /></SelectTrigger><SelectContent>{["all", "planned", "provisioning", "ready", "suspended", "failed", "archived", "pending", "queued", "running"].map((item) => <SelectItem key={item} value={item}>{item === "all" ? "All statuses" : item}</SelectItem>)}</SelectContent></Select></div></CardContent></Card>{loading ? <Skeleton className="h-72" /> : error ? <ErrorState description={error} onRetry={() => void load()} /> : !filtered.length ? <EmptyState title={tenants.length ? "No ERP sites match" : "No ERP sites yet"} description={tenants.length ? "Try another search or filter." : "Create a site record to track readiness."} action={!tenants.length ? { label: "Create ERP site", href: "/app/tenants/new" } : undefined} /> : <Table><TableHeader><TableRow><TableHead>Site</TableHead><TableHead>Environment</TableHead><TableHead>Domain</TableHead><TableHead>Provisioning</TableHead><TableHead>Status</TableHead><TableHead><span className="sr-only">Actions</span></TableHead></TableRow></TableHeader><TableBody>{filtered.map((tenant) => <TableRow key={tenant.id}><TableCell><Link className="font-bold hover:underline" href={`/app/tenants/${tenant.id}`}>{tenant.tenant_slug}</Link><p className="mt-1 text-xs" style={{ color: "var(--color-muted)" }}>Company {tenant.organization_id.slice(0, 8)}</p></TableCell><TableCell className="capitalize">{tenant.environment}</TableCell><TableCell>{tenant.primary_domain ?? tenant.custom_domain ?? "Not configured"}</TableCell><TableCell><StatusBadge status={tenant.provisioning_status} /></TableCell><TableCell><StatusBadge status={tenant.status} /></TableCell><TableCell><Link className="ui-button ui-button-secondary" href={`/app/tenants/${tenant.id}`}>Open</Link></TableCell></TableRow>)}</TableBody></Table>}<div className="flex justify-between text-xs" style={{ color: "var(--color-muted)" }}><span>{filtered.length} of {tenants.length} sites</span><Button variant="ghost" onClick={() => void load()}>Refresh</Button></div></div>;
 }

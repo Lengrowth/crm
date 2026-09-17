@@ -18,8 +18,9 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND = ROOT / "backend"
 FRONTEND = ROOT / "frontend"
-BACKEND_PYTHON = BACKEND / ".venv" / "Scripts" / "python.exe"
-ALEMBIC = BACKEND / ".venv" / "Scripts" / "alembic.exe"
+BACKEND_PYTHON = Path(os.environ.get("LOCAL_SMOKE_PYTHON", str(BACKEND / ".venv" / "Scripts" / "python.exe")))
+ALEMBIC = Path(os.environ.get("LOCAL_SMOKE_ALEMBIC", str(BACKEND / ".venv" / "Scripts" / "alembic.exe")))
+ALEMBIC_AS_MODULE = os.environ.get("LOCAL_SMOKE_ALEMBIC_AS_MODULE", "false").lower() in {"1", "true", "yes"}
 NEXT_ENTRY = FRONTEND / "node_modules" / "next" / "dist" / "bin" / "next"
 NODE = Path(shutil.which("node.exe") or shutil.which("node") or "")
 GIT_BASH = Path(r"C:\Program Files\Git\bin\bash.exe")
@@ -67,8 +68,16 @@ def git_bash_path(path: Path) -> str:
     return f"/{path.drive[0].lower()}{str(path)[2:].replace(chr(92), '/') }"
 
 
+def alembic_command(*args: str) -> list[str]:
+    if ALEMBIC_AS_MODULE:
+        return [str(BACKEND_PYTHON), "-m", "alembic", *args]
+    return [str(ALEMBIC), *args]
+
+
 def main() -> int:
-    required = (BACKEND_PYTHON, ALEMBIC, GIT_BASH, NODE, NEXT_ENTRY, FRONTEND / ".next")
+    required = (BACKEND_PYTHON, GIT_BASH, NODE, NEXT_ENTRY, FRONTEND / ".next")
+    if not ALEMBIC_AS_MODULE:
+        required = (*required, ALEMBIC)
     missing = [str(path) for path in required if not path.exists()]
     if missing:
         raise SystemExit(f"local smoke prerequisites missing: {', '.join(missing)}")
@@ -126,7 +135,7 @@ def main() -> int:
     backend_process: subprocess.Popen[bytes] | None = None
     frontend_process: subprocess.Popen[bytes] | None = None
     try:
-        subprocess.run([str(ALEMBIC), "upgrade", "head"], cwd=BACKEND, env=env, check=True)
+        subprocess.run(alembic_command("upgrade", "head"), cwd=BACKEND, env=env, check=True)
         backend_process = subprocess.Popen(
             [str(BACKEND_PYTHON), "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", BACKEND_PORT],
             cwd=BACKEND,

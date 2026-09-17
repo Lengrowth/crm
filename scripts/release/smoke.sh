@@ -91,6 +91,8 @@ if not payload.get("user", {}).get("id"):
     raise SystemExit("authenticated session payload has no user identity")
 PY
   curl "${CURL_ARGS[@]}" -fsS --max-time 20 -H "Authorization: Bearer $auth_token" "$BACKEND_URL/organizations" >/dev/null
+  curl "${CURL_ARGS[@]}" -fsS --max-time 20 -H "Authorization: Bearer $auth_token" "$BACKEND_URL/dashboard/summary" >/dev/null
+  curl "${CURL_ARGS[@]}" -fsS --max-time 20 -H "Authorization: Bearer $auth_token" "$BACKEND_URL/implementation/portfolio" >/dev/null
   printf 'authenticated application/API checks passed\n'
 elif [[ "$REQUIRE_AUTH_SMOKE" == "true" ]]; then
   echo "REQUIRE_AUTH_SMOKE=true but AUTH_TOKEN_FILE is not configured" >&2

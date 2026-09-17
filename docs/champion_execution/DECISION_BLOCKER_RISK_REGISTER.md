@@ -27,3 +27,13 @@
 | P1-B01 | Blocker | Resolved | Release owner / GitHub administrator | Exact-candidate enabled-shell staging artifact [10503792511](https://github.com/Lengrowth/crm/actions/runs/35237762341/artifacts/10503792511), protected production promotion/readback [10502656299](https://github.com/Lengrowth/crm/actions/runs/35234505403/artifacts/10502656299), and exact-current-candidate flag fallback artifacts [10503643197](https://github.com/Lengrowth/crm/actions/runs/35238093438/artifacts/10503643197) / [10504491369](https://github.com/Lengrowth/crm/actions/runs/35238216926/artifacts/10504491369) are attached to the release record; P1 is verified. |
 | P1-R05 | Risk | Resolved | Release owner / dependency owner | The seven-advisory inventory was remediated by upgrading Next.js to `15.5.25`, Playwright to `1.63.0`, Browserslist metadata, selector parsing, and enforcing patched `postcss@8.5.28` through the package override. `npm audit --omit=optional --audit-level=low` now reports zero vulnerabilities. |
 | P1-R06 | Risk | Resolved by architecture clarification | Release owner / infrastructure owner | Live checks on 2026-09-17 confirmed `erp.lengrowth.com` is the Frappe/ERPNext login surface and `lenerp.lengrowth.com` is the SaaS control-plane surface; Phase 1 shell acceptance is explicitly scoped to the SaaS hostname plus `staging.example.test`. No DNS/nginx reroute is required because the applications intentionally remain separated. |
+
+# PLAT-P2 Decision, Blocker, and Risk Register
+
+| ID | Type | Status | Owner | Required action |
+|---|---|---|---|---|
+| P2-D01 | Decision | Recorded | Release owner / delivery owner | Keep Phase 1 shell flag `platform_phase1_shell=true` in production, retain legacy fallback, and ship Phase 2 pages without a single permanent Phase 2 build-time gate. |
+| P2-D02 | Decision | Recorded | Release owner | Use bounded protected `/dashboard/summary` and `/implementation/portfolio` read models to avoid unbounded client fan-out; no schema migration is required. |
+| P2-R01 | Risk | Open pending release | Release owner | Exact staging candidate must prove the full authenticated route matrix, empty/partial dashboard states, company/site CRUD, authorization, two-company isolation, responsive/theme/focus, axe, and cleanup evidence. |
+| P2-R02 | Risk | Accepted waiver carried forward | Delivery owner / security owner | Credential rotation remains waived from Phase 0; no Champion confidential data may enter this environment until the waiver is resolved. |
+| P2-R03 | Risk | Open pending release | Release owner / infrastructure owner | Protected promotion and production observation must reconcile the exact staging candidate, current/previous pointers, runtime flag, health, backup state, and cleanup counts. |
