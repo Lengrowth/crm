@@ -54,6 +54,11 @@ jobs:
       - name: Remove only prior generated workspace outputs
         run: rm -rf -- "$GITHUB_WORKSPACE/frontend/node_modules" "$GITHUB_WORKSPACE/frontend/.next" "$GITHUB_WORKSPACE/staging-browser-evidence"
 
+      - name: Retain only active and previous staging candidates
+        run: |
+          chmod +x scripts/release/prune_staging_releases.sh
+          sudo scripts/release/prune_staging_releases.sh
+
       - name: Run candidate-bound validation suite
         env:
           SOURCE_REPO: ${{ github.workspace }}
