@@ -36,6 +36,7 @@ trap cleanup EXIT
 
 sudo python3 - "$BACKEND_ENV_FILE" "$PHASE1_SHELL_STATE" <<'PY'
 from pathlib import Path
+import re
 import sys
 
 path = Path(sys.argv[1])
@@ -43,9 +44,12 @@ state = sys.argv[2]
 lines = path.read_text(encoding="utf-8").splitlines()
 output = []
 updated = False
+feature_flags_pattern = re.compile(r"^\s*(?:export\s+)?FEATURE_FLAGS=")
 for line in lines:
-    if line.startswith("FEATURE_FLAGS="):
-        entries = [entry for entry in line.removeprefix("FEATURE_FLAGS=").split(",") if entry and not entry.startswith("platform_phase1_shell=")]
+    if feature_flags_pattern.match(line):
+        if updated:
+            continue
+        entries = [entry for entry in line.split("=", 1)[1].split(",") if entry and not entry.startswith("platform_phase1_shell=")]
         entries.append(f"platform_phase1_shell={state}")
         line = "FEATURE_FLAGS=" + ",".join(entries)
         updated = True
