@@ -1,3 +1,7 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { canAccessImplementation, getServerAuthUser } from "@/lib/server-auth";
+
 const milestones = [
   "Discovery",
   "Configuration",
@@ -6,7 +10,22 @@ const milestones = [
   "Go-live",
 ];
 
-export default function AppImplementationPage() {
+export default async function AppImplementationPage() {
+  const user = await getServerAuthUser();
+  if (!user) redirect("/login?next=%2Fapp%2Fimplementation");
+  if (!canAccessImplementation(user)) {
+    return (
+      <div className="operator-state-card max-w-xl">
+        <p className="operator-eyebrow">Access denied</p>
+        <h1 className="mt-3 text-2xl font-semibold">You do not have access to this area.</h1>
+        <p className="mt-3 text-sm leading-6" style={{ color: "var(--muted)" }}>
+          This area is reserved for platform administrators. Your session and organization access remain unchanged.
+        </p>
+        <Link className="operator-primary-button mt-6 inline-flex" href="/app">Back to Home</Link>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <section

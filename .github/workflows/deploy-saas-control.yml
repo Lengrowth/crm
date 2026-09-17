@@ -8,6 +8,15 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      phase1_shell_state:
+        description: Staging-only shell state for candidate browser evidence
+        required: true
+        default: "off"
+        type: choice
+        options:
+          - "off"
+          - "on"
 
 permissions:
   contents: read
@@ -34,8 +43,54 @@ jobs:
       - name: Make release scripts executable
         run: chmod +x scripts/release/*.sh scripts/deploy/*.sh
 
+      - name: Use the supported Node.js runtime for the locked frontend toolchain
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.1
+
       - name: Scan tracked and untracked candidate inputs for credential patterns
         run: python3 scripts/release/secret_scan.py
+
+      - name: Remove only prior generated workspace outputs
+        run: rm -rf -- "$GITHUB_WORKSPACE/frontend/node_modules" "$GITHUB_WORKSPACE/frontend/.next" "$GITHUB_WORKSPACE/staging-browser-evidence"
+
+      - name: Retain only active and previous staging candidates
+        run: |
+          chmod +x scripts/release/prune_staging_releases.sh
+          sudo scripts/release/prune_staging_releases.sh
+
+      - name: Run candidate-bound validation suite
+        env:
+          SOURCE_REPO: ${{ github.workspace }}
+          BACKEND_PYTHON: /opt/saas-control-staging/shared/backend-venv/bin/python
+        run: |
+          /opt/saas-control-staging/shared/backend-venv/bin/pip install --disable-pip-version-check --no-input 'pytest>=8,<9'
+          ./scripts/release/validate_candidate.sh
+
+      - name: Set staging-only shell flag for this candidate
+        env:
+          PHASE1_SHELL_STATE: ${{ inputs.phase1_shell_state || 'off' }}
+        run: |
+          case "$PHASE1_SHELL_STATE" in on|off) ;; *) echo "Invalid shell state" >&2; exit 1 ;; esac
+          sudo python3 - /opt/saas-control-staging/shared/env/staging-backend.env "$PHASE1_SHELL_STATE" <<'PY'
+          from pathlib import Path
+          import sys
+          path = Path(sys.argv[1])
+          state = sys.argv[2]
+          lines = path.read_text(encoding="utf-8").splitlines()
+          output = []
+          updated = False
+          for line in lines:
+              if line.startswith("FEATURE_FLAGS="):
+                  entries = [entry for entry in line.removeprefix("FEATURE_FLAGS=").split(",") if entry and not entry.startswith("platform_phase1_shell=")]
+                  entries.append(f"platform_phase1_shell={state}")
+                  line = "FEATURE_FLAGS=" + ",".join(entries)
+                  updated = True
+              output.append(line)
+          if not updated:
+              output.append(f"FEATURE_FLAGS=platform_phase1_shell={state}")
+          path.write_text("\n".join(output) + "\n", encoding="utf-8")
+          PY
 
       - name: Build and deploy exact candidate to staging
         env:
@@ -44,3 +99,30 @@ jobs:
           RELEASE_ID: ${{ github.sha }}
           REQUIRE_AUTH_SMOKE: "true"
         run: ./scripts/deploy/deploy_saas_control.sh
+
+      - name: Install browser runtime for durable staging evidence
+        run: /opt/saas-control-staging/current/frontend/node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Capture candidate-bound browser and accessibility evidence
+        env:
+          EXPECTED_PHASE_ONE_SHELL: ${{ inputs.phase1_shell_state || 'off' }}
+          HEADLESS: "false"
+          BASE_URL: http://127.0.0.1:13001
+          HOST_HEADER: staging.example.test
+          OUTPUT_DIR: ${{ github.workspace }}/staging-browser-evidence
+        run: |
+          token_file="$RUNNER_TEMP/saas-staging-smoke-token"
+          sudo install -m 600 -o "$(id -u)" -g "$(id -g)" /run/saas-control-staging/smoke/auth-token "$token_file"
+          browser_path="$(find "$HOME/.cache/ms-playwright" -type f -path '*/chrome-linux/chrome' -print -quit 2>/dev/null || true)"
+          [[ -n "$browser_path" ]] || { echo "Installed Chromium executable was not found" >&2; exit 1; }
+          AUTH_TOKEN_FILE="$token_file" BROWSER_EXECUTABLE_PATH="$browser_path" node /opt/saas-control-staging/current/frontend/scripts/capture_browser_evidence.mjs
+          rm -f -- "$token_file"
+
+      - name: Upload durable staging browser evidence
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-browser-evidence-${{ github.sha }}
+          path: staging-browser-evidence
+          if-no-files-found: error
+          retention-days: 30

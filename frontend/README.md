@@ -11,7 +11,7 @@ This is the Next.js App Router frontend for the SaaS control platform.
 - A simple light/dark theme shell built with Tailwind and local CSS tokens.
 - A responsive operator shell gated by the server-controlled
   `platform_phase1_shell` runtime flag. Set `NEXT_PUBLIC_APP_NAME`,
-  `NEXT_PUBLIC_ENVIRONMENT_LABEL`, `NEXT_PUBLIC_SUPPORT_URL`, and
+  `NEXT_PUBLIC_ENVIRONMENT_LABEL`, `NEXT_PUBLIC_STATUS_LABEL`, `NEXT_PUBLIC_SUPPORT_URL`, and
   `NEXT_PUBLIC_STATUS_URL` per deployment; do not bake deployment hostnames
   into shell code.
 

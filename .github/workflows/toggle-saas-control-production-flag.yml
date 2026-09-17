@@ -1,0 +1,91 @@
+name: Toggle tested SaaS control plane shell flag only
+
+on:
+  workflow_dispatch:
+    inputs:
+      current_release:
+        description: Exact immutable release currently serving production
+        required: true
+        type: string
+      phase1_shell_state:
+        description: New server-controlled shell state
+        required: true
+        type: choice
+        options:
+          - "off"
+          - "on"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: saas-control-production-flag
+  cancel-in-progress: false
+
+jobs:
+  toggle:
+    name: Toggle production flag without changing release pointers
+    runs-on:
+      - self-hosted
+      - linux
+      - saas-control
+    environment: production
+    steps:
+      - name: Check out release tooling
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Make release scripts executable
+        run: chmod +x scripts/release/*.sh scripts/deploy/*.sh
+
+      - name: Prepare disposable authenticated smoke identity
+        env:
+          SMOKE_EMAIL: phase1-flag-smoke-${{ github.run_id }}@example.test
+          SMOKE_ORGANIZATION: Phase 1 Flag Smoke ${{ github.run_id }}
+          TOKEN_FILE: /run/saas-control/smoke/auth-token
+        run: |
+          sudo install -d -o ubuntu -g ubuntu -m 700 /run/saas-control/smoke
+          set -a
+          . /opt/saas-control/shared/env/backend.env
+          set +a
+          PYTHONPATH=/opt/saas-control/current/backend /opt/saas-control/shared/backend-venv/bin/python scripts/release/production_smoke_auth.py prepare --email "$SMOKE_EMAIL" --organization "$SMOKE_ORGANIZATION" --token-file "$TOKEN_FILE"
+
+      - name: Toggle only the server-controlled flag and run smoke
+        env:
+          EXPECTED_CURRENT_RELEASE: ${{ inputs.current_release }}
+          PHASE1_SHELL_STATE: ${{ inputs.phase1_shell_state }}
+          AUTH_TOKEN_FILE: /run/saas-control/smoke/auth-token
+          BASE_URL: https://lenerp.lengrowth.com
+          BACKEND_URL: https://lenerp-api.lengrowth.com
+        run: ./scripts/deploy/toggle_production_flag.sh
+
+      - name: Remove disposable authenticated smoke identity
+        if: always()
+        env:
+          SMOKE_EMAIL: phase1-flag-smoke-${{ github.run_id }}@example.test
+          SMOKE_ORGANIZATION: Phase 1 Flag Smoke ${{ github.run_id }}
+          TOKEN_FILE: /run/saas-control/smoke/auth-token
+        run: |
+          set -a
+          . /opt/saas-control/shared/env/backend.env
+          set +a
+          PYTHONPATH=/opt/saas-control/current/backend /opt/saas-control/shared/backend-venv/bin/python scripts/release/production_smoke_auth.py cleanup --email "$SMOKE_EMAIL" --organization "$SMOKE_ORGANIZATION"
+          rm -f -- "$TOKEN_FILE"
+
+      - name: Capture non-secret production readback
+        if: always()
+        run: |
+          chmod +x scripts/release/capture_production_readback.sh
+          sudo scripts/release/capture_production_readback.sh "$GITHUB_WORKSPACE/production-readback.json"
+          sudo chown "$(id -u):$(id -g)" "$GITHUB_WORKSPACE/production-readback.json"
+
+      - name: Upload non-secret production readback
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-flag-readback-${{ github.run_id }}
+          path: production-readback.json
+          if-no-files-found: error
+          retention-days: 30

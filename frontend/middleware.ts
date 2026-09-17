@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { env } from "@/lib/env";
 
-const AUTH_COOKIE = "crm-auth-token";
+const AUTH_COOKIE = env.authCookieName;
 const PROTECTED_PREFIXES = ["/app", "/dashboard", "/organizations", "/tenants", "/billing", "/settings"];
 
 function isProtectedPath(pathname: string): boolean {
