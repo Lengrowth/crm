@@ -24,11 +24,22 @@ actual_release="$(readlink -f "$CURRENT_LINK")"
 exec 9>"$LOCK_FILE"
 flock -n 9 || { echo "Another production flag transition is running." >&2; exit 1; }
 
+restart_backend_cleanly() {
+  sudo "$SYSTEMCTL_BIN" stop "$BACKEND_SERVICE"
+  for _ in {1..15}; do
+    if ! curl -fsS -o /dev/null --max-time 2 "${PRODUCTION_BACKEND_LOCAL_URL:-http://127.0.0.1:8001}/health"; then
+      break
+    fi
+    sleep 1
+  done
+  sudo "$SYSTEMCTL_BIN" start "$BACKEND_SERVICE"
+}
+
 backup_file="/tmp/saas-control-production-flag.$$.env"
 sudo cp -p "$BACKEND_ENV_FILE" "$backup_file"
 restore() {
   sudo cp -p "$backup_file" "$BACKEND_ENV_FILE" 2>/dev/null || true
-  sudo "$SYSTEMCTL_BIN" restart "$BACKEND_SERVICE" >/dev/null 2>&1 || true
+  restart_backend_cleanly >/dev/null 2>&1 || true
   sudo rm -f -- "$backup_file"
 }
 cleanup() { sudo rm -f -- "$backup_file"; }
@@ -71,7 +82,7 @@ PY
 )"
 echo "Configured production feature flags: $configured_flags"
 sudo "$SYSTEMCTL_BIN" daemon-reload
-sudo "$SYSTEMCTL_BIN" restart "$BACKEND_SERVICE"
+restart_backend_cleanly
 loaded_flags="$(sudo "$SYSTEMCTL_BIN" show "$BACKEND_SERVICE" --property=Environment --value | tr ' ' '\n' | sed -n 's/^FEATURE_FLAGS=//p' | paste -sd ',' -)"
 echo "Loaded backend feature flags: $loaded_flags"
 backend_pid="$(pgrep -f 'uvicorn app.main:app --host 127.0.0.1 --port 8001' | head -n 1 || true)"
