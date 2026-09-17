@@ -121,6 +121,10 @@ normal browser action has no ERP verification control.
   bundle preview/apply/retry, invalid and dependent-disable rejection, company
   Modules view, audit before/after, reversal, non-admin denial, and cleanup
   manifest; accessibility reported zero violations.
+  The final documentation-bearing `main` reconciliation also passed in run
+  [35273517251](https://github.com/Lengrowth/crm/actions/runs/35273517251),
+  browser artifact
+  [10519664593](https://github.com/Lengrowth/crm/actions/runs/35273517251/artifacts/10519664593).
 - Database migration: staging rehearsal upgraded representative legacy schema
   `20260528_0007` to `20260917_0008`, downgraded, and upgraded again while
   preserving a legacy `inventory` assignment. The protected production
