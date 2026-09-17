@@ -160,7 +160,7 @@ jobs:
           non_admin_token_file="$RUNNER_TEMP/saas-staging-non-admin-token"
           sudo install -m 600 -o "$(id -u)" -g "$(id -g)" /run/saas-control-staging/smoke/auth-token "$token_file"
           sudo install -m 600 -o "$(id -u)" -g "$(id -g)" /run/saas-control-staging/smoke/non-admin-auth-token "$non_admin_token_file"
-          browser_path="$(find "$HOME/.cache/ms-playwright" -type f -path '*/chrome-linux/chrome' -print -quit 2>/dev/null || true)"
+          browser_path="$(find "$HOME/.cache/ms-playwright" -type f -name chrome -path '*/chrome*/chrome' -print -quit 2>/dev/null || true)"
           [[ -n "$browser_path" ]] || { echo "Installed Chromium executable was not found" >&2; exit 1; }
           evidence_script="/opt/saas-control-staging/current/frontend/scripts/capture_browser_evidence.mjs"
           if [[ -f "$GITHUB_WORKSPACE/frontend/scripts/current_capture_browser_evidence.mjs" ]]; then

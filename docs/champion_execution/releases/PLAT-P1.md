@@ -5,7 +5,7 @@ Release identity: `PLAT-P1`
 Record date: 2026-09-17
 Operator: Codex, working with the delivery owner
 Approver: Required GitHub `production` environment reviewer; delivery owner acceptance recorded at the protected promotion gate
-Production candidate: `12bc548056c59341d3ccc492a5353a696a7c0661`
+Production candidate: `851302efc617f8a6587b30694a5c65a3e06de20a`
 
 ## Scope and safety decision
 
@@ -87,9 +87,9 @@ separate procedure and is not implied by this release.
 | Backend suite | PASS | `python -m pytest backend/tests -q`; 36 passed |
 | Secret scan | PASS | `python scripts/release/secret_scan.py` |
 | Diff whitespace | PASS | `git diff --check` |
-| Authenticated route matrix | PASS | Exact post-merge candidate browser artifact [10498661711](https://github.com/Lengrowth/crm/actions/runs/35223932797/artifacts/10498661711); 11 routes returned HTTP 200 |
-| Mobile drawer/breadcrumb evidence | PASS | Exact post-merge candidate run [35223932797](https://github.com/Lengrowth/crm/actions/runs/35223932797) used shell `on`, retained desktop/mobile screenshots, and recorded zero serious/critical violations and zero serious/critical incomplete checks |
-| Runtime flag fallback | PASS | Current-candidate protected flag-only off run [35227147798](https://github.com/Lengrowth/crm/actions/runs/35227147798) with [readback 10499287799](https://github.com/Lengrowth/crm/actions/runs/35227147798/artifacts/10499287799), followed by on run [35227246158](https://github.com/Lengrowth/crm/actions/runs/35227246158) with [readback 10499237979](https://github.com/Lengrowth/crm/actions/runs/35227246158/artifacts/10499237979), preserved the exact current release pointer |
+| Authenticated route matrix | PASS | Exact candidate browser artifact [10503792511](https://github.com/Lengrowth/crm/actions/runs/35237762341/artifacts/10503792511); 11 routes returned HTTP 200 |
+| Mobile drawer/breadcrumb evidence | PASS | Exact candidate run [35237762341](https://github.com/Lengrowth/crm/actions/runs/35237762341) used shell `on`, retained desktop/mobile screenshots, and recorded zero serious/critical violations and zero serious/critical incomplete checks |
+| Runtime flag fallback | PASS | Exact-current-candidate protected flag-only off run [35238093438](https://github.com/Lengrowth/crm/actions/runs/35238093438) with [readback 10503643197](https://github.com/Lengrowth/crm/actions/runs/35238093438/artifacts/10503643197), followed by on run [35238216926](https://github.com/Lengrowth/crm/actions/runs/35238216926) with [readback 10504491369](https://github.com/Lengrowth/crm/actions/runs/35238216926/artifacts/10504491369), preserved the exact current and previous release pointers |
 | Hostname routing interpretation | PASS | Live checks on 2026-09-17 confirmed `erp.lengrowth.com/` is the Frappe login surface and `/app` redirects to Frappe `/login`; `lenerp.lengrowth.com/` is the SaaS surface and unauthenticated `/app` redirects to its SaaS `/login`; `lenerp-api.lengrowth.com/health` returned HTTP 200. The staging browser artifact uses `staging.example.test`. | The Phase 1 shell hostname requirement is explicitly interpreted as the SaaS hostname plus staging lane; no ERP hostname reroute is required. |
 
 ## Hostname acceptance reconciliation
@@ -105,9 +105,9 @@ two applications:
   check returned HTTP 200 for `/` and `/app` resolved to
   `https://lenerp.lengrowth.com/login?next=%2Fapp`; the canonical API health
   endpoint returned HTTP 200.
-- The exact-candidate staging browser evidence [35223932797](https://github.com/Lengrowth/crm/actions/runs/35223932797)
+- The exact-candidate staging browser evidence [35237762341](https://github.com/Lengrowth/crm/actions/runs/35237762341)
   uses `staging.example.test` and records the enabled shell, route matrix, and
-  accessibility results.
+  accessibility results. The earlier `12bc548…` evidence remains historical.
 
 Therefore the Phase 1 shell acceptance is now explicit: validate the SaaS
 shell under `lenerp.lengrowth.com` and the non-public staging lane, while
@@ -117,9 +117,9 @@ documented application separation.
 
 ## Staging and production evidence
 
-The authoritative post-merge candidate-bound staging run [35223932797](https://github.com/Lengrowth/crm/actions/runs/35223932797)
-retained artifact [10498661711](https://github.com/Lengrowth/crm/actions/runs/35223932797/artifacts/10498661711).
-It tested the exact `main` candidate `12bc548056c59341d3ccc492a5353a696a7c0661`
+The authoritative exact-candidate staging run [35237762341](https://github.com/Lengrowth/crm/actions/runs/35237762341)
+retained artifact [10503792511](https://github.com/Lengrowth/crm/actions/runs/35237762341/artifacts/10503792511).
+It tested the exact production candidate `851302efc617f8a6587b30694a5c65a3e06de20a`
 with the shell explicitly enabled. The artifact records runtime release and
 commit identity equal to that candidate, synthetic operator-validation
 provenance using a disposable authenticated platform-admin fixture, 11
@@ -137,14 +137,14 @@ Protected production evidence and fallback evidence:
 | Action | Run | Artifact / result |
 |---|---|---|
 | Prior-candidate flag-only fallback | [35204249048](https://github.com/Lengrowth/crm/actions/runs/35204249048) | [readback artifact 10489067913](https://github.com/Lengrowth/crm/actions/runs/35204249048/artifacts/10489067913); prior exact release pointer preserved, flag `false` |
-| Exact candidate staging evidence with shell enabled | [35223932797](https://github.com/Lengrowth/crm/actions/runs/35223932797) | [browser artifact 10498661711](https://github.com/Lengrowth/crm/actions/runs/35223932797/artifacts/10498661711); exact candidate/runtime identity matched, synthetic operator-validation provenance recorded, strict desktop/mobile axe gate passed |
-| Protected production promotion of `12bc548…` | [35224283218](https://github.com/Lengrowth/crm/actions/runs/35224283218) | [production readback artifact 10498031884](https://github.com/Lengrowth/crm/actions/runs/35224283218/artifacts/10498031884); exact release promoted, shell flag `true`, authenticated production smoke and cleanup passed |
-| Current-candidate flag-only fallback | [35227147798](https://github.com/Lengrowth/crm/actions/runs/35227147798) then [35227246158](https://github.com/Lengrowth/crm/actions/runs/35227246158) | [off readback 10499287799](https://github.com/Lengrowth/crm/actions/runs/35227147798/artifacts/10499287799) showed current/previous unchanged and flag `false`; [on readback 10499237979](https://github.com/Lengrowth/crm/actions/runs/35227246158/artifacts/10499237979) restored flag `true` with current/previous unchanged |
+| Exact candidate staging evidence with shell enabled | [35237762341](https://github.com/Lengrowth/crm/actions/runs/35237762341) | [browser artifact 10503792511](https://github.com/Lengrowth/crm/actions/runs/35237762341/artifacts/10503792511); exact `851302ef…` candidate/runtime identity matched, synthetic operator-validation provenance recorded, strict desktop/mobile axe gate passed |
+| Protected production promotion of `851302ef…` | [35234505403](https://github.com/Lengrowth/crm/actions/runs/35234505403) | [production readback artifact 10502656299](https://github.com/Lengrowth/crm/actions/runs/35234505403/artifacts/10502656299); exact release promoted, shell flag `true`, authenticated production smoke and cleanup passed |
+| Exact-current-candidate flag-only fallback | [35238093438](https://github.com/Lengrowth/crm/actions/runs/35238093438) then [35238216926](https://github.com/Lengrowth/crm/actions/runs/35238216926) | [off readback 10503643197](https://github.com/Lengrowth/crm/actions/runs/35238093438/artifacts/10503643197) showed current/previous unchanged and flag `false`; [on readback 10504491369](https://github.com/Lengrowth/crm/actions/runs/35238216926/artifacts/10504491369) restored flag `true` with current/previous unchanged |
 
 The final readback recorded for the currently serving candidate:
 
-- `current`: `/opt/saas-control/releases/12bc548056c59341d3ccc492a5353a696a7c0661`
-- `previous`: `/opt/saas-control/releases/0db050931933f7d8f0a4295121f3337edc135778`
+- `current`: `/opt/saas-control/releases/851302efc617f8a6587b30694a5c65a3e06de20a`
+- `previous`: `/opt/saas-control/releases/12bc548056c59341d3ccc492a5353a696a7c0661`
 - backend, frontend, nginx, and R2 backup timer active; R2 timer enabled
 - R2 lifecycle query succeeded with 17 objects present
 - local production health HTTP `200`; clean Frappe/ERPNext source trees
