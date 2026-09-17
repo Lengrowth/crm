@@ -67,13 +67,19 @@ await desktop.screenshot({ path: path.join(outputDir, "app-desktop.png"), fullPa
 
 await desktop.setViewportSize({ width: 390, height: 844 });
 await desktop.reload({ waitUntil: "networkidle", timeout: 30000 });
-await desktop.locator("button[aria-label='Open navigation']").click();
-const drawer = desktop.locator("aside[role='dialog'][aria-label='Mobile navigation']");
-await drawer.waitFor({ state: "visible", timeout: 10000 });
-const mobileA11y = await desktop.evaluate(async () => window.axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa"] } }));
-await desktop.screenshot({ path: path.join(outputDir, "app-mobile-drawer.png"), fullPage: true });
+let mobileA11y;
 const shellMarker = await desktop.locator("nav[aria-label='Primary navigation']").count() ? "on" : await desktop.locator("nav[aria-label='Dashboard navigation']").count() ? "off" : "unknown";
 if (shellMarker !== expectedShell) throw new Error(`expected shell ${expectedShell}, observed ${shellMarker}`);
+if (expectedShell === "on") {
+  await desktop.locator("button[aria-label='Open navigation']").click();
+  const drawer = desktop.locator("aside[role='dialog'][aria-label='Mobile navigation']");
+  await drawer.waitFor({ state: "visible", timeout: 10000 });
+  mobileA11y = await desktop.evaluate(async () => window.axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa"] } }));
+  await desktop.screenshot({ path: path.join(outputDir, "app-mobile-drawer.png"), fullPage: true });
+} else {
+  mobileA11y = await desktop.evaluate(async () => window.axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa"] } }));
+  await desktop.screenshot({ path: path.join(outputDir, "app-mobile.png"), fullPage: true });
+}
 
 const report = {
   captured_at_utc: new Date().toISOString(),
