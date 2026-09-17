@@ -19,13 +19,11 @@ import {
   type NavigationIcon,
 } from "@/lib/navigation";
 import { fetchRuntimeRelease, isPhaseOneShellEnabled, type RuntimeRelease } from "@/lib/runtime-config";
+import { COMPACT_STORAGE_KEY, GROUPS_STORAGE_KEY, readCollapsedGroups, readCompactPreference } from "@/lib/operator-preferences";
 import type { AuthUser } from "@/features/auth/types";
 
 type AppShellProps = { children: ReactNode };
 type SessionState = "loading" | "anonymous" | "authenticated";
-
-const COMPACT_STORAGE_KEY = "crm-sidebar-compact";
-const GROUPS_STORAGE_KEY = "crm-sidebar-groups";
 
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
@@ -84,7 +82,7 @@ export function AppShell({ children }: AppShellProps) {
   );
 }
 
-function OperatorShellFrame({ children, groups, runtime, user }: { children: ReactNode; groups: NavigationGroup[]; runtime: RuntimeRelease | null; user: AuthUser | null }) {
+export function OperatorShellFrame({ children, groups, runtime, user }: { children: ReactNode; groups: NavigationGroup[]; runtime: RuntimeRelease | null; user: AuthUser | null }) {
   const pathname = usePathname();
   const router = useRouter();
   const [compact, setCompact] = useState(false);
@@ -96,13 +94,8 @@ function OperatorShellFrame({ children, groups, runtime, user }: { children: Rea
   const pageTitle = useMemo(() => getPageTitle(pathname), [pathname]);
 
   useEffect(() => {
-    setCompact(window.localStorage.getItem(COMPACT_STORAGE_KEY) === "true");
-    try {
-      const stored = JSON.parse(window.localStorage.getItem(GROUPS_STORAGE_KEY) ?? "{}");
-      if (stored && typeof stored === "object") setCollapsedGroups(stored);
-    } catch {
-      setCollapsedGroups({});
-    }
+    setCompact(readCompactPreference(window.localStorage));
+    setCollapsedGroups(readCollapsedGroups(window.localStorage));
   }, []);
 
   useEffect(() => { window.localStorage.setItem(COMPACT_STORAGE_KEY, String(compact)); }, [compact]);
@@ -133,7 +126,10 @@ function OperatorShellFrame({ children, groups, runtime, user }: { children: Rea
     router.refresh();
   }
 
-  const displayEnvironment = runtime?.environment || env.environmentLabel;
+  // The build/deployment configuration owns the operator-facing label. The
+  // runtime manifest intentionally remains a staging-built candidate even
+  // after promotion, so it must not relabel a production shell as staging.
+  const displayEnvironment = env.environmentLabel;
   return (
     <div className="operator-shell min-h-screen">
       <a href="#main-content" className="operator-skip-link">Skip to main content</a>
@@ -168,7 +164,7 @@ function OperatorShellFrame({ children, groups, runtime, user }: { children: Rea
   );
 }
 
-function Sidebar({ groups, pathname, compact, collapsedGroups, mobileOpen, onCloseMobile, onToggleCompact, onToggleGroup }: { groups: NavigationGroup[]; pathname: string; compact: boolean; collapsedGroups: Record<string, boolean>; mobileOpen: boolean; onCloseMobile: () => void; onToggleCompact: () => void; onToggleGroup: (id: string) => void }) {
+export function Sidebar({ groups, pathname, compact, collapsedGroups, mobileOpen, onCloseMobile, onToggleCompact, onToggleGroup }: { groups: NavigationGroup[]; pathname: string; compact: boolean; collapsedGroups: Record<string, boolean>; mobileOpen: boolean; onCloseMobile: () => void; onToggleCompact: () => void; onToggleGroup: (id: string) => void }) {
   const content = <>
     <div className="operator-brand-row"><Link href="/app" className="operator-brand" onClick={onCloseMobile}><span className="operator-brand-mark" aria-hidden="true">L</span><span className={compact ? "sr-only" : ""}>{env.appName}</span></Link><button type="button" className="operator-icon-button lg:hidden" aria-label="Close navigation" onClick={onCloseMobile}><CloseIcon /></button></div>
     <div className={`operator-rail-label ${compact ? "sr-only" : ""}`}><span>Workspace</span><span className="operator-environment">{env.environmentLabel}</span></div>
