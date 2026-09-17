@@ -76,7 +76,7 @@ loaded_flags="$(sudo "$SYSTEMCTL_BIN" show "$BACKEND_SERVICE" --property=Environ
 echo "Loaded backend feature flags: $loaded_flags"
 backend_pid="$(pgrep -f 'uvicorn app.main:app --host 127.0.0.1 --port 8001' | head -n 1 || true)"
 if [[ -n "$backend_pid" ]]; then
-  process_flags="$(sudo tr '\0' '\n' < "/proc/$backend_pid/environ" | sed -n 's/^FEATURE_FLAGS=//p' | paste -sd ',' -)"
+  process_flags="$(sudo tr '\0' '\n' < "/proc/$backend_pid/environ" | sed -n 's/^[Ff][Ee][Aa][Tt][Uu][Rr][Ee]_[Ff][Ll][Aa][Gg][Ss]=//p' | paste -sd ',' -)"
   echo "Backend process feature flags: $process_flags"
 fi
 ready=false
