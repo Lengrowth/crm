@@ -177,9 +177,9 @@ export function OperatorShellFrame({ children, groups, runtime, user }: { childr
             <div className="flex min-w-0 items-center gap-3">
               <button ref={mobileMenuButtonRef} type="button" className="operator-icon-button lg:hidden" aria-label="Open navigation" aria-expanded={mobileOpen} onClick={() => setMobileOpen(true)}><MenuIcon /></button>
               <div className="min-w-0">
-                <div className="operator-breadcrumbs" aria-label="Breadcrumb">
+                <nav className="operator-breadcrumbs" aria-label="Breadcrumb">
                   {breadcrumbs.map((crumb, index) => <span key={`${crumb.label}-${index}`} className="flex items-center gap-2">{index > 0 ? <ChevronIcon /> : null}{crumb.href ? <Link href={crumb.href}>{crumb.label}</Link> : <span aria-current="page">{crumb.label}</span>}</span>)}
-                </div>
+                </nav>
                 <h1 className="operator-page-title">{pageTitle}</h1>
               </div>
             </div>
