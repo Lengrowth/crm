@@ -113,7 +113,7 @@ jobs:
         run: |
           token_file="$RUNNER_TEMP/saas-staging-smoke-token"
           sudo install -m 600 -o "$(id -u)" -g "$(id -g)" /run/saas-control-staging/smoke/auth-token "$token_file"
-          AUTH_TOKEN_FILE="$token_file" node frontend/scripts/capture_browser_evidence.mjs
+          AUTH_TOKEN_FILE="$token_file" node /opt/saas-control-staging/current/frontend/scripts/capture_browser_evidence.mjs
           rm -f -- "$token_file"
 
       - name: Upload durable staging browser evidence
