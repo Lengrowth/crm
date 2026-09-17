@@ -15,7 +15,8 @@ if [[ -n "$HOST_HEADER" ]]; then curl_args+=( -H "Host: $HOST_HEADER" ); fi
 token="$(<"$AUTH_TOKEN_FILE")"
 [[ -n "$token" ]] || { echo "Shell smoke token file is empty" >&2; exit 1; }
 
-release_payload="$(curl "${curl_args[@]}" -fsS --max-time 20 "$BACKEND_URL/runtime/release")"
+runtime_nonce="$(date +%s%N)"
+release_payload="$(curl "${curl_args[@]}" -fsS --max-time 20 -H 'Cache-Control: no-cache' "$BACKEND_URL/runtime/release?phase1_smoke_nonce=$runtime_nonce")"
 python3 - "$EXPECTED_RELEASE" "$EXPECTED_PHASE_ONE_SHELL" "$release_payload" <<'PY'
 import json
 import sys
