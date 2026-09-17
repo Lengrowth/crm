@@ -58,6 +58,7 @@ jobs:
         run: |
           git fetch origin main --depth=1
           git show origin/main:frontend/scripts/capture_browser_evidence.mjs > "$RUNNER_TEMP/capture_browser_evidence.mjs"
+          git show origin/main:scripts/release/prepare_staging_smoke_auth.py > "$RUNNER_TEMP/prepare_staging_smoke_auth.py"
 
       - name: Make release scripts executable
         run: chmod +x scripts/release/*.sh scripts/deploy/*.sh
@@ -130,11 +131,13 @@ jobs:
           set -a
           . /opt/saas-control-staging/shared/env/staging-backend.env
           set +a
+          auth_script="/opt/saas-control-staging/current/scripts/release/prepare_staging_smoke_auth.py"
+          if [[ -f "$RUNNER_TEMP/prepare_staging_smoke_auth.py" ]]; then auth_script="$RUNNER_TEMP/prepare_staging_smoke_auth.py"; fi
           sudo -n -E -u saas-staging env \
             PYTHONPATH=/opt/saas-control-staging/current/backend \
             STAGING_SMOKE_EMAIL="$NON_ADMIN_SMOKE_EMAIL" \
             /opt/saas-control-staging/shared/backend-venv/bin/python \
-            /opt/saas-control-staging/current/scripts/release/prepare_staging_smoke_auth.py \
+            "$auth_script" \
             --token-file /run/saas-control-staging/smoke/non-admin-auth-token \
             --non-admin
 
@@ -168,10 +171,12 @@ jobs:
           set -a
           . /opt/saas-control-staging/shared/env/staging-backend.env
           set +a
+          auth_script="/opt/saas-control-staging/current/scripts/release/prepare_staging_smoke_auth.py"
+          if [[ -f "$RUNNER_TEMP/prepare_staging_smoke_auth.py" ]]; then auth_script="$RUNNER_TEMP/prepare_staging_smoke_auth.py"; fi
           sudo -n -E -u saas-staging env \
             PYTHONPATH=/opt/saas-control-staging/current/backend \
             /opt/saas-control-staging/shared/backend-venv/bin/python \
-            /opt/saas-control-staging/current/scripts/release/prepare_staging_smoke_auth.py \
+            "$auth_script" \
             --email "$NON_ADMIN_SMOKE_EMAIL" \
             --token-file /run/saas-control-staging/smoke/non-admin-auth-token \
             --cleanup
