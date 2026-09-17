@@ -29,6 +29,14 @@ on:
         options:
           - "off"
           - "on"
+      phase3_migration_approved:
+        description: Approve the additive Phase 3 migration and catalog sync after backup verification
+        required: true
+        default: "no"
+        type: choice
+        options:
+          - "no"
+          - "yes"
 
 permissions:
   contents: read
@@ -59,6 +67,40 @@ jobs:
         env:
           RELEASE_ID: ${{ inputs.release_id }}
         run: ./scripts/release/materialize_production_candidate.sh
+
+      - name: Keep Phase 3 entitlement writes fail-closed during promotion
+        run: |
+          sudo python3 - /opt/saas-control/shared/env/backend.env <<'PY'
+          from pathlib import Path
+          path = Path('/opt/saas-control/shared/env/backend.env')
+          lines = path.read_text(encoding='utf-8').splitlines()
+          output = []
+          for line in lines:
+              if line.startswith('FEATURE_FLAGS='):
+                  entries = [entry for entry in line.removeprefix('FEATURE_FLAGS=').split(',') if entry and not entry.split('=', 1)[0].strip().startswith('module_entitlement_')]
+                  entries.extend(['module_entitlement_writes=off', 'module_entitlement_operator_only=off', 'module_entitlement_general=off'])
+                  line = 'FEATURE_FLAGS=' + ','.join(entries)
+              output.append(line)
+          path.write_text('\n'.join(output) + '\n', encoding='utf-8')
+          PY
+
+      - name: Require explicit Phase 3 migration approval
+        if: ${{ inputs.phase3_migration_approved != 'yes' }}
+        run: |
+          echo "Phase 3 production promotion requires phase3_migration_approved=yes after verified backups." >&2
+          exit 1
+
+      - name: Apply additive Phase 3 migration and catalog sync
+        if: ${{ inputs.phase3_migration_approved == 'yes' }}
+        env:
+          RELEASE_ID: ${{ inputs.release_id }}
+        run: |
+          set -a
+          . /opt/saas-control/shared/env/backend.env
+          set +a
+          cd "/opt/saas-control/releases/$RELEASE_ID/backend"
+          PYTHONPATH="/opt/saas-control/releases/$RELEASE_ID/backend" /opt/saas-control/shared/backend-venv/bin/alembic -c alembic.ini upgrade head
+          PYTHONPATH="/opt/saas-control/releases/$RELEASE_ID/backend" /opt/saas-control/shared/backend-venv/bin/python -m app.db.seed
 
       - name: Prepare disposable authenticated smoke identity
         env:

@@ -1,0 +1,82 @@
+name: Roll out SaaS module entitlement writes
+
+on:
+  workflow_dispatch:
+    inputs:
+      current_release:
+        description: Exact immutable production release currently serving traffic
+        required: true
+        type: string
+      rollout_stage:
+        description: Server-controlled Phase 3 rollout stage
+        required: true
+        type: choice
+        options:
+          - read-only
+          - operator-only
+          - general
+
+permissions:
+  contents: read
+
+concurrency:
+  group: saas-control-module-entitlement-rollout
+  cancel-in-progress: false
+
+jobs:
+  rollout:
+    name: Set protected module entitlement rollout
+    runs-on:
+      - self-hosted
+      - linux
+      - saas-control
+    environment: production
+    steps:
+      - name: Check out release tooling
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Make release scripts executable
+        run: chmod +x scripts/deploy/*.sh scripts/release/*.py
+
+      - name: Set server-controlled rollout stage
+        env:
+          EXPECTED_CURRENT_RELEASE: ${{ inputs.current_release }}
+          MODULE_ROLLOUT_STAGE: ${{ inputs.rollout_stage }}
+        run: ./scripts/deploy/toggle_module_entitlement_rollout.sh
+
+      - name: Run synthetic apply, retry, isolation, reversal, and cleanup evidence
+        if: ${{ inputs.rollout_stage == 'operator-only' }}
+        env:
+          EXPECTED_RELEASE: ${{ inputs.current_release }}
+          FEATURE_FLAGS_SAFE: operator-only
+          PRODUCTION_BACKEND_URL: https://lenerp-api.lengrowth.com
+        run: |
+          set -a
+          . /opt/saas-control/shared/env/backend.env
+          set +a
+          run_id="${GITHUB_RUN_ID}-p3"
+          output="$GITHUB_WORKSPACE/production-phase3-evidence.json"
+          admin_token="/run/saas-control/smoke/phase3-admin-token"
+          member_token="/run/saas-control/smoke/phase3-member-token"
+          other_token="/run/saas-control/smoke/phase3-other-token"
+          PYTHONPATH=/opt/saas-control/current/backend \
+            /opt/saas-control/shared/backend-venv/bin/python \
+            scripts/release/production_phase3_smoke.py \
+            --output "$output" \
+            --admin-token-file "$admin_token" \
+            --member-token-file "$member_token" \
+            --other-token-file "$other_token" \
+            --run-id "$run_id"
+          rm -f -- "$admin_token" "$member_token" "$other_token"
+
+      - name: Upload production Phase 3 evidence
+        if: ${{ success() && inputs.rollout_stage == 'operator-only' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-phase3-evidence-${{ inputs.current_release }}-${{ github.run_id }}
+          path: production-phase3-evidence.json
+          if-no-files-found: error
+          retention-days: 90

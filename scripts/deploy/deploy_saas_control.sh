@@ -105,6 +105,12 @@ if [[ "${RUN_DB_MIGRATION:-true}" == "true" ]]; then
   else
     (cd "$CANDIDATE_DIR/backend" && "$BACKEND_VENV/bin/alembic" -c alembic.ini upgrade head)
   fi
+  log "Synchronizing additive reference catalog and bundles"
+  if id "$STAGING_SERVICE_USER" >/dev/null 2>&1; then
+    (cd "$CANDIDATE_DIR/backend" && sudo -n -E -u "$STAGING_SERVICE_USER" env PYTHONPATH="$CANDIDATE_DIR/backend" "$BACKEND_VENV/bin/python" -m app.db.seed)
+  else
+    (cd "$CANDIDATE_DIR/backend" && PYTHONPATH="$CANDIDATE_DIR/backend" "$BACKEND_VENV/bin/python" -m app.db.seed)
+  fi
 fi
 
 OLD_TARGET="$(readlink -f "$CURRENT_LINK" 2>/dev/null || true)"

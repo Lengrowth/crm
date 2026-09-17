@@ -6,6 +6,7 @@ import path from "node:path";
 let baseUrl = (process.env.BASE_URL ?? "").replace(/\/$/, "");
 const tokenFile = process.env.AUTH_TOKEN_FILE;
 const nonAdminTokenFile = process.env.NON_ADMIN_AUTH_TOKEN_FILE;
+const phase3OtherTokenFile = process.env.PHASE3_OTHER_AUTH_TOKEN_FILE;
 const outputDir = process.env.OUTPUT_DIR ?? "browser-evidence";
 const expectedShell = process.env.EXPECTED_PHASE_ONE_SHELL ?? "on";
 const expectedRelease = process.env.EXPECTED_RELEASE;
@@ -27,6 +28,7 @@ const routes = [
   "/app/organizations",
   "/app/organizations/new",
   `/app/organizations/${organizationId}`,
+  `/app/organizations/${organizationId}/modules`,
   `/app/organizations/${organizationId}/tenants`,
   "/app/tenants",
   "/app/tenants/new",
@@ -229,6 +231,56 @@ report.phase2_ui_crud = {
 };
 await writeFile(path.join(outputDir, "phase2-cleanup.json"), `${JSON.stringify(phase2Cleanup, null, 2)}\n`, "utf8");
 await uiPage.close();
+
+const phase3Cleanup = { organization_ids: [], tenant_ids: [] };
+const phase3Org = await phase2Api("/organizations", "POST", { name: `Phase 3 Browser Synthetic ${syntheticSuffix}`, status: "trial" });
+if (phase3Org.status !== 201 || !phase3Org.body?.id) throw new Error(`Phase 3 synthetic company setup failed: ${phase3Org.status}`);
+addUnique(phase3Cleanup.organization_ids, phase3Org.body.id);
+const phase3Tenant = await phase2Api(`/organizations/${phase3Org.body.id}/tenants`, "POST", { tenant_slug: `p3-browser-${syntheticSuffix}`.toLowerCase(), environment: "staging", status: "planned" });
+if (phase3Tenant.status !== 201 || !phase3Tenant.body?.id) throw new Error(`Phase 3 synthetic site setup failed: ${phase3Tenant.status}`);
+addUnique(phase3Cleanup.tenant_ids, phase3Tenant.body.id);
+await writeFile(path.join(outputDir, "phase3-cleanup.json"), `${JSON.stringify(phase3Cleanup, null, 2)}\n`, "utf8");
+const phase3Catalog = await phase2Api("/catalog/modules");
+const phase3PublicCatalog = await phase2Api("/public/modules");
+if (phase3Catalog.status !== 200 || phase3PublicCatalog.status !== 200) throw new Error("Phase 3 catalog API reads failed");
+const phase3CatalogCodes = new Set((phase3Catalog.body ?? []).map((item) => item.code));
+const phase3PublicCodes = new Set((phase3PublicCatalog.body ?? []).map((item) => item.code));
+if (![...phase3PublicCodes].every((code) => phase3CatalogCodes.has(code))) throw new Error("Phase 3 public/internal catalog identities diverged");
+const phase3PreviewPayload = { organization_id: phase3Org.body.id, bundle_key: "champion-drilling", bundle_version: 1, idempotency_key: `p3-browser-preview-${syntheticSuffix}` };
+const phase3Preview = await phase2Api(`/organizations/${phase3Org.body.id}/modules/preview`, "POST", phase3PreviewPayload);
+if (phase3Preview.status !== 200 || !(phase3Preview.body?.effective?.effective_codes ?? []).includes("well_mapping")) throw new Error("Phase 3 bundle preview failed");
+const phase3ApplyPayload = { ...phase3PreviewPayload, preview_hash: phase3Preview.body.preview_hash, idempotency_key: `p3-browser-apply-${syntheticSuffix}` };
+const phase3Apply = await phase2Api(`/organizations/${phase3Org.body.id}/modules/apply`, "POST", phase3ApplyPayload);
+if (phase3Apply.status !== 200) throw new Error("Phase 3 bundle apply failed");
+const phase3Retry = await phase2Api(`/organizations/${phase3Org.body.id}/modules/apply`, "POST", phase3ApplyPayload);
+if (phase3Retry.status !== 200 || phase3Retry.body?.replayed !== true) throw new Error("Phase 3 duplicate retry was not replayed");
+const phase3Invalid = await phase2Api(`/organizations/${phase3Org.body.id}/modules/preview`, "POST", { organization_id: phase3Org.body.id, enable_codes: ["unknown-phase3-module"], idempotency_key: `p3-browser-invalid-${syntheticSuffix}` });
+if (phase3Invalid.status !== 400) throw new Error("Phase 3 invalid selection was accepted");
+const phase3Effective = await phase2Api(`/organizations/${phase3Org.body.id}/modules`);
+if (phase3Effective.status !== 200 || (phase3Effective.body?.items ?? []).some((item) => item.entitled && item.verification_state === "verified")) throw new Error("Phase 3 ERP state separation check failed");
+const phase3DependentDisable = await phase2Api(`/organizations/${phase3Org.body.id}/modules/preview`, "POST", { organization_id: phase3Org.body.id, disable_codes: ["accounting"], idempotency_key: `p3-browser-dependent-disable-${syntheticSuffix}` });
+if (phase3DependentDisable.status !== 400) throw new Error("Phase 3 dependent disable was accepted");
+const phase3AuditBefore = await phase2Api(`/organizations/${phase3Org.body.id}/modules/audit`);
+if (phase3AuditBefore.status !== 200 || phase3AuditBefore.body.length !== 1) throw new Error("Phase 3 audit before reversal check failed");
+const phase3UiPage = await context.newPage();
+await phase3UiPage.goto(`${baseUrl}/app/modules`, { waitUntil: "networkidle", timeout: 30000 });
+await phase3UiPage.locator("input[aria-label='Search modules']").fill("Accounting");
+if (!(await phase3UiPage.getByText("accounting", { exact: true }).count())) throw new Error("Phase 3 module search/detail evidence failed");
+await phase3UiPage.goto(`${baseUrl}/app/organizations/${phase3Org.body.id}/modules`, { waitUntil: "networkidle", timeout: 30000 });
+if (!(await phase3UiPage.getByText("Effective modules", { exact: true }).count())) throw new Error("Phase 3 company Modules view failed");
+await phase3UiPage.screenshot({ path: path.join(outputDir, "phase3-company-modules.png"), fullPage: true });
+await phase3UiPage.close();
+if (nonAdminTokenFile) {
+  const phase3NonAdminToken = (await readFile(nonAdminTokenFile, "utf8")).trim();
+  const deniedRead = await phase2Api(`/organizations/${phase3Org.body.id}/modules`, "GET", undefined, phase3NonAdminToken);
+  const deniedMutation = await phase2Api(`/organizations/${phase3Org.body.id}/modules/apply`, "POST", { organization_id: phase3Org.body.id, enable_codes: ["crm"], idempotency_key: `p3-browser-denied-${syntheticSuffix}` }, phase3NonAdminToken);
+  if (![403, 404].includes(deniedRead.status) || ![403, 404].includes(deniedMutation.status)) throw new Error("Phase 3 non-admin isolation check failed");
+}
+const phase3Reverse = await phase2Api(`/organizations/${phase3Org.body.id}/modules/reverse`, "POST", { organization_id: phase3Org.body.id, audit_id: phase3Apply.body.audit_id, idempotency_key: `p3-browser-reverse-${syntheticSuffix}` });
+if (phase3Reverse.status !== 200 || phase3Reverse.body?.effective?.effective_codes?.length) throw new Error("Phase 3 reversal failed");
+const phase3AuditAfter = await phase2Api(`/organizations/${phase3Org.body.id}/modules/audit`);
+if (phase3AuditAfter.status !== 200 || phase3AuditAfter.body.length !== 2) throw new Error("Phase 3 audit after reversal check failed");
+report.phase3_module_control = { catalog_loaded_from_backend: true, public_internal_identities_agree: true, module_search_detail: true, bundle_preview: true, bundle_apply: true, duplicate_retry_idempotent: true, invalid_selection_rejected: true, dependent_disable_rejected: true, company_modules_view: true, audit_before_after: { before: phase3AuditBefore.body.length, after: phase3AuditAfter.body.length }, entitlement_erp_state_separate: true, reversal: true, non_admin_denied: Boolean(nonAdminTokenFile), cleanup_manifest: "phase3-cleanup.json" };
 
 const runtimeResponse = await fetch(runtimeReleaseUrl, { cache: "no-store" });
 if (!runtimeResponse.ok) throw new Error(`runtime release endpoint returned HTTP ${runtimeResponse.status}`);
