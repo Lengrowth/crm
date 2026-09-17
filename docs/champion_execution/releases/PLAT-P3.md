@@ -1,10 +1,12 @@
 # PLAT-P3 — Module Control Release Record
 
-Status: **IN DEVELOPMENT — local implementation and migration rehearsal passed; exact staging and protected production evidence pending**
+Status: **PASS — exact candidate staged, protected production promotion completed, staged rollout verified, production observed, and synthetic cleanup verified**
 Release identity: `PLAT-P3`
-Record date: 2026-09-17
+Record date: 2026-09-18
 Operator: Codex, working with the delivery owner
-Approver: Required GitHub `production` environment reviewer
+Approver: GitHub `production` environment reviewer; approvals recorded on protected runs
+Production candidate: `68926c22aab01079f17c2cebe21edeeff8ca2c75`
+Previous production candidate: `41ac76500a6a502ac78f22d6dbefbf90996ee46a`
 
 ## Scope and safety decision
 
@@ -92,8 +94,8 @@ normal browser action has no ERP verification control.
 
 | Check | Result | Evidence |
 |---|---|---|
-| Backend suite | PASS | `python -m pytest backend/tests -q` — 42 passed |
-| Phase 3 service/API tests | PASS | 4 passed: safe default, dependencies, disable safety, retry, reversal, authorization/isolation |
+| Backend suite | PASS | `python -m pytest backend/tests -q` — 45 passed |
+| Phase 3 service/API tests | PASS | 6 passed: catalog/seed, safe default, dependencies, disable safety, retry, reversal, authorization/isolation, rules, and bundle audit |
 | Python compilation | PASS | `python -m compileall -q backend/app backend/tests scripts/release/production_phase3_smoke.py` |
 | Frontend tests | PASS | `npm test` — 12 passed |
 | Frontend typecheck | PASS | `npm run typecheck` |
@@ -106,18 +108,59 @@ normal browser action has no ERP verification control.
 
 ## Staging and production evidence
 
-To be filled only from matching artifacts and readback:
-
-- Exact candidate SHA and ancestry:
-- Staging deployment run and browser artifact:
-- Catalog/search/filter/detail and public/internal identity evidence:
-- Bundle preview/apply/retry/reversal and invalid-selection evidence:
-- Authorization and tenant-isolation evidence:
-- Database revision before/after:
-- Protected production promotion/readback artifact:
-- Read-only/operator-only/general rollout evidence:
-- Synthetic cleanup zero counts:
-- Production current/previous pointers and observation window:
+- Exact candidate and ancestry: `68926c22aab01079f17c2cebe21edeeff8ca2c75`; it is the
+  protected merge of PRs [#49](https://github.com/Lengrowth/crm/pull/49) and
+  [#50](https://github.com/Lengrowth/crm/pull/50), and the verified baseline
+  `7cd9c2d2cc3e5a4507e380f8b122983a3ad76d9d` is an ancestor.
+- Final-main staging: run
+  [35267218039](https://github.com/Lengrowth/crm/actions/runs/35267218039),
+  browser artifact
+  [10517640727](https://github.com/Lengrowth/crm/actions/runs/35267218039/artifacts/10517640727).
+  Runtime identity matched the candidate. The Phase 3 artifact records backend
+  catalog loading, public/internal identity agreement, module search/detail,
+  bundle preview/apply/retry, invalid and dependent-disable rejection, company
+  Modules view, audit before/after, reversal, non-admin denial, and cleanup
+  manifest; accessibility reported zero violations.
+- Database migration: staging rehearsal upgraded representative legacy schema
+  `20260528_0007` to `20260917_0008`, downgraded, and upgraded again while
+  preserving a legacy `inventory` assignment. The protected production
+  promotion run applied the same additive `upgrade head` from `20260528_0007`
+  to `20260917_0008`; catalog seed then completed successfully.
+- Protected production promotion: run
+  [35267738908](https://github.com/Lengrowth/crm/actions/runs/35267738908),
+  readback artifact
+  [10518265800](https://github.com/Lengrowth/crm/actions/runs/35267738908/artifacts/10518265800).
+  It reports current `/opt/saas-control/releases/68926c22...`, previous
+  `/opt/saas-control/releases/41ac765...`, active backend/frontend/nginx/R2
+  timer services, local health `200`, clean upstream trees, and zero Phase 0
+  smoke records.
+- Rollout evidence: protected read-only run
+  [35271204673](https://github.com/Lengrowth/crm/actions/runs/35271204673) was
+  followed by live readback `writes=false`, `operator_only=false`,
+  `general=false`; operator-only run
+  [35271298344](https://github.com/Lengrowth/crm/actions/runs/35271298344)
+  passed with artifact
+  [10518545982](https://github.com/Lengrowth/crm/actions/runs/35271298344/artifacts/10518545982);
+  general rollout run
+  [35271386799](https://github.com/Lengrowth/crm/actions/runs/35271386799)
+  passed and restored the final authorized-role state.
+- Production synthetic verification: earlier operator-only run
+  [35270280179](https://github.com/Lengrowth/crm/actions/runs/35270280179)
+  artifact
+  [10518550049](https://github.com/Lengrowth/crm/actions/runs/35270280179/artifacts/10518550049)
+  and final operator-only artifact
+  [10518545982](https://github.com/Lengrowth/crm/actions/runs/35271298344/artifacts/10518545982)
+  both report catalog counts `21/17`, preview/apply/retry/reversal success,
+  authorization isolation, no untrusted verification, and zero remaining
+  organizations, users, assignments, or audits.
+- Observation: four samples from 2026-09-17T20:34:57Z through
+  2026-09-17T20:35:58Z returned health `200`, the exact candidate release, and
+  stable flags `module_entitlement_writes=true`,
+  `module_entitlement_operator_only=false`,
+  `module_entitlement_general=true`.
+- Cleanup: production artifact reports zero residual synthetic organizations,
+  users, module assignments, and module audits; staging cleanup completed in
+  the final-main workflow. Legitimate catalog/reference data was preserved.
 
 ## C03 and limitations
 
@@ -128,7 +171,10 @@ verification decisions remain unresolved. The Phase 0 credential-rotation
 waiver remains accepted; no Champion confidential data may enter the
 environment under that waiver.
 
-Final verdict: **PLAT-P3: BLOCKED** until exact-candidate staging, protected
-production promotion, synthetic production reversal/cleanup, observation, and
-matching artifacts are complete. This is a gate status, not a claim that the
-local implementation is complete.
+Final verdict: **PLAT-P3: PASS**. Exact-candidate staging, migration rehearsal,
+protected production promotion, read-only/operator-only/general rollout,
+synthetic production preview/apply/retry/reversal, authorization and
+tenant-isolation checks, ERP-state separation, cleanup, observation, and
+documentation reconciliation are complete. C03 remains `defined` because
+Champion-specific role/module decisions and ERP verification are unresolved;
+that is an explicit package boundary, not a Phase 3 gate failure.
