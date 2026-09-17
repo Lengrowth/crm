@@ -1,12 +1,12 @@
-# Phase 0 Handover Inventory
+# Phase 0 and Phase 1 Handover Inventory
 
-Status: working inventory for `PLAT-P0`; no secret values belong here.
+Status: `PLAT-P0` and `PLAT-P1` complete; no secret values belong here.
 
 ## Repositories and source
 
 | Component | Repository/remotes | Current evidence |
 |---|---|---|
-| CRM control plane | Local `https://github.com/BuildGrowthNow/crm.git`; requested destination `https://github.com/Lengrowth/crm` | production/staging at `7e30e40b2e601567419c97debee7e6d43fc89f1c`; latest protected promotion and readback passed |
+| CRM control plane | Local `https://github.com/BuildGrowthNow/crm.git`; requested destination `https://github.com/Lengrowth/crm` | production current `c2b923a5550923749b4f4ade7599b4a96a8943f1`, previous `15268f8dad1187994f89256f5dc55a7e3c982586`; final protected promotion and readback passed |
 | Champion forecast / commercial plan | `https://github.com/guerra2fernando/champion-forecast.git` | local checkout has unrelated dirty changes; preserve them |
 | Frappe upstream | `https://github.com/frappe/frappe.git` | production `edae775dd36b6c4ad7acab10230262bd74040765`; clean detached clone at `C:\Users\smikl\Desktop\Work\phase0-upstreams\frappe` |
 | ERPNext upstream | `https://github.com/frappe/erpnext.git` | production `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`; clean detached clone at `C:\Users\smikl\Desktop\Work\phase0-upstreams\erpnext` |
@@ -19,6 +19,8 @@ Status: working inventory for `PLAT-P0`; no secret values belong here.
 - AWS EC2 and Cloudflare zone are verified; the temporary application hostnames are proxied through Cloudflare to the EC2 origin. Canonical public API `lenerp-api.lengrowth.com` resolves through Cloudflare and `/health` returned HTTP `200` on 2026-09-15 and again after retirement verification on 2026-09-16. The old deep hostname `api.lenerp.lengrowth.com` is retired, must not be used, and its old DNS record was deleted from Cloudflare on 2026-09-16.
 - Final non-secret production readback artifact from workflow `35108238557` reports Frappe and ERPNext source trees clean at the recorded production heads; no upstream source was changed by this run.
 - Reproducible staging-lane contract: `ops/staging/`; control-plane and ERP staging host/service/database/file evidence is established on the EC2 with private host-header checks.
+- `PLAT-P1` production default is the responsive operator shell from candidate `c2b923a5550923749b4f4ade7599b4a96a8943f1`; `platform_phase1_shell=true` is server-controlled and the old shell remains available with the flag disabled.
+- Final Phase 1 protected production promotion is run [35189173434](https://github.com/Lengrowth/crm/actions/runs/35189173434) with non-secret readback artifact [10483861183](https://github.com/Lengrowth/crm/actions/runs/35189173434/artifacts/10483861183). Fallback evidence is run [35188091170](https://github.com/Lengrowth/crm/actions/runs/35188091170) with artifact [10483290012](https://github.com/Lengrowth/crm/actions/runs/35188091170/artifacts/10483290012).
 
 ## Release artifacts
 
@@ -29,6 +31,7 @@ Status: working inventory for `PLAT-P0`; no secret values belong here.
 - Preflight and smoke checks: `scripts/release/preflight.sh`, `scripts/release/smoke.sh`.
 - Upstream source guard: `scripts/release/verify_upstream_clean.sh`.
 - Secret scan: `scripts/release/secret_scan.py`.
+- Phase 1 shell smoke: `scripts/release/shell_smoke.sh`.
 
 ## Data and recovery
 
@@ -37,3 +40,8 @@ Status: working inventory for `PLAT-P0`; no secret values belong here.
 - The ERP SQL dump restored into disposable MariaDB schema `plat_p0_restore_20260915` with 707 tables; the temporary schema was removed after verification.
 - The disposable ERP staging site is `erp-staging.example.test` under `/opt/frappe-staging-bench`; control-plane staging is under `/opt/saas-control-staging`. Their databases, files, Redis ports, services, and workers are separate from production.
 - No Champion confidential data may be received, restored, copied, or imported before credential rotation and plaintext-secret resolution are complete.
+
+## Next-phase baseline
+
+- Phase 2 starts from production candidate `c2b923a5550923749b4f4ade7599b4a96a8943f1` with the operator shell enabled and the old shell retained behind its server flag.
+- The next release must continue to use staging-first immutable candidates and the protected production workflow; no Phase 2 page redesign or Champion data import is implied by this handover.
