@@ -8,12 +8,17 @@ const tokenFile = process.env.AUTH_TOKEN_FILE;
 const nonAdminTokenFile = process.env.NON_ADMIN_AUTH_TOKEN_FILE;
 const outputDir = process.env.OUTPUT_DIR ?? "browser-evidence";
 const expectedShell = process.env.EXPECTED_PHASE_ONE_SHELL ?? "on";
+const expectedRelease = process.env.EXPECTED_RELEASE;
+const runtimeReleaseUrl = process.env.RUNTIME_RELEASE_URL;
+const rolloutStage = process.env.ROLLOUT_STAGE ?? "operator-validation";
 const cookieName = process.env.AUTH_COOKIE_NAME ?? "crm-auth-token";
 const hostHeader = process.env.HOST_HEADER;
 const organizationId = process.env.ORGANIZATION_ID ?? "synthetic-organization";
 const tenantId = process.env.TENANT_ID ?? "synthetic-tenant";
 
 if (!baseUrl) throw new Error("BASE_URL is required");
+if (!expectedRelease) throw new Error("EXPECTED_RELEASE is required");
+if (!runtimeReleaseUrl) throw new Error("RUNTIME_RELEASE_URL is required");
 await mkdir(outputDir, { recursive: true });
 
 const routes = [
@@ -88,8 +93,29 @@ const report = {
   base_url: baseUrl,
   expected_phase1_shell: expectedShell,
   observed_shell: shellMarker,
+  runtime_release: null,
+  rollout_validation: {
+    stage: rolloutStage,
+    principal: "authenticated-platform-operator",
+  },
   routes: results,
   accessibility: { desktop: desktopA11y, mobile: mobileA11y },
+};
+const runtimeResponse = await fetch(runtimeReleaseUrl, { cache: "no-store" });
+if (!runtimeResponse.ok) throw new Error(`runtime release endpoint returned HTTP ${runtimeResponse.status}`);
+const runtimePayload = await runtimeResponse.json();
+const runtimeFlag = runtimePayload?.feature_flags?.platform_phase1_shell;
+if (runtimePayload?.release_id !== expectedRelease || runtimePayload?.commit !== expectedRelease) {
+  throw new Error(`runtime release identity mismatch: expected ${expectedRelease}, observed ${runtimePayload?.release_id ?? "missing"}/${runtimePayload?.commit ?? "missing"}`);
+}
+if (runtimeFlag !== (expectedShell === "on")) {
+  throw new Error(`runtime release flag mismatch: expected ${expectedShell}, observed ${String(runtimeFlag)}`);
+}
+report.runtime_release = {
+  release_id: runtimePayload.release_id,
+  commit: runtimePayload.commit,
+  environment: runtimePayload.environment ?? null,
+  platform_phase1_shell: runtimeFlag,
 };
 if (nonAdminTokenFile) {
   const nonAdminToken = (await readFile(nonAdminTokenFile, "utf8")).trim();
@@ -111,5 +137,7 @@ if (nonAdminTokenFile) {
 }
 const seriousViolations = [...desktopA11y.violations, ...mobileA11y.violations].filter((violation) => ["critical", "serious"].includes(violation.impact));
 if (seriousViolations.length) throw new Error(`serious accessibility violations: ${seriousViolations.map((violation) => violation.id).join(", ")}`);
+const seriousIncomplete = [...desktopA11y.incomplete, ...mobileA11y.incomplete].filter((incomplete) => ["critical", "serious"].includes(incomplete.impact));
+if (seriousIncomplete.length) throw new Error(`serious incomplete accessibility checks: ${seriousIncomplete.map((incomplete) => incomplete.id).join(", ")}`);
 await writeFile(path.join(outputDir, "browser-evidence.json"), `${JSON.stringify(report, null, 2)}\n`, "utf8");
 await browser.close();

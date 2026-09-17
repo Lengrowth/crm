@@ -9,6 +9,19 @@ on:
       - main
   workflow_dispatch:
     inputs:
+      candidate_ref:
+        description: Exact candidate ref to build and browser-validate (defaults to the workflow commit)
+        required: false
+        default: ""
+        type: string
+      rollout_stage:
+        description: Rollout evidence stage recorded in the durable browser artifact
+        required: false
+        default: "operator-validation"
+        type: choice
+        options:
+          - "operator-validation"
+          - "general"
       phase1_shell_state:
         description: Staging-only shell state for candidate browser evidence
         required: true
@@ -37,8 +50,14 @@ jobs:
       - name: Check out exact source commit
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ inputs.candidate_ref || github.sha }}
           fetch-depth: 0
+
+      - name: Prepare current browser evidence harness
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.candidate_ref != '' }}
+        run: |
+          git fetch origin main --depth=1
+          git show origin/main:frontend/scripts/capture_browser_evidence.mjs > "$RUNNER_TEMP/capture_browser_evidence.mjs"
 
       - name: Make release scripts executable
         run: chmod +x scripts/release/*.sh scripts/deploy/*.sh
@@ -95,8 +114,8 @@ jobs:
       - name: Build and deploy exact candidate to staging
         env:
           DEPLOY_TARGET: staging
-          TARGET_REF: ${{ github.sha }}
-          RELEASE_ID: ${{ github.sha }}
+          TARGET_REF: ${{ inputs.candidate_ref || github.sha }}
+          RELEASE_ID: ${{ inputs.candidate_ref || github.sha }}
           REQUIRE_AUTH_SMOKE: "true"
         run: ./scripts/deploy/deploy_saas_control.sh
 
@@ -122,6 +141,9 @@ jobs:
       - name: Capture candidate-bound browser and accessibility evidence
         env:
           EXPECTED_PHASE_ONE_SHELL: ${{ inputs.phase1_shell_state || 'off' }}
+          EXPECTED_RELEASE: ${{ inputs.candidate_ref || github.sha }}
+          RUNTIME_RELEASE_URL: http://127.0.0.1:18001/runtime/release
+          ROLLOUT_STAGE: ${{ inputs.rollout_stage || 'operator-validation' }}
           HEADLESS: "false"
           BASE_URL: http://127.0.0.1:13001
           HOST_HEADER: staging.example.test
@@ -133,7 +155,9 @@ jobs:
           sudo install -m 600 -o "$(id -u)" -g "$(id -g)" /run/saas-control-staging/smoke/non-admin-auth-token "$non_admin_token_file"
           browser_path="$(find "$HOME/.cache/ms-playwright" -type f -path '*/chrome-linux/chrome' -print -quit 2>/dev/null || true)"
           [[ -n "$browser_path" ]] || { echo "Installed Chromium executable was not found" >&2; exit 1; }
-          AUTH_TOKEN_FILE="$token_file" NON_ADMIN_AUTH_TOKEN_FILE="$non_admin_token_file" BROWSER_EXECUTABLE_PATH="$browser_path" node /opt/saas-control-staging/current/frontend/scripts/capture_browser_evidence.mjs
+          evidence_script="/opt/saas-control-staging/current/frontend/scripts/capture_browser_evidence.mjs"
+          if [[ -f "$RUNNER_TEMP/capture_browser_evidence.mjs" ]]; then evidence_script="$RUNNER_TEMP/capture_browser_evidence.mjs"; fi
+          AUTH_TOKEN_FILE="$token_file" NON_ADMIN_AUTH_TOKEN_FILE="$non_admin_token_file" BROWSER_EXECUTABLE_PATH="$browser_path" node "$evidence_script"
           rm -f -- "$token_file" "$non_admin_token_file"
 
       - name: Remove disposable non-admin route test identity
@@ -157,7 +181,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: staging-browser-evidence-${{ github.sha }}
+          name: staging-browser-evidence-${{ inputs.candidate_ref || github.sha }}
           path: staging-browser-evidence
           if-no-files-found: error
           retention-days: 30
