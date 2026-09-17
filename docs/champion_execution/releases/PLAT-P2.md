@@ -5,8 +5,8 @@ Release identity: `PLAT-P2`
 Record date: 2026-09-17
 Operator: Codex, working with the delivery owner
 Approver: Required GitHub `production` environment reviewer
-Previous known-good production candidate: `851302efc617f8a6587b30694a5c65a3e06de20a`
-Previous rollback candidate: `12bc548056c59341d3ccc492a5353a696a7c0661`
+Current production candidate: `41ac76500a6a502ac78f22d6dbefbf90996ee46a`
+Previous production candidate: `f1d54e9af4fe620d4c565038f64f989c37e36d6f`
 
 ## Scope and safety decision
 
@@ -45,8 +45,9 @@ Recorded for candidate validation:
 5. Shared primitives and tokens work in light/dark themes, desktop/mobile
    layouts, keyboard navigation, reduced motion, and axe checks.
 6. Candidate-bound browser evidence creates two synthetic companies and sites,
-   updates one company, verifies both reads for the admin, verifies second-
-   company denial for the non-admin, and removes exact identifiers afterward.
+   exercises UI validation/create/update flows, verifies both reads for the
+   admin, verifies second-company read and mutation denial for the non-admin,
+   and removes exact identifiers afterward.
 
 Rollback immediately if login/authenticated access, existing deep links,
 authorization/tenant isolation, the dashboard critical path, company/site CRUD,
@@ -66,9 +67,11 @@ of this release.
   with typed data, safe errors, search/filter controls, confirmations, and
   operator-oriented copy.
 - Added bounded dashboard and implementation portfolio API read models with
-  authorization and tenant-scoped queries.
+  authorization, tenant-scoped queries, independent totals, and explicit
+  detail truncation indicators.
 - Extended candidate browser evidence with empty/partial dashboard states,
-  theme/focus checks, CRUD/isolation evidence, and exact-ID cleanup.
+  theme/focus checks, UI validation/create/update CRUD, mutation-denial and
+  isolation evidence, and exact-ID cleanup.
 
 ## Local validation
 
@@ -79,45 +82,49 @@ of this release.
 | Frontend unit/component tests | PASS | `npm test` — 12 tests passed |
 | Frontend typecheck | PASS | `npm run typecheck` |
 | Frontend production build | PASS | `npm run build` — 34 routes generated |
-| Backend suite | PASS | `python -m pytest backend/tests -q` — 37 passed |
+| Backend suite | PASS | `python -m pytest backend/tests -q` — 38 passed |
 | Python compilation | PASS | `python -m compileall -q backend/app backend/tests` |
 | Secret scan | PASS | `python scripts/release/secret_scan.py` |
 | Diff whitespace | PASS | `git diff --check` |
-| Local smoke | PASS | `python scripts/release/local_smoke.py` with explicit `LOCAL_SMOKE_PYTHON` and `LOCAL_SMOKE_ALEMBIC_AS_MODULE=true`; synthetic DB/services cleaned up |
+| Local smoke | PASS | `python scripts/release/local_smoke.py` with explicit `LOCAL_SMOKE_PYTHON` and `LOCAL_SMOKE_ALEMBIC_AS_MODULE=true`; disposable platform-admin fixture exercised the admin-only portfolio route and synthetic DB/services were cleaned up |
 
 ## Staging validation
 
-PASS. The exact application candidate was `f1d54e9af4fe620d4c565038f64f989c37e36d6f`.
-Protected PR validation passed in run [35246913843](https://github.com/Lengrowth/crm/actions/runs/35246913843)
-with browser artifact [10508027589](https://github.com/Lengrowth/crm/actions/runs/35246913843/artifacts/10508027589);
-the final main candidate was validated in run [35247390273](https://github.com/Lengrowth/crm/actions/runs/35247390273).
-The exact candidate was re-staged with the current release harness in run
-[35250840486](https://github.com/Lengrowth/crm/actions/runs/35250840486),
-artifact [10508514378](https://github.com/Lengrowth/crm/actions/runs/35250840486/artifacts/10508514378).
-All route/state/theme/mobile/focus, authorization, synthetic CRUD and tenant-isolation,
-axe, and exact cleanup checks passed. The final release-tooling changes were
-merged to main as `940ba81` after protected staging runs
-[35251449826](https://github.com/Lengrowth/crm/actions/runs/35251449826) and
-[35251903844](https://github.com/Lengrowth/crm/actions/runs/35251903844).
-Desktop/mobile axe runs reported no serious or critical violations. The
-translucent `color-mix` backdrop remains axe-incomplete; its semantic text and
-surface pairs were manually reviewed above WCAG AA and recorded as reviewed.
+PASS. Remediation PR #47 validated the corrected implementation in run
+[35257247863](https://github.com/Lengrowth/crm/actions/runs/35257247863),
+with browser artifact
+[10512978308](https://github.com/Lengrowth/crm/actions/runs/35257247863/artifacts/10512978308).
+The exact post-merge main candidate is
+`41ac76500a6a502ac78f22d6dbefbf90996ee46a`; its final staging validation
+passed in run [35257785806](https://github.com/Lengrowth/crm/actions/runs/35257785806)
+with browser artifact
+[10513394070](https://github.com/Lengrowth/crm/actions/runs/35257785806/artifacts/10513394070).
+The candidate-bound artifacts record UI company/site create and update,
+validation failures, non-admin read and cross-company mutation denial, all
+required routes/states/themes/responsive widths, zero serious/critical axe
+violations, and the reviewed contrast-only incomplete checks. The corrected
+dashboard reports independent warning totals with truncation indicators, and
+the portfolio uses bounded aggregate/detail queries with project/task
+truncation signals. Exact synthetic records were removed after capture.
 
 ## Production promotion and observation
 
 PASS. Protected workflow run
-[35252397846](https://github.com/Lengrowth/crm/actions/runs/35252397846)
-approved and promoted the exact candidate with verified backups and
+[35258252240](https://github.com/Lengrowth/crm/actions/runs/35258252240)
+approved and promoted exact candidate `41ac765…` with verified backups and
 `platform_phase1_shell=true`. Its production readback artifact is
-[10509816751](https://github.com/Lengrowth/crm/actions/runs/35252397846/artifacts/10509816751).
-The authorized production Phase 2 smoke passed organization and tenant create,
-read/update, non-admin cross-tenant denial, and exact dependent-record cleanup.
-Readback reported current `f1d54e9…`, previous `851302ef…`, local health `200`,
-active backend/frontend/nginx/R2 timer services, R2 query/lifecycle success,
-clean upstream source trees, and zero smoke users, organizations, or active
-sessions. Three post-promotion public observations returned HTTP 200 for the
-SaaS root, canonical API health, and runtime release; runtime release identity
-matched `f1d54e9…` and the Phase 1 shell remained enabled.
+[10513034032](https://github.com/Lengrowth/crm/actions/runs/35258252240/artifacts/10513034032).
+The authorized production Phase 2 smoke passed organization and tenant
+create/read/update, non-admin cross-company read and mutation denial, and
+cleanup. Readback reported current `41ac765…`, previous `f1d54e9…`, local
+health `200`, active backend/frontend/nginx/R2 timer services, R2
+query/lifecycle success, clean upstream source trees, and zero Phase 0 smoke
+users, organizations, or active sessions. The Phase 2 cleanup manifest was
+available in readback, status `passed`, and zero for organizations, tenants,
+users, sessions, tokens, memberships, audit logs, provisioning jobs, domain
+mappings, implementation projects/tasks, tenant provisioning records, and
+ERPNext integration metadata. Runtime release identity matched `41ac765…`
+and the Phase 1 shell remained enabled.
 
 The initial rerun stopped before mutation when staging retention had pruned the
 candidate directory; the subsequent exact re-stage passed. A later smoke
@@ -143,6 +150,6 @@ was changed.
 The generic checklist in `docs/champion_execution/PHASE_DEPLOYMENT_GATE.md`
 applies. Final verdict: **PLAT-P2: PASS**. Exact-candidate staging, browser,
 protected promotion, production readback, observation, cleanup, and documentation
-reconciliation are complete. Rollback target remains `851302ef…`; the prior
-Phase 1 candidate `12bc548…` remains available through the protected release
-pointers.
+reconciliation are complete. Rollback target remains `f1d54e9…`; the prior
+Phase 1 candidate `851302ef…` and older `12bc548…` remain available through
+the protected release pointers.

@@ -6,7 +6,7 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; no secret values
 
 | Component | Repository/remotes | Current evidence |
 |---|---|---|
-| CRM control plane | Local `https://github.com/BuildGrowthNow/crm.git`; authoritative destination `https://github.com/Lengrowth/crm` | production current `f1d54e9af4fe620d4c565038f64f989c37e36d6f`, previous `851302efc617f8a6587b30694a5c65a3e06de20a`; protected Phase 2 promotion/readback and synthetic CRUD/isolation cleanup passed |
+| CRM control plane | Local `https://github.com/BuildGrowthNow/crm.git`; authoritative destination `https://github.com/Lengrowth/crm` | production current `41ac76500a6a502ac78f22d6dbefbf90996ee46a`, previous `f1d54e9af4fe620d4c565038f64f989c37e36d6f`; protected Phase 2 promotion/readback, UI/API CRUD, mutation isolation, and Phase 2 cleanup passed |
 | Champion forecast / commercial plan | `https://github.com/guerra2fernando/champion-forecast.git` | local checkout has unrelated dirty changes; preserve them |
 | Frappe upstream | `https://github.com/frappe/frappe.git` | production `edae775dd36b6c4ad7acab10230262bd74040765`; clean detached clone at `C:\Users\smikl\Desktop\Work\phase0-upstreams\frappe` |
 | ERPNext upstream | `https://github.com/frappe/erpnext.git` | production `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`; clean detached clone at `C:\Users\smikl\Desktop\Work\phase0-upstreams\erpnext` |
@@ -20,11 +20,11 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; no secret values
 - AWS EC2 and Cloudflare zone are verified; the temporary application hostnames are proxied through Cloudflare to the EC2 origin. Canonical public API `lenerp-api.lengrowth.com` resolves through Cloudflare and `/health` returned HTTP `200` on 2026-09-15 and again after retirement verification on 2026-09-16. The old deep hostname `api.lenerp.lengrowth.com` is retired, must not be used, and its old DNS record was deleted from Cloudflare on 2026-09-16.
 - Final non-secret production readback artifact from workflow `35108238557` reports Frappe and ERPNext source trees clean at the recorded production heads; no upstream source was changed by this run.
 - Reproducible staging-lane contract: `ops/staging/`; control-plane and ERP staging host/service/database/file evidence is established on the EC2 with private host-header checks.
-- `PLAT-P2` production serves exact candidate `f1d54e9af4fe620d4c565038f64f989c37e36d6f`; its shell flag is on, the previous Phase 1 candidate is `851302efc617f8a6587b30694a5c65a3e06de20a`, and the older `12bc548…` rollback remains available through protected release pointers.
-- Exact-candidate enabled-shell browser/WCAG evidence is run [35237762341](https://github.com/Lengrowth/crm/actions/runs/35237762341) with artifact [10503792511](https://github.com/Lengrowth/crm/actions/runs/35237762341/artifacts/10503792511); its operator-validation identity is synthetic and uses a disposable authenticated platform-admin fixture. Protected production promotion/readback is run [35234505403](https://github.com/Lengrowth/crm/actions/runs/35234505403) with artifact [10502656299](https://github.com/Lengrowth/crm/actions/runs/35234505403/artifacts/10502656299). The prior `12bc548…` candidate remains the previous pointer.
+- `PLAT-P2` production serves exact candidate `41ac76500a6a502ac78f22d6dbefbf90996ee46a`; its shell flag is on, the previous candidate is `f1d54e9af4fe620d4c565038f64f989c37e36d6f`, and older rollback pointers `851302ef…` / `12bc548…` remain available through protected release pointers.
+- Final remediated candidate browser/WCAG evidence is PR run [35257247863](https://github.com/Lengrowth/crm/actions/runs/35257247863), artifact [10512978308](https://github.com/Lengrowth/crm/actions/runs/35257247863/artifacts/10512978308), and post-merge main run [35257785806](https://github.com/Lengrowth/crm/actions/runs/35257785806), artifact [10513394070](https://github.com/Lengrowth/crm/actions/runs/35257785806/artifacts/10513394070). The artifacts record UI CRUD/validation, cross-company mutation denial, responsive/theme/accessibility evidence, and exact cleanup for candidate `41ac765…`. The prior `12bc548…` candidate remains available through protected release pointers.
 - Live hostname reconciliation on 2026-09-17 confirmed `erp.lengrowth.com` serves the Frappe login surface and redirects `/app` to Frappe `/login`, while `lenerp.lengrowth.com` serves the SaaS surface and redirects unauthenticated `/app` to the SaaS `/login`; `lenerp-api.lengrowth.com/health` returned HTTP 200. This explicitly resolves the Phase 1 wording ambiguity without rerouting the ERP hostname.
 - Exact-current-candidate flag-only fallback is proven by off run [35238093438](https://github.com/Lengrowth/crm/actions/runs/35238093438) / artifact [10503643197](https://github.com/Lengrowth/crm/actions/runs/35238093438/artifacts/10503643197), followed by restore-on run [35238216926](https://github.com/Lengrowth/crm/actions/runs/35238216926) / artifact [10504491369](https://github.com/Lengrowth/crm/actions/runs/35238216926/artifacts/10504491369); both preserved the current and previous release pointers.
-- The final Phase 2 production readback artifact is [10509816751](https://github.com/Lengrowth/crm/actions/runs/35252397846/artifacts/10509816751) from run [35252397846](https://github.com/Lengrowth/crm/actions/runs/35252397846). It reports current `f1d54e9…`, previous `851302ef…`, local health `200`, active backend/frontend/nginx/R2 timer services, enabled R2 lifecycle rules, 17 R2 objects, shell flag `true`, clean Frappe/ERPNext heads, and zero temporary smoke users, organizations, or sessions. The authorized Phase 2 smoke passed create/read/update and tenant-isolation denial; exact dependent records were cleaned. Public SaaS root, canonical API health, and runtime release observations each returned `200` with release and commit identity `f1d54e9…`.
+- The final Phase 2 production readback artifact is [10513034032](https://github.com/Lengrowth/crm/actions/runs/35258252240/artifacts/10513034032) from run [35258252240](https://github.com/Lengrowth/crm/actions/runs/35258252240). It reports current `41ac765…`, previous `f1d54e9…`, local health `200`, active backend/frontend/nginx/R2 timer services, enabled R2 lifecycle rules, 17 R2 objects, shell flag `true`, clean Frappe/ERPNext heads, and zero temporary smoke users, organizations, or sessions. The authorized Phase 2 smoke passed create/read/update, tenant-isolation read/mutation denial, and exact dependent-record cleanup; the Phase 2 manifest reports zero remaining records for every created class. Runtime release observations returned `200` with release and commit identity `41ac765…`.
 
 ## Release artifacts
 
@@ -47,7 +47,7 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; no secret values
 
 ## Next-phase baseline
 
-- Phase 2 production now serves exact candidate `f1d54e9af4fe620d4c565038f64f989c37e36d6f` with previous candidate `851302efc617f8a6587b30694a5c65a3e06de20a`, the operator shell enabled, and the older rollback pointer `12bc548…` retained. The runtime manifest may continue to report `environment: staging` because the immutable artifact is staging-built and promoted unchanged.
+- Phase 2 production now serves exact candidate `41ac76500a6a502ac78f22d6dbefbf90996ee46a` with previous candidate `f1d54e9af4fe620d4c565038f64f989c37e36d6f`, the operator shell enabled, and older rollback pointers `851302ef…` / `12bc548…` retained. The runtime manifest may continue to report `environment: staging` because the immutable artifact is staging-built and promoted unchanged.
 - The next release must continue to use staging-first immutable candidates and the protected production workflow; no Phase 2 page redesign or Champion data import is implied by this handover.
 
 ## Phase 2 baseline
@@ -58,6 +58,6 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; no secret values
   models at `/dashboard/summary` and `/implementation/portfolio`; no database
   revision or production Frappe/ERPNext change is required.
 - Local validation is recorded in `releases/PLAT-P2.md`; exact candidate
-  `f1d54e9…` passed protected staging, main, production promotion, observation,
-  CRUD/isolation cleanup, and readback. The release record contains the full
-  evidence and accepted limitations.
+  `41ac765…` passed protected staging, main, production promotion, observation,
+  UI/API CRUD, mutation isolation, Phase 2 cleanup, and readback. The release
+  record contains the full evidence and accepted limitations.
