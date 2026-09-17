@@ -145,6 +145,7 @@ jobs:
             --non-admin
 
       - name: Capture candidate-bound browser and accessibility evidence
+        # Keep this capture step adjacent to the deployed release dependencies.
         env:
           EXPECTED_PHASE_ONE_SHELL: ${{ inputs.phase1_shell_state || 'off' }}
           EXPECTED_RELEASE: ${{ inputs.candidate_ref || github.sha }}
