@@ -180,7 +180,9 @@ The existing credential-rotation waiver from Phase 0 remains explicitly
 accepted. No credentials were rotated or invalidated, no production Frappe or
 ERPNext worktree was modified, and no database migration or business API change
 was introduced. The GitHub Actions Node.js 20 deprecation annotation is an
-upstream runner warning only. The independent frontend dependency audit
-inventory is seven vulnerabilities (1 low, 1 moderate, 4 high, 1 critical)
-and remains a separately tracked dependency-owner review item; it is not
-silently treated as zero risk or conflated with the functional/browser gate.
+upstream runner warning only. The former seven-vulnerability frontend audit
+inventory was remediated by upgrading Next.js to `15.5.25`, Playwright to
+`1.63.0`, the affected Browserslist metadata and selector parser, and the
+transitive Next.js PostCSS package through the patched `postcss@8.5.28`
+override. `npm audit --omit=optional --audit-level=low` now reports zero
+vulnerabilities.
