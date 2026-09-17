@@ -51,5 +51,16 @@ path.write_text("\n".join(output) + "\n", encoding="utf-8")
 PY
 
 sudo systemctl restart "${BACKEND_SERVICE:-saas-backend}"
-curl -fsS "${PRODUCTION_BACKEND_LOCAL_URL:-http://127.0.0.1:8001}/health" >/dev/null
+ready=false
+for _ in {1..30}; do
+  if curl -fsS -o /dev/null --max-time 3 "${PRODUCTION_BACKEND_LOCAL_URL:-http://127.0.0.1:8001}/health"; then
+    ready=true
+    break
+  fi
+  sleep 2
+done
+if [[ "$ready" != true ]]; then
+  echo "Production backend did not become ready after the rollout restart." >&2
+  exit 1
+fi
 echo "Module entitlement rollout set to $ROLLOUT_STAGE for $EXPECTED_CURRENT_RELEASE"
