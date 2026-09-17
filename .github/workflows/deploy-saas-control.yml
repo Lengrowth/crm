@@ -196,15 +196,16 @@ jobs:
         run: |
           cleanup_file="$GITHUB_WORKSPACE/staging-browser-evidence/phase2-cleanup.json"
           if [[ -f "$cleanup_file" ]]; then
-            chmod 755 "$GITHUB_WORKSPACE/staging-browser-evidence"
-            chmod 644 "$cleanup_file"
+            cleanup_copy="/tmp/saas-control-phase2-cleanup-${GITHUB_RUN_ID}.json"
+            sudo install -m 644 -o saas-staging -g saas-staging "$cleanup_file" "$cleanup_copy"
             set -a
             . /opt/saas-control-staging/shared/env/staging-backend.env
             set +a
             sudo -n -E -u saas-staging env PYTHONPATH=/opt/saas-control-staging/current/backend \
               /opt/saas-control-staging/shared/backend-venv/bin/python \
               /opt/saas-control-staging/current/scripts/release/cleanup_phase2_synthetic.py \
-              --file "$cleanup_file"
+              --file "$cleanup_copy"
+            sudo rm -f -- "$cleanup_copy"
           else
             echo "No Phase 2 synthetic cleanup manifest was produced"
           fi

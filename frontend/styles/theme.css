@@ -29,9 +29,9 @@
     --color-border: var(--border);
     --color-border-strong: var(--border-strong);
     --color-focus: #6c9400;
-    --color-success: #16803c;
+    --color-success: #126b32;
     --color-success-soft: rgba(22, 128, 60, 0.12);
-    --color-warning: #a15c00;
+    --color-warning: #955300;
     --color-warning-soft: rgba(161, 92, 0, 0.12);
     --color-danger: #b42318;
     --color-danger-soft: rgba(180, 35, 24, 0.12);
