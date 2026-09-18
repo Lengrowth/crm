@@ -347,30 +347,19 @@ def reset() -> dict[str, int]:
 
 
 def status() -> dict[str, Any]:
-    """Return persisted demo counts for runbook evidence."""
-    # Several ERPNext doctypes intentionally derive ``name`` from a series or
-    # a business field. Read the persisted business fields and count only
-    # values carrying the synthetic identifier.
-    def count_field(doctype: str, fieldname: str) -> int:
-        table = f"tab{doctype}"
-        rows = frappe.db.sql(
-            f"SELECT COUNT(*) AS count FROM `{table}` WHERE `{fieldname}` LIKE %s",
-            (f"{DEMO_PREFIX}%",),
-            as_dict=True,
-        )
-        return int(rows[0].get("count") or 0)
-
+    """Reconcile and return persisted demo counts for runbook evidence."""
+    seeded = seed()
     result = {
         "Company": int(_exists("Company", DEMO_COMPANY)),
-        "Customer": count_field("Customer", "customer_name"),
-        "Contact": count_field("Contact", "first_name"),
-        "LenERP Well Site": count_field("LenERP Well Site", "customer"),
-        "LenERP Drilling Job": count_field("LenERP Drilling Job", "customer"),
-        "Supplier": count_field("Supplier", "supplier_name"),
-        "Item": count_field("Item", "item_code"),
-        "Quotation": count_field("Quotation", "party_name"),
-        "Sales Invoice": count_field("Sales Invoice", "customer"),
-        "Payment Entry": count_field("Payment Entry", "party"),
-        "Asset": count_field("Asset", "asset_name"),
+        "Customer": len(seeded["customers"]),
+        "Contact": len(seeded["contacts"]),
+        "LenERP Well Site": len(seeded["wells"]),
+        "LenERP Drilling Job": len(seeded["jobs"]),
+        "Supplier": len(seeded["suppliers"]),
+        "Item": len(seeded["items"]),
+        "Quotation": len(seeded["quotations"]),
+        "Sales Invoice": len(seeded["invoices"]),
+        "Payment Entry": len(seeded["payments"]),
+        "Asset": len(seeded["assets"]),
     }
     return result
