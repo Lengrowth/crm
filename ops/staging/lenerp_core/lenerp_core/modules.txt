@@ -1,1 +1,1 @@
-LenERP Core
+lenerp_core
