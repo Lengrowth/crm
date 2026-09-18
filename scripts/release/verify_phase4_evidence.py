@@ -82,6 +82,29 @@ def _request(url: str, token: str) -> urllib.request.Request:
     )
 
 
+class _ArtifactRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Do not forward the GitHub bearer token to signed artifact storage."""
+
+    def redirect_request(
+        self,
+        req: urllib.request.Request,
+        fp: Any,
+        code: int,
+        msg: str,
+        headers: Any,
+        newurl: str,
+    ):
+        redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if redirected is None:
+            return None
+        source_host = urllib.parse.urlsplit(req.full_url).netloc
+        target_host = urllib.parse.urlsplit(newurl).netloc
+        if source_host != target_host:
+            redirected.headers.pop("Authorization", None)
+            redirected.unredirected_hdrs.pop("Authorization", None)
+        return redirected
+
+
 def read_json(url: str, token: str) -> dict[str, Any]:
     with urllib.request.urlopen(_request(url, token), timeout=30) as response:
         payload = json.loads(response.read().decode("utf-8"))
@@ -91,7 +114,8 @@ def read_json(url: str, token: str) -> dict[str, Any]:
 
 
 def read_artifact(artifact: dict[str, Any], token: str) -> dict[str, Any]:
-    with urllib.request.urlopen(_request(artifact["archive_download_url"], token), timeout=60) as response:
+    opener = urllib.request.build_opener(_ArtifactRedirectHandler)
+    with opener.open(_request(artifact["archive_download_url"], token), timeout=60) as response:
         archive = response.read()
     with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
         files = {name.rsplit("/", 1)[-1]: name for name in bundle.namelist()}
