@@ -56,8 +56,35 @@ def _ensure_warehouse_types() -> None:
         )
 
 
+def _ensure_party_defaults() -> None:
+    """Provide the minimal ERPNext party masters used by synthetic customers."""
+    if not _exists("Customer Group", "All Customer Groups"):
+        _insert(
+            "Customer Group",
+            "All Customer Groups",
+            {"customer_group_name": "All Customer Groups", "is_group": 1},
+        )
+    if not _exists("Customer Group", "Commercial"):
+        _insert(
+            "Customer Group",
+            "Commercial",
+            {
+                "customer_group_name": "Commercial",
+                "parent_customer_group": "All Customer Groups",
+                "is_group": 0,
+            },
+        )
+    if not _exists("Territory", "All Territories"):
+        _insert(
+            "Territory",
+            "All Territories",
+            {"territory_name": "All Territories", "is_group": 1},
+        )
+
+
 def _company() -> str:
     _ensure_warehouse_types()
+    _ensure_party_defaults()
     return _insert(
         "Company",
         DEMO_COMPANY,

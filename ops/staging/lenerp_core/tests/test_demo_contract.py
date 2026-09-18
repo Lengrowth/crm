@@ -37,6 +37,12 @@ def test_seed_is_explicit_and_reset_is_demo_prefix_scoped():
     assert "def status()" in seed
     assert "bench --site <staging-site> execute" in seed
     assert "DEMO-CHAMPION-" in seed
+    assert '"Warehouse Type"' in seed
+    assert '"Transit"' in seed
+    assert '"Customer Group"' in seed
+    assert '"Commercial"' in seed
+    assert '"Territory"' in seed
+    assert '"All Territories"' in seed
     assert "real_data" not in seed.lower()
 
 
@@ -45,3 +51,19 @@ def test_dashboard_api_states_persisted_source_and_real_data_boundary():
     assert "source\": \"persisted ERPNext records\"" in api
     assert "real_data_authorized\": False" in api
     assert "frappe.get_all" in api
+
+
+def test_persisted_doctypes_have_python_modules():
+    for doctype_dir in DOCTYPE_ROOT.iterdir():
+        if not doctype_dir.is_dir() or doctype_dir.name.startswith("__"):
+            continue
+        assert (doctype_dir / f"{doctype_dir.name}.json").exists()
+        assert (doctype_dir / f"{doctype_dir.name}.py").exists(), doctype_dir.name
+
+
+def test_workflow_metadata_is_prepared_before_migration():
+    hooks = (ROOT / "lenerp_core" / "hooks.py").read_text(encoding="utf-8")
+    install = (ROOT / "lenerp_core" / "install.py").read_text(encoding="utf-8")
+    assert 'before_migrate = "lenerp_core.install.before_migrate"' in hooks
+    assert '"Workflow State"' in install
+    assert '"Workflow Action Master"' in install

@@ -335,7 +335,7 @@ jobs:
           TARGET_REF: ${{ steps.candidate.outputs.sha }}
           RELEASE_ID: ${{ steps.candidate.outputs.sha }}
           CUSTOM_APP_VERSION: "0.2.0"
-          CUSTOM_APP_COMMIT: "f8427b1e8a50dd4712056d9af8ccd073123930fa"
+          CUSTOM_APP_COMMIT: "be82b982cf8ced73b73fa595a0737751dc8fc049"
           REQUIRE_AUTH_SMOKE: "true"
         run: ./scripts/deploy/deploy_saas_control.sh
 
