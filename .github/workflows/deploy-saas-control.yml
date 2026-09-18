@@ -78,11 +78,11 @@ jobs:
         with:
           repository: Len-OS/lenerp_core
           ref: ${{ inputs.custom_app_ref || 'main' }}
-          path: ${{ runner.temp }}/lenerp-core-source
+          path: staging-lenerp-core-source
           fetch-depth: 0
 
       - name: Validate the exact LenERP Core app
-        working-directory: ${{ runner.temp }}/lenerp-core-source
+        working-directory: ${{ github.workspace }}/staging-lenerp-core-source
         run: |
           python3 -m compileall -q lenerp_core
           python3 -m pytest -q
@@ -319,14 +319,14 @@ jobs:
           DEPLOY_TARGET: staging
           TARGET_REF: ${{ steps.candidate.outputs.sha }}
           RELEASE_ID: ${{ steps.candidate.outputs.sha }}
-          CUSTOM_APP_REPO: ${{ runner.temp }}/lenerp-core-source
+          CUSTOM_APP_REPO: ${{ github.workspace }}/staging-lenerp-core-source
           CUSTOM_APP_REF: HEAD
           REQUIRE_AUTH_SMOKE: "true"
         run: ./scripts/deploy/deploy_saas_control.sh
 
       - name: Install and migrate the exact custom app on ERP staging
         env:
-          CUSTOM_APP_REPO: ${{ runner.temp }}/lenerp-core-source
+          CUSTOM_APP_REPO: ${{ github.workspace }}/staging-lenerp-core-source
         run: |
           sudo rsync -a --delete --exclude='.git' "$CUSTOM_APP_REPO/" /opt/frappe-staging-bench/apps/lenerp_core/
           sudo chown -R frappe:frappe /opt/frappe-staging-bench/apps/lenerp_core
