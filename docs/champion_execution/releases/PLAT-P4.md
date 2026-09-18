@@ -1,6 +1,6 @@
 # PLAT-P4 — Onboarding and Durable Provisioning Release Record
 
-Status: **PASS — exact-candidate staging evidence and protected production promotion completed**
+Status: **REVIEW FAIL — the cited Phase 4 evidence was produced after the protected production promotion, and the old materializer bypassed evidence verification for an already-materialized candidate**
 Release identity: `PLAT-P4`
 Record date: 2026-09-18
 Operator: Codex, working with the delivery owner
@@ -118,6 +118,23 @@ promotion explicitly writes every Phase 4 flag to off.
 
 ## Staging and production evidence
 
+### Reconciliation correction
+
+The previous record is not an acceptable Phase 4 gate result. Protected
+production promotion run `35370954773` started at `16:51:40Z` and completed at
+`16:54:33Z`, while the cited exact synthetic run `35371519119` started at
+`16:57:38Z`. The earlier candidate staging run `35370737638` had browser
+evidence but no `phase4-synthetic-evidence-*` artifact. In addition, the old
+`materialize_production_candidate.sh` verified Phase 4 evidence only when the
+source candidate had to be built; an existing production candidate was
+accepted from a generic `.staging-smoke-passed` marker. Therefore the prior
+promotion cannot be credited as having passed the exact Phase 4 synthetic
+evidence gate.
+
+The gate remains open until this record is replaced with a newly protected
+promotion whose candidate-bound success-and-recovery artifact completed before
+the promotion request.
+
 The guarded workflow was run against the exact promoted release candidate with
 `phase4_synthetic_state=on` in staging:
 
@@ -154,4 +171,5 @@ not staged, reset, or overwritten. Rollback remains available through the
 immutable `current`/`previous` release pointers, with the prior production
 release retained as `82e7b4e3600aedf37d24dbb9273a3dba408a0746`.
 
-Final verdict: **PLAT-P4: PASS**.
+Final verdict: **PLAT-P4 REVIEW: FAIL** — remediation and a newly protected,
+chronologically ordered promotion are required.
