@@ -39,6 +39,17 @@ The CRM working-tree changes in `CLAUDE.md`,
 `frontend/tsconfig.tsbuildinfo`, `POST_PROGRAM_FEATURES_AND_CONTROLS.md`, and
 `UX_SCREEN_BLUEPRINT.md` were present before this audit and remain untouched.
 
+## Revalidation after concurrent branch movement
+
+During continuation, the active CRM checkout moved to
+`codex/plat-p4-readback-docs` and the authoritative `Lengrowth/crm` `main`
+advanced to `4a63264e1e8cb7c998c767262a6e1022647ff7b0`. The Phase 5 commits
+were cherry-picked onto the active branch without conflicts. The `lenerp_core`
+implementation remains the independent commit `ed551dc` on
+`codex/champ-c01-r1`; no production pointer, upstream tree, or Champion data
+was changed. The earlier `0822400…` value remains the point-in-time baseline
+used when this audit was first written, not the current remote head.
+
 ## Entry findings
 
 ### Available
