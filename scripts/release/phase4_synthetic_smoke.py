@@ -152,7 +152,7 @@ def main() -> int:
     request_id: str | None = None
     site_id: str | None = None
     exit_code = 1
-    admin_email = f"phase4-admin-{run_id}@example.test"
+    admin_email = f"phase4-admin-{run_id}@acmephase4.com"
     evidence: dict[str, object] = {"status": "failed", "run_id": run_id, "started_at": datetime.now(timezone.utc).isoformat()}
     try:
         payload = {
