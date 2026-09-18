@@ -91,6 +91,9 @@ jobs:
         with:
           node-version: 22.13.1
 
+      - name: Reclaim only the disposable npm cache on the staging runner
+        run: npm cache clean --force
+
       - name: Scan tracked and untracked candidate inputs for credential patterns
         run: python3 scripts/release/secret_scan.py
 
