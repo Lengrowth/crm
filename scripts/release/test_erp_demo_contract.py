@@ -19,6 +19,7 @@ def test_erp_demo_smoke_is_staging_only_and_explicitly_seeded():
 def test_staging_smoke_defaults_to_the_synthetic_demo_app_version():
     script = (ROOT / "scripts" / "release" / "erp_staging_smoke.sh").read_text(encoding="utf-8")
     assert "EXPECTED_CUSTOM_APP_VERSION:-0.2.0" in script
+    assert "after 60s" in script
 
 
 def test_staging_workflow_verifies_the_installed_custom_app_candidate():

@@ -22,11 +22,20 @@ for unit in \
 done
 echo "ERP staging services passed"
 
+wait_for_loopback_port() {
+  local port="$1"
+  for attempt in $(seq 1 30); do
+    if ss -ltn | grep -Eq "127\.0\.0\.1:${port}[[:space:]]"; then
+      return 0
+    fi
+    sleep 2
+  done
+  echo "ERP staging port is not listening on loopback after 60s: $port" >&2
+  return 1
+}
+
 for port in 14100 14101 28000; do
-  ss -ltn | grep -Eq "127\.0\.0\.1:${port}[[:space:]]" || {
-    echo "ERP staging port is not listening on loopback: $port" >&2
-    exit 1
-  }
+  wait_for_loopback_port "$port" || exit 1
 done
 echo "ERP staging ports passed"
 
