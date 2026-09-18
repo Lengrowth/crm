@@ -50,6 +50,22 @@ implementation remains the independent commit `ed551dc` on
 was changed. The earlier `0822400…` value remains the point-in-time baseline
 used when this audit was first written, not the current remote head.
 
+### Deployed Project Start recheck (2026-09-18)
+
+The deployed workspace route is reachable at
+`https://champion-forecast.vercel.app/project-start`. Its client-generated
+shared-link route produced a public export at the inspected link, but the
+export is the unanswered seed rather than a Champion-approved record:
+
+- revision `0`, updated `2026-09-09`, with all four phases `not_ready`;
+- no data sources recorded and `84` generated blockers;
+- no completed agreement, organization, branding, migration, or go-live
+  decisions were available in the export.
+
+This confirms that the deployed questionnaire is available, not that Project
+Start has been completed. No answer values were copied into CRM and no
+Project Start data was changed during the recheck.
+
 ## Entry findings
 
 ### Available
