@@ -174,9 +174,11 @@ def main() -> int:
             "implementation_notes": "Synthetic Phase 4 staging smoke; no Champion data.",
         }
         status, created = request(base_url, "POST", "/public/onboarding-requests", payload={"idempotency_key": f"phase4-{run_id}", "payload": payload})
+        if created.get("request_id"):
+            request_id = str(created["request_id"])
         if status not in (200, 201) or not created.get("request_id") or not created.get("management_token"):
-            raise RuntimeError("public synthetic onboarding request was not accepted")
-        request_id = str(created["request_id"])
+            detail = created.get("detail") or created.get("message") or "no response detail"
+            raise RuntimeError(f"public synthetic onboarding request was not accepted (HTTP {status}: {detail})")
         management_token = str(created["management_token"])
         status, _ = request(base_url, "POST", f"/public/onboarding-requests/{request_id}/submit", onboarding_token=management_token)
         if status != 200:
