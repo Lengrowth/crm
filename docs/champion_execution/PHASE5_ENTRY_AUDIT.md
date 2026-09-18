@@ -102,10 +102,11 @@ Project Start data was changed during the recheck.
   port 22. No production change was attempted.
 - `lenerp_core` had no DocTypes, fixtures, patches, hooks, roles, workspaces,
   reports, print formats, or tests before the C01 foundation slice.
-- The proposal question source mismatch was corrected in
-  `champion-forecast` commit `9d6975e`: the source now carries the canonical
-  `$30,000` and `$55/hour` values directly, the runtime normalization was
-  removed, and a regression test prevents the stale literals from returning.
+- The proposal and Project Start commercial-source mismatch was corrected in
+  `champion-forecast` commits `9d6975e` and `8243b87`: source, UI, and the
+  implementation specification now carry the canonical `$30,000` and
+  `$55/hour` values directly, the runtime normalization was removed, and
+  regression tests prevent the stale literals from returning.
 
 ## Current package disposition
 
