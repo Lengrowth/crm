@@ -174,25 +174,35 @@ def _core_records(company: str) -> dict[str, list[str]]:
         ("DEMO-JOB-004", customer_names[0], well_names[0], "Maintenance", "Planned", 10, "Unassigned", "Routine annual service; confirm parts before scheduling."),
     )
     for name, customer, well, job_type, status, offset, crew, notes in jobs:
-        job_names.append(
-            _insert(
-                "LenERP Drilling Job",
-                name,
-                {
-                    "customer": customer,
-                    "well_site": well,
-                    "job_type": job_type,
-                    "status": status,
-                    "workflow_state": status,
-                    "scheduled_date": add_days(today(), offset),
-                    "assigned_personnel": crew,
-                    "priority": "High" if status == "In Progress" else "Routine",
-                    "work_notes": notes,
-                    "completion_details": notes if status == "Completed" else None,
-                    "completed_on": add_days(today(), offset) if status == "Completed" else None,
-                },
-            )
+        job_name = _insert(
+            "LenERP Drilling Job",
+            name,
+            {
+                "customer": customer,
+                "well_site": well,
+                "job_type": job_type,
+                # Workflow validation requires a new document to start in its
+                # configured initial state. The final synthetic snapshot is
+                # applied below through the database API, preserving the
+                # production workflow transitions for interactive edits.
+                "status": "Planned",
+                "workflow_state": "Planned",
+                "scheduled_date": add_days(today(), offset),
+                "assigned_personnel": crew,
+                "priority": "High" if status == "In Progress" else "Routine",
+                "work_notes": notes,
+                "completion_details": notes if status == "Completed" else None,
+                "completed_on": add_days(today(), offset) if status == "Completed" else None,
+            },
         )
+        if status != "Planned":
+            frappe.db.set_value(
+                "LenERP Drilling Job",
+                job_name,
+                {"status": status, "workflow_state": status},
+                update_modified=False,
+            )
+        job_names.append(job_name)
 
     return {"customers": customer_names, "contacts": contact_names, "wells": well_names, "jobs": job_names}
 
