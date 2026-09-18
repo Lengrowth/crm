@@ -391,7 +391,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-            name: staging-browser-evidence-${{ steps.candidate.outputs.sha }}
+          name: staging-browser-evidence-${{ steps.candidate.outputs.sha }}
           path: staging-browser-evidence
           if-no-files-found: error
           retention-days: 30
