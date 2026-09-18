@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.integrations.erpnext_client import ERPNextClient
+from app.integrations.mock_erpnext import MockERPNextClient
 from app.integrations.erpnext_runtime import get_erpnext_client
 from app.models.domain import (
     FirstLoginHandoff,
@@ -75,9 +76,14 @@ def run_next_job(session: Session, client: Optional[ERPNextClient] = None, max_a
     job = provisioning_service.claim_next_job(session, worker_id, lease_seconds=120)
     if job is None:
         return None
-    erp_client = client or get_erpnext_client()
     if job.workflow_version == "phase4-1":
+        isolation = job.target_isolation_json or {}
+        if job.target_environment == "staging" and isolation.get("lane") == "isolated_synthetic":
+            erp_client = client or MockERPNextClient()
+        else:
+            erp_client = client or get_erpnext_client()
         return _run_phase4_job(session, job, erp_client, worker_id)
+    erp_client = client or get_erpnext_client()
     return _run_legacy_job(session, job, erp_client, worker_id, max_attempts)
 
 

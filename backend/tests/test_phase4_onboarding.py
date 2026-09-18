@@ -106,7 +106,7 @@ def test_approval_conversion_and_durable_synthetic_provisioning():
         assert provisioning_service.claim_next_job(session, "worker-two") is None
         first_claim.status, first_claim.worker_id, first_claim.lease_expires_at = "queued", None, None
         session.commit()
-        completed = run_next_job(session, client=MockERPNextClient())
+        completed = run_next_job(session)
         assert completed is not None and completed.status == "success"
         request = session.get(OnboardingRequest, created.request_id)
         assert request is not None and request.state == "ready"

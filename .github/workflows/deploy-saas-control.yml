@@ -180,33 +180,43 @@ jobs:
         env:
           RUN_ID: phase4-${{ github.run_id }}
         run: |
-          token_file="$RUNNER_TEMP/saas-staging-phase4-token"
-          sudo install -m 600 -o "$(id -u)" -g "$(id -g)" /run/saas-control-staging/smoke/auth-token "$token_file"
-          trap 'rm -f -- "$token_file"' EXIT
-          PYTHONPATH=/opt/saas-control-staging/current/backend \
+          set -a
+          . /opt/saas-control-staging/shared/env/staging-backend.env
+          set +a
+          token_file=/run/saas-control-staging/smoke/auth-token
+          evidence_file="/tmp/phase4-synthetic-evidence-${RUN_ID}.json"
+          trap 'sudo rm -f -- "$evidence_file"' EXIT
+          sudo -n -E -u saas-staging env \
+            PYTHONPATH=/opt/saas-control-staging/current/backend \
             /opt/saas-control-staging/shared/backend-venv/bin/python \
             /opt/saas-control-staging/current/scripts/release/phase4_synthetic_smoke.py \
             --base-url http://127.0.0.1:18001 \
             --admin-token-file "$token_file" \
             --run-id "$RUN_ID" \
-            --output "$GITHUB_WORKSPACE/phase4-synthetic-evidence.json"
+            --output "$evidence_file"
+          sudo install -m 644 -o "$(id -u)" -g "$(id -g)" "$evidence_file" "$GITHUB_WORKSPACE/phase4-synthetic-evidence.json"
 
       - name: Run controlled Phase 4 failure and recovery smoke
         if: ${{ (inputs.phase4_synthetic_state || 'off') == 'on' }}
         env:
           RUN_ID: phase4-recovery-${{ github.run_id }}
         run: |
-          token_file="$RUNNER_TEMP/saas-staging-phase4-recovery-token"
-          sudo install -m 600 -o "$(id -u)" -g "$(id -g)" /run/saas-control-staging/smoke/auth-token "$token_file"
-          trap 'rm -f -- "$token_file"' EXIT
-          PYTHONPATH=/opt/saas-control-staging/current/backend \
+          set -a
+          . /opt/saas-control-staging/shared/env/staging-backend.env
+          set +a
+          token_file=/run/saas-control-staging/smoke/auth-token
+          evidence_file="/tmp/phase4-synthetic-recovery-evidence-${RUN_ID}.json"
+          trap 'sudo rm -f -- "$evidence_file"' EXIT
+          sudo -n -E -u saas-staging env \
+            PYTHONPATH=/opt/saas-control-staging/current/backend \
             /opt/saas-control-staging/shared/backend-venv/bin/python \
             /opt/saas-control-staging/current/scripts/release/phase4_synthetic_smoke.py \
             --base-url http://127.0.0.1:18001 \
             --admin-token-file "$token_file" \
             --run-id "$RUN_ID" \
             --failure-step health_checks \
-            --output "$GITHUB_WORKSPACE/phase4-synthetic-recovery-evidence.json"
+            --output "$evidence_file"
+          sudo install -m 644 -o "$(id -u)" -g "$(id -g)" "$evidence_file" "$GITHUB_WORKSPACE/phase4-synthetic-recovery-evidence.json"
 
       - name: Upload non-secret Phase 4 synthetic evidence
         if: ${{ always() && (inputs.phase4_synthetic_state || 'off') == 'on' }}

@@ -1,0 +1,20 @@
+[Unit]
+Description=LenERP SaaS staging control-plane provisioning worker
+After=network-online.target saas-control-staging-backend.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=saas-staging
+Group=saas-staging
+WorkingDirectory=/opt/saas-control-staging/current/backend
+EnvironmentFile=/opt/saas-control-staging/shared/env/staging-backend.env
+Environment=PROVISIONING_WORKER_POLL_SECONDS=2
+ExecStart=/opt/saas-control-staging/shared/backend-venv/bin/python -m app.workers.provisioning_loop
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
