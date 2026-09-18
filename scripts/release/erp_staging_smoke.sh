@@ -7,6 +7,7 @@ BASE_URL="${BASE_URL:-http://127.0.0.1:28000}"
 HOST_HEADER="${HOST_HEADER:-$SITE}"
 EXPECTED_FRAPPE_COMMIT="${EXPECTED_FRAPPE_COMMIT:-edae775dd36b6c4ad7acab10230262bd74040765}"
 EXPECTED_ERPNEXT_COMMIT="${EXPECTED_ERPNEXT_COMMIT:-945e825bee3d0d645f6cb59bcaab90fcbfb98ce3}"
+EXPECTED_CUSTOM_APP_VERSION="${EXPECTED_CUSTOM_APP_VERSION:-0.1.0}"
 
 for unit in \
   frappe-staging-redis-cache.service \
@@ -52,7 +53,7 @@ grep -Eq '^erpnext[[:space:]]+15\.120\.0([[:space:]]|$)' <<<"$apps" || {
   echo "staging ERPNext version mismatch" >&2
   exit 1
 }
-grep -Eq '^lenerp_core[[:space:]]+0\.1\.0([[:space:]]|$)' <<<"$apps" || {
+grep -Eq "^lenerp_core[[:space:]]+${EXPECTED_CUSTOM_APP_VERSION}([[:space:]]|$)" <<<"$apps" || {
   echo "staging custom app is not installed" >&2
   exit 1
 }
