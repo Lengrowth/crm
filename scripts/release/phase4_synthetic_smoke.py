@@ -23,7 +23,7 @@ from pathlib import Path
 from sqlalchemy import select
 
 from app.db.session import SessionLocal
-from app.integrations.erpnext_runtime import get_erpnext_client
+from app.integrations.mock_erpnext import MockERPNextClient
 from app.models.domain import (
     DomainMapping,
     FirstLoginHandoff,
@@ -132,7 +132,7 @@ def cleanup(request_id: str, admin_email: str, site_id: str | None) -> dict[str,
         counts["synthetic_admins"] = session.query(SaaSUser).filter(SaaSUser.email == admin_email).delete(synchronize_session=False)
         session.commit()
         if site_id:
-            client = get_erpnext_client()
+            client = MockERPNextClient()
             result = client.delete_site(site_id)
             if result.get("status") not in {"success", "not_found"}:
                 raise RuntimeError("synthetic isolated site cleanup did not complete")
