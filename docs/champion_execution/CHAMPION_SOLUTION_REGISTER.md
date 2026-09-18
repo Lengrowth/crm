@@ -19,6 +19,23 @@ Champion-specific modules, pages, workflows, configuration, reports, and forms a
 
 The register is the initial decomposition. Add a new package only when a requirement cannot be safely accepted within an existing package. New modules or materially new features must also receive the required commercial classification and written approval.
 
+## Phase 5 package release mapping
+
+| Package | Release identity | Current state | Evidence/next gate |
+|---|---|---|---|
+| C01 | `CHAMP-C01-R1` | In development | Value-free `lenerp_core` foundation; see `releases/CHAMP-C01-R1.md` |
+| C02 | `CHAMP-C02-R1` | Blocked | Await `AGR-02`, `ORG-02`–`ORG-06` |
+| C03 | `CHAMP-C03-R1` | Defined, synthetic-only | Historical PLAT-P3 evidence does not equal Champion acceptance |
+| C04 | `CHAMP-C04-R1` | Blocked | Await Site/Well and Well Mapping decisions |
+| C05 | `CHAMP-C05-R1` | Blocked | Await approved job types, states, transitions, and assignments |
+| C06 | `CHAMP-C06-R1` | Blocked | Await warehouses, items, stock, asset, and maintenance decisions |
+| C07 | `CHAMP-C07-R1` | Blocked | Await accounting boundary, chart, tax, payment, and approval decisions |
+| C08 | `CHAMP-C08-R1` | Blocked | Await approved metrics, report sources, forms, alerts, and prints |
+
+Each identity is independently reviewable. A later revision such as
+`CHAMP-C04-R2` is required when approved requirements or accepted behavior
+change; no `PLAT-P5` identity exists.
+
 ## Package record template
 
 Copy this section for each implementation/release of a package.
