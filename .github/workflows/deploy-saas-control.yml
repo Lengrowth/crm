@@ -181,12 +181,13 @@ jobs:
         run: |
           db_root_username="saas_phase4_bench"
           db_root_password="$(openssl rand -hex 32)"
+          mariadb_socket_admin="false"
           if [[ -n "${STAGING_MARIADB_ROOT_PASSWORD:-}" ]]; then
             mariadb_root_username="${STAGING_MARIADB_ROOT_USERNAME:-root}"
             mariadb_root_password="$STAGING_MARIADB_ROOT_PASSWORD"
           else
-            mariadb_root_credential="$(sudo python3 - <<'PY'
-          from configparser import ConfigParser
+            if mariadb_root_credential="$(sudo python3 - <<'PY'
+          from configparser import ConfigParser, Error as ConfigParserError
           import json
           from pathlib import Path
 
@@ -207,7 +208,7 @@ jobs:
               if not path.is_file():
                   continue
               try:
-                  if path.name == '.my.cnf':
+                  if path.suffix == '.cnf':
                       parser = ConfigParser()
                       parser.read(path)
                       for section in ('client', 'mysql', 'mariadb'):
@@ -223,15 +224,26 @@ jobs:
                               username = payload.get('root_username', 'root') if isinstance(payload, dict) else 'root'
                               print(f"{username}\t{value}")
                               raise SystemExit(0)
-              except (OSError, ValueError, json.JSONDecodeError):
+              except (OSError, ValueError, ConfigParserError, json.JSONDecodeError):
                   continue
           raise SystemExit('No protected staging MariaDB root credential was found.')
           PY
-            )"
-            IFS=$'\t' read -r mariadb_root_username mariadb_root_password <<< "$mariadb_root_credential"
+            )"; then
+              IFS=$'\t' read -r mariadb_root_username mariadb_root_password <<< "$mariadb_root_credential"
+            elif sudo -n -u mysql mariadb --protocol=socket --batch --skip-column-names -e 'SELECT 1' >/dev/null 2>&1; then
+              mariadb_socket_admin="true"
+            else
+              echo "No protected staging MariaDB root credential or Unix-socket admin was available." >&2
+              exit 1
+            fi
           fi
-          [[ -n "$mariadb_root_username" && -n "$mariadb_root_password" ]] || { echo "Staging MariaDB root credential is unavailable" >&2; exit 1; }
-          sudo -n env MYSQL_PWD="$mariadb_root_password" mariadb --protocol=socket --user="$mariadb_root_username" --batch <<SQL
+          if [[ "$mariadb_socket_admin" == "true" ]]; then
+            run_mariadb_admin() { sudo -n -u mysql mariadb --protocol=socket --batch; }
+          else
+            [[ -n "$mariadb_root_username" && -n "$mariadb_root_password" ]] || { echo "Staging MariaDB root credential is unavailable" >&2; exit 1; }
+            run_mariadb_admin() { sudo -n env MYSQL_PWD="$mariadb_root_password" mariadb --protocol=socket --user="$mariadb_root_username" --batch; }
+          fi
+          run_mariadb_admin <<SQL
           CREATE USER IF NOT EXISTS '${db_root_username}'@'localhost' IDENTIFIED BY '${db_root_password}';
           CREATE USER IF NOT EXISTS '${db_root_username}'@'%' IDENTIFIED BY '${db_root_password}';
           ALTER USER '${db_root_username}'@'localhost' IDENTIFIED BY '${db_root_password}';
