@@ -164,7 +164,10 @@ def phase4_cleanup_evidence() -> dict[str, object]:
         "tenants": "SELECT count(*) FROM tenants WHERE id IN (SELECT tenant_id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%');",
         "projects": "SELECT count(*) FROM implementation_projects WHERE id IN (SELECT implementation_project_id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%');",
         "tasks": "SELECT count(*) FROM implementation_tasks WHERE implementation_project_id IN (SELECT implementation_project_id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%');",
-        "domains": "SELECT count(*) FROM domain_mappings WHERE tenant_id IN (SELECT tenant_id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%');",
+        # DomainMapping.__tablename__ is "domains". Keep this counter aligned
+        # with the deployed schema so production readback can prove zero
+        # surviving Phase 4 domain records instead of returning null.
+        "domains": "SELECT count(*) FROM domains WHERE tenant_id IN (SELECT tenant_id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%');",
         "organization_modules": "SELECT count(*) FROM organization_modules WHERE organization_id IN (SELECT organization_id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%') AND source_type = 'onboarding';",
         "module_entitlement_audits": "SELECT count(*) FROM module_entitlement_audits WHERE organization_id IN (SELECT organization_id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%') AND source_type = 'onboarding';",
         "module_application_statuses": "SELECT count(*) FROM module_application_statuses WHERE tenant_id IN (SELECT tenant_id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%');",
@@ -181,7 +184,10 @@ def phase4_cleanup_evidence() -> dict[str, object]:
         result = subprocess.run(["sqlite3", database_path, sql], check=False, capture_output=True, text=True)
         value = result.stdout.strip()
         counts[key] = int(value) if result.returncode == 0 and value.isdigit() else None
-    counts["all_remaining_counts_zero"] = all(value == 0 for value in counts.values() if isinstance(value, int)) and all(value is not None for value in counts.values())
+    counts["all_remaining_counts_zero"] = all(
+        isinstance(value, int) and not isinstance(value, bool) and value == 0
+        for value in counts.values()
+    )
     counts["database_path_exposed"] = False
     return {"available": True, "counts": counts}
 
