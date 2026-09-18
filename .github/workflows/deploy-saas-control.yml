@@ -68,6 +68,19 @@ jobs:
           [[ "$candidate_sha" =~ ^[0-9a-f]{40}$ ]] || { echo "Candidate checkout is not a commit: $candidate_sha" >&2; exit 1; }
           echo "sha=$candidate_sha" >> "$GITHUB_OUTPUT"
 
+      - name: Verify the commit-pinned LenERP Core staging bundle
+        run: |
+          test "$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)" = "b9343ac1eb95bc44b8f4bb2254e77047ade645e3"
+          python3 -m compileall -q ops/staging/lenerp_core/lenerp_core
+          python3 - <<'PY'
+          import tomllib
+          from pathlib import Path
+          version = tomllib.loads(Path('ops/staging/lenerp_core/pyproject.toml').read_text(encoding='utf-8'))['project']['version']
+          if version != '0.2.0':
+              raise SystemExit(f'Unexpected bundled lenerp_core version: {version}')
+          print(f'Bundled lenerp_core {version} validated')
+          PY
+
       - name: Make release scripts executable
         run: chmod +x scripts/release/*.sh scripts/deploy/*.sh
 
@@ -304,6 +317,16 @@ jobs:
           CUSTOM_APP_COMMIT: "b9343ac1eb95bc44b8f4bb2254e77047ade645e3"
           REQUIRE_AUTH_SMOKE: "true"
         run: ./scripts/deploy/deploy_saas_control.sh
+
+      - name: Install and migrate the exact custom app from the pinned staging bundle
+        run: |
+          sudo rsync -a --delete --exclude='.git' ops/staging/lenerp_core/ /opt/frappe-staging-bench/apps/lenerp_core/
+          sudo chown -R frappe:frappe /opt/frappe-staging-bench/apps/lenerp_core
+          if ! sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test list-apps | grep -Eq '^lenerp_core[[:space:]]'"; then
+            sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test install-app lenerp_core"
+          fi
+          sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test migrate"
+          sudo systemctl restart frappe-staging-web.service frappe-staging-worker-short.service frappe-staging-schedule.service
 
       - name: Verify the dedicated ERP staging bench and queues
         run: sudo scripts/release/erp_staging_smoke.sh
