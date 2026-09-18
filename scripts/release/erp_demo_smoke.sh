@@ -29,6 +29,7 @@ grep -q 'DEMO-CHAMPION-' <<<"$seed_output" || { echo "demo seed returned no demo
 grep -q 'LenERP Drilling Job' <<<"$status_output" || { echo "demo status did not include jobs" >&2; exit 1; }
 
 echo "ERP synthetic demonstration seed passed for ${SITE}"
+echo "$seed_output"
 echo "$status_output"
 
 if [[ "$KEEP_DEMO" != "1" ]]; then

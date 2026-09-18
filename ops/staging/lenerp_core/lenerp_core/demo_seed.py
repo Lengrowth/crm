@@ -307,7 +307,7 @@ def seed() -> dict[str, Any]:
     frappe.db.commit()
     result = {"company": company, **core, **commercial, **inventory}
     result["counts"] = {key: len(value) if isinstance(value, list) else 1 for key, value in result.items() if key != "company"}
-    print(f"{DEMO_PREFIX} synthetic seed complete")
+    print(f"{DEMO_PREFIX} synthetic seed complete counts={frappe.as_json(result['counts'])}")
     return result
 
 
@@ -349,20 +349,23 @@ def reset() -> dict[str, int]:
 def status() -> dict[str, Any]:
     """Return persisted demo counts for runbook evidence."""
     # Several ERPNext doctypes intentionally derive ``name`` from a series or
-    # a business field. Count using the persisted synthetic identifiers and
-    # links instead of assuming every document name starts with DEMO-.
-    prefix = f"{DEMO_PREFIX}%"
+    # a business field. Read the persisted business fields and count only
+    # values carrying the synthetic identifier.
+    def count_field(doctype: str, fieldname: str) -> int:
+        rows = frappe.get_all(doctype, fields=[fieldname], limit_page_length=0)
+        return sum(str(row.get(fieldname) or "").startswith(DEMO_PREFIX) for row in rows)
+
     result = {
         "Company": int(_exists("Company", DEMO_COMPANY)),
-        "Customer": frappe.db.count("Customer", {"customer_name": ["like", prefix]}),
-        "Contact": frappe.db.count("Contact", {"first_name": ["like", prefix]}),
-        "LenERP Well Site": frappe.db.count("LenERP Well Site", {"customer": ["like", prefix]}),
-        "LenERP Drilling Job": frappe.db.count("LenERP Drilling Job", {"customer": ["like", prefix]}),
-        "Supplier": frappe.db.count("Supplier", {"supplier_name": ["like", prefix]}),
-        "Item": frappe.db.count("Item", {"item_code": ["like", prefix]}),
-        "Quotation": frappe.db.count("Quotation", {"party_name": ["like", prefix]}),
-        "Sales Invoice": frappe.db.count("Sales Invoice", {"customer": ["like", prefix]}),
-        "Payment Entry": frappe.db.count("Payment Entry", {"party": ["like", prefix]}),
-        "Asset": frappe.db.count("Asset", {"asset_name": ["like", prefix]}),
+        "Customer": count_field("Customer", "customer_name"),
+        "Contact": count_field("Contact", "first_name"),
+        "LenERP Well Site": count_field("LenERP Well Site", "customer"),
+        "LenERP Drilling Job": count_field("LenERP Drilling Job", "customer"),
+        "Supplier": count_field("Supplier", "supplier_name"),
+        "Item": count_field("Item", "item_code"),
+        "Quotation": count_field("Quotation", "party_name"),
+        "Sales Invoice": count_field("Sales Invoice", "customer"),
+        "Payment Entry": count_field("Payment Entry", "party"),
+        "Asset": count_field("Asset", "asset_name"),
     }
     return result

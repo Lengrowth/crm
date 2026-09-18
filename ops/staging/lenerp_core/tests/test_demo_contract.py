@@ -44,8 +44,8 @@ def test_seed_is_explicit_and_reset_is_demo_prefix_scoped():
     assert '"Territory"' in seed
     assert '"All Territories"' in seed
     assert 'DEMO-CHAMPION-North Ridge Farm' in seed
-    assert '"customer_name": ["like", prefix]' in seed
-    assert '"asset_name": ["like", prefix]' in seed
+    assert "frappe.as_json(result['counts'])" in seed
+    assert "def count_field(doctype: str, fieldname: str)" in seed
     assert 'Reconcile scalar fields' in seed
     assert 'frappe.db.set_value(doctype, name, field, value' in seed
     assert '"workflow_state": "Planned"' in seed
