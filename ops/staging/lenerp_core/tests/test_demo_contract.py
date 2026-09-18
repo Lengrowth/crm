@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).parents[1]
-DOCTYPE_ROOT = ROOT / "lenerp_core" / "len_erp_core" / "doctype"
+DOCTYPE_ROOT = ROOT / "lenerp_core" / "lenerp_core" / "doctype"
 
 
 def read_doctype(name: str) -> dict:
