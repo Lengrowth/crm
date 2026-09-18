@@ -141,8 +141,9 @@ def _run_phase4_job(session: Session, job: ProvisioningJob, client: ERPNextClien
         except LeaseLost:
             session.rollback()
             return session.get(ProvisioningJob, job.id) or job
-        except Exception:
-            return _handle_step_failure(session, job, step, worker_id, StepFailure("The provisioning step failed safely; inspect the sanitized event history.", "manual_recovery"))
+        except Exception as exc:
+            detail = sanitize_value(str(exc))
+            return _handle_step_failure(session, job, step, worker_id, StepFailure(f"{type(exc).__name__}: {detail}", "manual_recovery"))
     return _finish_phase4(session, job, request, tenant, worker_id, lease_token)
 
 
@@ -183,7 +184,7 @@ def _run_step(session: Session, job: ProvisioningJob, step: ProvisioningStep, re
         if not site_id:
             result = client.create_site(request.organization_id or "", tenant.id, {"domain": f"{job.target_isolation_json.get('site_namespace', tenant.tenant_slug)}.example.test", "idempotency_key": f"phase4:{job.id}"})
             if result.get("status") != "success" or not result.get("site_id"):
-                raise StepFailure("The isolated site could not be created.", "retryable")
+                raise StepFailure(f"The isolated site could not be created: {sanitize_value(result.get('error') or 'provider rejected site creation')}", "retryable")
             site_id = str(result["site_id"])
             refs["site_id"] = site_id
             refs["site_name"] = str(result.get("site_name") or "")

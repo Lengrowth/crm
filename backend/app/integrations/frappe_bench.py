@@ -38,6 +38,7 @@ class FrappeBenchERPNextClient(ERPNextClient):
         run_as_user: Optional[str] = "frappe",
         bench_command: str = "/usr/local/bin/bench",
         web_url: str = "http://127.0.0.1:28000",
+        db_root_username: str = "root",
         db_root_password: Optional[str] = None,
         command_timeout_seconds: int = 300,
     ) -> None:
@@ -46,6 +47,7 @@ class FrappeBenchERPNextClient(ERPNextClient):
         self.run_as_user = run_as_user.strip() if run_as_user else None
         self.bench_command = bench_command
         self.web_url = web_url.rstrip("/")
+        self.db_root_username = db_root_username.strip() or "root"
         self.db_root_password = db_root_password
         self.command_timeout_seconds = max(30, command_timeout_seconds)
         if not self.site_prefix or not re.fullmatch(r"[a-z0-9-]+", self.site_prefix):
@@ -61,6 +63,7 @@ class FrappeBenchERPNextClient(ERPNextClient):
             run_as_user=os.environ.get("ERPNEXT_BENCH_RUN_AS_USER", "frappe"),
             bench_command=os.environ.get("ERPNEXT_BENCH_COMMAND", "/usr/local/bin/bench"),
             web_url=os.environ.get("ERPNEXT_BENCH_WEB_URL", "http://127.0.0.1:28000"),
+            db_root_username=os.environ.get("ERPNEXT_DB_ROOT_USERNAME", "root"),
             db_root_password=os.environ.get("ERPNEXT_DB_ROOT_PASSWORD") or None,
             command_timeout_seconds=int(os.environ.get("ERPNEXT_BENCH_TIMEOUT_SECONDS", "300")),
         )
@@ -160,9 +163,16 @@ class FrappeBenchERPNextClient(ERPNextClient):
             return ProvisionRecord({"status": "success", "site_id": site_name, "site_name": site_name, "provider": "frappe_staging_bench", "replayed": True})
         admin_password = secrets.token_urlsafe(32)
         args = ["new-site", site_name, "--admin-password", admin_password]
+        if self.db_root_username:
+            args.extend(["--db-root-username", self.db_root_username])
         if self.db_root_password:
             args.extend(["--db-root-password", self.db_root_password])
-        ok, _ = self._run(args, input_data=(self.db_root_password + "\n") if self.db_root_password else None)
+        ok, _ = self._run(args, input_data=(self.db_root_password + "\n") if self.db_root_password else "\n")
+        if not ok:
+            legacy_args = ["new-site", site_name, "--admin-password", admin_password, "--mariadb-root-username", self.db_root_username]
+            if self.db_root_password:
+                legacy_args.extend(["--mariadb-root-password", self.db_root_password])
+            ok, _ = self._run(legacy_args, input_data=(self.db_root_password + "\n") if self.db_root_password else "\n")
         if not ok and not self._site_exists(site_name):
             return ProvisionRecord({"status": "failed", "error": "isolated ERP site creation failed"})
         return ProvisionRecord({"status": "success", "site_id": site_name, "site_name": site_name, "provider": "frappe_staging_bench", "bench_root": str(self.bench_root), "database_isolated": True, "files_isolated": True, "queues_isolated": True})
@@ -261,7 +271,17 @@ class FrappeBenchERPNextClient(ERPNextClient):
     def delete_site(self, site_id: str) -> OperationResult:
         if not self._site_exists(site_id):
             return OperationResult({"status": "not_found", "site_id": site_id, "provider": "frappe_staging_bench"})
-        ok, _ = self._run(["drop-site", site_id, "--force", "--no-backup"])
+        args = ["drop-site", site_id, "--force", "--no-backup"]
+        if self.db_root_username:
+            args.extend(["--db-root-username", self.db_root_username])
+        if self.db_root_password:
+            args.extend(["--db-root-password", self.db_root_password])
+        ok, _ = self._run(args, input_data=(self.db_root_password + "\n") if self.db_root_password else "\n")
+        if not ok:
+            legacy_args = ["drop-site", site_id, "--force", "--no-backup", "--mariadb-root-username", self.db_root_username]
+            if self.db_root_password:
+                legacy_args.extend(["--mariadb-root-password", self.db_root_password])
+            ok, _ = self._run(legacy_args, input_data=(self.db_root_password + "\n") if self.db_root_password else "\n")
         if not ok and self._site_exists(site_id):
             return OperationResult({"status": "failed", "site_id": site_id, "provider": "frappe_staging_bench", "error": "isolated ERP site cleanup failed"})
         return OperationResult({"status": "success", "site_id": site_id, "provider": "frappe_staging_bench", "provider_verified": not self._site_exists(site_id)})

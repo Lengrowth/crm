@@ -262,7 +262,8 @@ def main() -> int:
                         {
                             "step_key": step.get("step_key"),
                             "status": step.get("status"),
-                            "error_message": step.get("error_message"),
+                            "sanitized_error": step.get("sanitized_error"),
+                            "failure_category": step.get("failure_category"),
                             "evidence_json": step.get("evidence_json"),
                         }
                         for step in failed_detail.get("steps", [])
