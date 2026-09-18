@@ -18,7 +18,8 @@ Record date: 2026-09-18
   `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`
 - Schema revision: not installed; no database migration
 - Runtime flag: no branding application or domain cutover enabled
-- CRM release-path commit: `4eaa7ad` parameterizes
+- CRM release-path commit on the active branch: `8115e42` (cherry-picked from
+  source commit `4eaa7ad`) parameterizes
   `EXPECTED_CUSTOM_APP_VERSION`; the existing `0.1.0` default is preserved,
   and C01 staging must invoke the smoke with `EXPECTED_CUSTOM_APP_VERSION=0.2.0`.
 
