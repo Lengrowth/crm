@@ -70,7 +70,7 @@ jobs:
 
       - name: Verify the commit-pinned LenERP Core staging bundle
         run: |
-          test "$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)" = "6c5552fc1e0c530786c143d4a9fcf95a8c3851e9"
+          test "$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)" = "f62c8912913f34292f00233e0c1f6a673bd5a315"
           python3 -m compileall -q ops/staging/lenerp_core/lenerp_core
           python3 - <<'PY'
           import re
@@ -335,7 +335,7 @@ jobs:
           TARGET_REF: ${{ steps.candidate.outputs.sha }}
           RELEASE_ID: ${{ steps.candidate.outputs.sha }}
           CUSTOM_APP_VERSION: "0.2.0"
-          CUSTOM_APP_COMMIT: "6c5552fc1e0c530786c143d4a9fcf95a8c3851e9"
+          CUSTOM_APP_COMMIT: "f62c8912913f34292f00233e0c1f6a673bd5a315"
           REQUIRE_AUTH_SMOKE: "true"
         run: ./scripts/deploy/deploy_saas_control.sh
 

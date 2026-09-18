@@ -10,7 +10,7 @@ Record date: 2026-09-19
 - CRM control-plane baseline: `08224008142bd8a387f908b656b3565dd1754ae5` on
   authoritative `Lengrowth/crm` `main`
 - `lenerp_core` branch: `codex/champ-c01-r1`
-- `lenerp_core` commit: `6c5552fc1e0c530786c143d4a9fcf95a8c3851e9` on
+- `lenerp_core` commit: `f62c8912913f34292f00233e0c1f6a673bd5a315` on
   `codex/champ-c01-r1`
 - `lenerp_core` version: `0.2.0`
 - Frappe reference: `15.119.1`,

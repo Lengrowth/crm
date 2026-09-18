@@ -3,7 +3,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).parents[1]
-DOCTYPE = ROOT / "lenerp_core" / "doctype" / "lenerp_branding_settings" / "lenerp_branding_settings.json"
+DOCTYPE = ROOT / "lenerp_core" / "len_erp_core" / "doctype" / "lenerp_branding_settings" / "lenerp_branding_settings.json"
 
 
 def test_c01_doctype_is_value_free_and_system_manager_only():
