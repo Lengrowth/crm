@@ -1,6 +1,7 @@
 import pytest
 
 from app.core.config import settings
+from app.integrations.frappe_bench import FrappeBenchERPNextClient
 from app.integrations.erpnext.http import ERPNextHTTPClient
 from app.integrations.erpnext_runtime import (
     ERPNextConfigurationError,
@@ -43,6 +44,22 @@ def test_explicit_mock_requires_override_outside_local(
 
     with pytest.raises(ERPNextConfigurationError):
         get_erpnext_client()
+
+
+def test_staging_bench_passes_database_admin_username(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    monkeypatch.setattr(settings, "environment", "staging")
+    monkeypatch.setattr(settings, "erpnext_mode", "bench")
+    monkeypatch.setattr(settings, "erpnext_bench_root", str(tmp_path))
+    monkeypatch.setattr(settings, "erpnext_db_root_username", "saas_phase4_bench")
+    monkeypatch.setattr(settings, "erpnext_db_root_password", "staging-secret")
+
+    client = get_erpnext_client()
+
+    assert isinstance(client, FrappeBenchERPNextClient)
+    assert client.db_root_username == "saas_phase4_bench"
+    assert client.db_root_password == "staging-secret"
 
 
 def test_live_mode_returns_http_client_when_configured(

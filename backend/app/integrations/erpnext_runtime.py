@@ -120,6 +120,7 @@ def get_erpnext_client() -> ERPNextClient:
             run_as_user=settings.erpnext_bench_run_as_user,
             bench_command=settings.erpnext_bench_command,
             web_url=settings.erpnext_bench_web_url,
+            db_root_username=settings.erpnext_db_root_username,
             db_root_password=settings.erpnext_db_root_password,
         )
 
