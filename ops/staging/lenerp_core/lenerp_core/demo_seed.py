@@ -46,7 +46,18 @@ def _try_insert(doctype: str, name: str, values: dict[str, Any]) -> str | None:
         return None
 
 
+def _ensure_warehouse_types() -> None:
+    """Provide the standard ERPNext link used by a new company's transit warehouse."""
+    if not _exists("Warehouse Type", "Transit"):
+        _insert(
+            "Warehouse Type",
+            "Transit",
+            {"description": "Standard ERPNext transit warehouse type for synthetic demo setup."},
+        )
+
+
 def _company() -> str:
+    _ensure_warehouse_types()
     return _insert(
         "Company",
         DEMO_COMPANY,
