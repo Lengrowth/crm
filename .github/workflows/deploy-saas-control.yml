@@ -369,6 +369,39 @@ jobs:
           fi
           if [[ "$smoke_status" -ne 0 ]]; then exit "$smoke_status"; fi
 
+      - name: Bind Phase 4 evidence to the exact candidate and staging run
+        if: ${{ always() && (inputs.phase4_synthetic_state || 'off') == 'on' }}
+        env:
+          CANDIDATE_SHA: ${{ steps.candidate.outputs.sha }}
+        run: |
+          python3 - "$GITHUB_WORKSPACE/phase4-synthetic-evidence-metadata.json" <<'PY'
+          import json
+          import os
+          import sys
+          from datetime import datetime, timezone
+
+          candidate_sha = os.environ["CANDIDATE_SHA"]
+          if len(candidate_sha) != 40 or any(char not in "0123456789abcdef" for char in candidate_sha):
+              raise SystemExit("candidate SHA is not a full lowercase commit SHA")
+          with open(sys.argv[1], "w", encoding="utf-8") as handle:
+              json.dump(
+                  {
+                      "evidence_version": 2,
+                      "candidate_sha": candidate_sha,
+                      "staging_run_id": int(os.environ["GITHUB_RUN_ID"]),
+                      "workflow_file": ".github/workflows/deploy-saas-control.yml",
+                      "success_evidence_file": "phase4-synthetic-evidence.json",
+                      "recovery_evidence_file": "phase4-synthetic-recovery-evidence.json",
+                      "bound_at_utc": datetime.now(timezone.utc).isoformat(),
+                  },
+                  handle,
+                  indent=2,
+                  sort_keys=True,
+              )
+          with open(sys.argv[1], encoding="utf-8") as handle:
+              json.load(handle)
+          PY
+
       - name: Upload non-secret Phase 4 synthetic evidence
         if: ${{ always() && (inputs.phase4_synthetic_state || 'off') == 'on' }}
         uses: actions/upload-artifact@v4
@@ -377,7 +410,8 @@ jobs:
           path: |
             phase4-synthetic-evidence.json
             phase4-synthetic-recovery-evidence.json
-          if-no-files-found: warn
+            phase4-synthetic-evidence-metadata.json
+          if-no-files-found: error
           retention-days: 30
 
       - name: Install browser runtime for durable staging evidence

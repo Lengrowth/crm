@@ -75,6 +75,18 @@ grep -Fxq "$RELEASE_ID" "$CANDIDATE_DIR/.staging-smoke-passed" || {
   echo "Candidate staging smoke marker does not match RELEASE_ID" >&2
   exit 1
 }
+[[ -s "$CANDIDATE_DIR/.phase4-synthetic-evidence-verified" ]] || {
+  echo "Candidate has no verified, candidate-bound Phase 4 evidence marker: $CANDIDATE_DIR" >&2
+  exit 1
+}
+grep -Fxq "candidate_sha=$RELEASE_ID" "$CANDIDATE_DIR/.phase4-synthetic-evidence-verified" || {
+  echo "Candidate Phase 4 evidence marker does not match RELEASE_ID" >&2
+  exit 1
+}
+grep -Eq '^evidence_run_id=[0-9]+$' "$CANDIDATE_DIR/.phase4-synthetic-evidence-verified" || {
+  echo "Candidate Phase 4 evidence marker has no valid evidence run ID" >&2
+  exit 1
+}
 bash "$CANDIDATE_DIR/scripts/release/preflight.sh" "$CANDIDATE_DIR"
 python3 - "$CANDIDATE_DIR/release-manifest.json" <<'PY'
 import json

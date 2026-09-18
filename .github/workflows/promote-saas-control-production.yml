@@ -67,6 +67,7 @@ jobs:
         env:
           RELEASE_ID: ${{ inputs.release_id }}
           GITHUB_TOKEN: ${{ github.token }}
+          PROMOTION_RUN_ID: ${{ github.run_id }}
         run: ./scripts/release/materialize_production_candidate.sh
 
       - name: Keep Phase 3 entitlement writes fail-closed during promotion
