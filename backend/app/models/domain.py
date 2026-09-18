@@ -467,6 +467,160 @@ class ProvisioningJob(Base, UUIDMixin, TimestampMixin):
         JSON, nullable=False, default=list
     )
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    onboarding_request_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("onboarding_requests.id"), nullable=True, index=True
+    )
+    onboarding_version: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    workflow_version: Mapped[str] = mapped_column(String(32), nullable=False, default="legacy-1")
+    worker_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    lease_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    heartbeat_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    next_attempt_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
+    cancel_requested_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    external_refs_json: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    target_environment: Mapped[str] = mapped_column(String(32), nullable=False, default="staging")
+    target_isolation_json: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+
+
+class OnboardingRequest(Base, UUIDMixin, TimestampMixin):
+    """Durable public intake identity; all applicant data is versioned separately."""
+
+    __tablename__ = "onboarding_requests"
+    __table_args__ = (
+        UniqueConstraint("idempotency_key", name="uq_onboarding_request_idempotency"),
+    )
+
+    idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    management_token_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    state: Mapped[str] = mapped_column(String(32), nullable=False, default="draft", index=True)
+    applicant_visible_status: Mapped[str] = mapped_column(String(32), nullable=False, default="draft")
+    current_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    submitted_version: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    approved_version: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    approved_bundle_key: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    approved_bundle_version: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    approved_by_user_id: Mapped[Optional[str]] = mapped_column(ForeignKey("saas_users.id"), nullable=True)
+    approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    execution_authorized_by_user_id: Mapped[Optional[str]] = mapped_column(ForeignKey("saas_users.id"), nullable=True)
+    execution_authorized_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    converted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    organization_id: Mapped[Optional[str]] = mapped_column(ForeignKey("organizations.id"), nullable=True, index=True)
+    tenant_id: Mapped[Optional[str]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
+    implementation_project_id: Mapped[Optional[str]] = mapped_column(ForeignKey("implementation_projects.id"), nullable=True)
+    provisioning_job_id: Mapped[Optional[str]] = mapped_column(ForeignKey("provisioning_jobs.id"), nullable=True)
+    rejection_reason: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    cancellation_reason: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+
+
+class OnboardingRequestVersion(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "onboarding_request_versions"
+    __table_args__ = (
+        UniqueConstraint("request_id", "version", name="uq_onboarding_request_version"),
+        UniqueConstraint("request_id", "version_idempotency_key", name="uq_onboarding_version_idempotency"),
+    )
+
+    request_id: Mapped[str] = mapped_column(ForeignKey("onboarding_requests.id"), nullable=False, index=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    version_idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    snapshot_json: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    requested_module_codes_json: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    bundle_key: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    bundle_version: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    source: Mapped[str] = mapped_column(String(32), nullable=False, default="public")
+    submitted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    supersedes_version: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+
+class OnboardingManagementCredential(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "onboarding_management_credentials"
+
+    request_id: Mapped[str] = mapped_column(ForeignKey("onboarding_requests.id"), nullable=False, index=True)
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_used_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class OnboardingDecision(Base, UUIDMixin):
+    __tablename__ = "onboarding_decisions"
+
+    request_id: Mapped[str] = mapped_column(ForeignKey("onboarding_requests.id"), nullable=False, index=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    actor_user_id: Mapped[str] = mapped_column(ForeignKey("saas_users.id"), nullable=False, index=True)
+    decision: Mapped[str] = mapped_column(String(32), nullable=False)
+    reason: Mapped[str] = mapped_column(String(500), nullable=False)
+    bundle_key: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    bundle_version: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    execution_authorized: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class ProvisioningStep(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "provisioning_steps"
+    __table_args__ = (UniqueConstraint("job_id", "step_key", name="uq_provisioning_step_job_key"),)
+
+    job_id: Mapped[str] = mapped_column(ForeignKey("provisioning_jobs.id"), nullable=False, index=True)
+    step_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    ordinal: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    next_attempt_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    worker_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    lease_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    failure_category: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    sanitized_error: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    evidence_json: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    external_ref: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    rollback_state: Mapped[str] = mapped_column(String(32), nullable=False, default="not_started")
+    dependency_keys_json: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+
+
+class ProvisioningEvent(Base, UUIDMixin):
+    __tablename__ = "provisioning_events"
+
+    step_id: Mapped[str] = mapped_column(ForeignKey("provisioning_steps.id"), nullable=False, index=True)
+    job_id: Mapped[str] = mapped_column(ForeignKey("provisioning_jobs.id"), nullable=False, index=True)
+    attempt: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    event_code: Mapped[str] = mapped_column(String(64), nullable=False)
+    public_message: Mapped[str] = mapped_column(String(500), nullable=False)
+    context_json: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class ProvisioningOutboxEvent(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "provisioning_outbox_events"
+    __table_args__ = (UniqueConstraint("idempotency_key", name="uq_provisioning_outbox_idempotency"),)
+
+    aggregate_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    aggregate_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    payload_json: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    available_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    processed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class FirstLoginHandoff(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "first_login_handoffs"
+
+    request_id: Mapped[str] = mapped_column(ForeignKey("onboarding_requests.id"), nullable=False, index=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("saas_users.id"), nullable=False, index=True)
+    token_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    token_secret_ref: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="prepared")
+    delivery_status: Mapped[str] = mapped_column(String(32), nullable=False, default="disabled")
+    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    consumed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    delivery_reference: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
 
 class AuditLog(Base, UUIDMixin):

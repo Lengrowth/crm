@@ -18,6 +18,7 @@ from app.models.erpnext import (
     TenantProvisioningRecord,
     utcnow,
 )
+from app.services.provisioning_service import sanitize_value
 
 
 class ERPNextService:
@@ -50,39 +51,33 @@ class ERPNextService:
 
         # Step 1: create site
         res = self.client.create_site(organization_id, tenant_id, site_options)
-        self._provisioning[provision_id]["details"]["create_site"] = dict(res)
+        self._provisioning[provision_id]["details"]["create_site"] = sanitize_value(dict(res))
         if res.get("status") != "success":
-            self._fail_provision(provision_id, f"create_site failed: {res}")
+            self._fail_provision(provision_id, "create_site failed")
             return self._provisioning[provision_id]
 
         site_id = res.get("site_id")
         if not site_id:
             self._fail_provision(
-                provision_id, f"create_site returned no site_id: {res}"
+                provision_id, "create_site returned no site_id"
             )
             return self._provisioning[provision_id]
         site_id = str(site_id)
 
         # Step 2: install ERPNext core (optional in mock)
         res_install = self.client.install_app(site_id, "erpnext")
-        self._provisioning[provision_id]["details"]["install_erpnext"] = dict(
-            res_install
-        )
+        self._provisioning[provision_id]["details"]["install_erpnext"] = sanitize_value(dict(res_install))
         if res_install.get("status") != "success":
-            self._fail_provision(provision_id, f"install_erpnext failed: {res_install}")
+            self._fail_provision(provision_id, "install_erpnext failed")
             return self._provisioning[provision_id]
 
         # Step 3: install custom app if provided
         custom_app = site_options.get("custom_app")
         if custom_app:
             res_custom = self.client.install_app(site_id, str(custom_app))
-            self._provisioning[provision_id]["details"]["install_custom_app"] = dict(
-                res_custom
-            )
+            self._provisioning[provision_id]["details"]["install_custom_app"] = sanitize_value(dict(res_custom))
             if res_custom.get("status") != "success":
-                self._fail_provision(
-                    provision_id, f"install_custom_app failed: {res_custom}"
-                )
+                self._fail_provision(provision_id, "install_custom_app failed")
                 return self._provisioning[provision_id]
 
         # Step 4: bind domain
@@ -92,15 +87,15 @@ class ERPNextService:
 
             # issue ssl
             res_ssl = self.client.issue_ssl(site_id, str(domain))
-            self._provisioning[provision_id]["details"]["issue_ssl"] = dict(res_ssl)
+            self._provisioning[provision_id]["details"]["issue_ssl"] = sanitize_value(dict(res_ssl))
             if res_ssl.get("status") != "success":
-                self._fail_provision(provision_id, f"issue_ssl failed: {res_ssl}")
+                self._fail_provision(provision_id, "issue_ssl failed")
                 return self._provisioning[provision_id]
 
             # success
-            self._provisioning[provision_id]["details"]["bind_domain"] = dict(res_bind)
+            self._provisioning[provision_id]["details"]["bind_domain"] = sanitize_value(dict(res_bind))
             if res_bind.get("status") != "success":
-                self._fail_provision(provision_id, f"bind_domain failed: {res_bind}")
+                self._fail_provision(provision_id, "bind_domain failed")
                 return self._provisioning[provision_id]
 
         now2 = datetime.utcnow().isoformat()
@@ -113,7 +108,7 @@ class ERPNextService:
         now = datetime.utcnow().isoformat()
         self._provisioning[provision_id]["status"] = "failed"
         self._provisioning[provision_id]["finished_at"] = now
-        self._provisioning[provision_id]["error_message"] = message
+        self._provisioning[provision_id]["error_message"] = str(message)[:255]
 
     def get_provisioning_record(self, provision_id: str) -> Optional[dict[str, Any]]:
         return self._provisioning.get(provision_id)
@@ -192,7 +187,7 @@ class PersistentERPNextService(ERPNextService):
         value: dict[str, Any],
     ) -> None:
         d = dict(rec.details or {})
-        d[key] = value
+        d[key] = sanitize_value(value)
         rec.details = d
         session.add(rec)
         session.commit()
@@ -279,13 +274,13 @@ class PersistentERPNextService(ERPNextService):
         res = self.client.create_site(rec.organization_id, rec.tenant_id, site_options)
         self._update_details(session, rec, "create_site", dict(res))
         if res.get("status") != "success":
-            self._finalize_failure(session, rec, f"create_site failed: {res}")
+            self._finalize_failure(session, rec, "create_site failed")
             return rec
 
         site_id = res.get("site_id")
         if not site_id:
             self._finalize_failure(
-                session, rec, f"create_site returned no site_id: {res}"
+                session, rec, "create_site returned no site_id"
             )
             return rec
         site_id = str(site_id)
@@ -294,9 +289,7 @@ class PersistentERPNextService(ERPNextService):
         res_install = self.client.install_app(site_id, "erpnext")
         self._update_details(session, rec, "install_erpnext", dict(res_install))
         if res_install.get("status") != "success":
-            self._finalize_failure(
-                session, rec, f"install_erpnext failed: {res_install}"
-            )
+            self._finalize_failure(session, rec, "install_erpnext failed")
             return rec
 
         # optional custom app
@@ -305,9 +298,7 @@ class PersistentERPNextService(ERPNextService):
             res_custom = self.client.install_app(site_id, str(custom_app))
             self._update_details(session, rec, "install_custom_app", dict(res_custom))
             if res_custom.get("status") != "success":
-                self._finalize_failure(
-                    session, rec, f"install_custom_app failed: {res_custom}"
-                )
+                self._finalize_failure(session, rec, "install_custom_app failed")
                 return rec
 
         domain = site_options.get("domain")
@@ -317,10 +308,10 @@ class PersistentERPNextService(ERPNextService):
             res_ssl = self.client.issue_ssl(site_id, str(domain))
             self._update_details(session, rec, "issue_ssl", dict(res_ssl))
             if res_ssl.get("status") != "success":
-                self._finalize_failure(session, rec, f"issue_ssl failed: {res_ssl}")
+                self._finalize_failure(session, rec, "issue_ssl failed")
                 return rec
             if res_bind.get("status") != "success":
-                self._finalize_failure(session, rec, f"bind_domain failed: {res_bind}")
+                self._finalize_failure(session, rec, "bind_domain failed")
                 return rec
 
         # success

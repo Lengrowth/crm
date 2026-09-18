@@ -5,6 +5,7 @@ from typing import Union
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.api.dependencies import (
     get_accessible_tenant,
     get_current_user,
@@ -27,6 +28,14 @@ from app.services.domain_service import (
 
 router = APIRouter(tags=["domains"])
 service = DomainService()
+
+
+def _require_legacy_domain_mutation() -> None:
+    if not settings.feature_flag_map.get("legacy_domain_mutations", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Direct domain mutation is disabled. Use an approved onboarding workflow.",
+        )
 
 
 def _raise_domain_error(
@@ -63,6 +72,7 @@ def create_domain(
     session: Session = Depends(get_db_session),
     _: object = Depends(require_tenant_write_access),
 ):
+    _require_legacy_domain_mutation()
     try:
         return service.create_domain(session, tenant_id, payload)
     except (DomainAccessError, DomainNotFoundError, DomainValidationError) as exc:
@@ -77,6 +87,7 @@ def update_domain(
     session: Session = Depends(get_db_session),
     _: object = Depends(require_tenant_write_access),
 ):
+    _require_legacy_domain_mutation()
     try:
         return service.update_domain(session, tenant_id, domain_id, payload)
     except (DomainAccessError, DomainNotFoundError, DomainValidationError) as exc:
@@ -94,6 +105,7 @@ def manual_activate(
     _: object = Depends(require_tenant_write_access),
     current_user: SaaSUser = Depends(get_current_user),
 ):
+    _require_legacy_domain_mutation()
     try:
         return service.manual_activate(session, tenant_id, domain_id, current_user, payload)
     except (DomainAccessError, DomainNotFoundError, DomainValidationError) as exc:

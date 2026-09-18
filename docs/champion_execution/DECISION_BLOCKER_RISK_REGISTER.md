@@ -49,4 +49,15 @@
   | P3-R03 | Risk | Resolved | Release owner | The initial operator rollout readiness race was corrected by bounded post-restart health polling in PR [#50](https://github.com/Lengrowth/crm/pull/50); the remediated candidate's operator run [35279271616](https://github.com/Lengrowth/crm/actions/runs/35279271616) passed with complete cleanup evidence. |
   | P3-R04 | Risk | Resolved | Release owner / delivery owner | Explicit read-only run [35279338775](https://github.com/Lengrowth/crm/actions/runs/35279338775), operator-only run [35279271616](https://github.com/Lengrowth/crm/actions/runs/35279271616), and general run [35279384713](https://github.com/Lengrowth/crm/actions/runs/35279384713) establish the required staged rollout sequence. |
 | P3-B01 | Blocker | Resolved | Release owner / GitHub administrator | Protected production approvals were recorded on promotion and rollout runs; PLAT-P3 final verdict is recorded as PASS in `releases/PLAT-P3.md`. |
-| P3-R05 | Accepted limitation | Open by design | Delivery owner / Champion acceptance authority | C03 remains `defined`: Champion role/module decisions, chart of accounts, field mappings, branding/domain, and ERP verification require future approved inputs. No Champion data was imported. |
+  | P3-R05 | Accepted limitation | Open by design | Delivery owner / Champion acceptance authority | C03 remains `defined`: Champion role/module decisions, chart of accounts, field mappings, branding/domain, and ERP verification require future approved inputs. No Champion data was imported. |
+
+# PLAT-P4 Decision, Blocker, and Risk Register
+
+| ID | Type | Status | Owner | Required action |
+|---|---|---|---|---|
+| P4-D01 | Decision | Resolved | Release owner / delivery owner | Public onboarding is request-only; only an exact approved request version may be converted, and execution is separately authorized. Billing, DNS mutation, first-login delivery, and real provider execution remain outside this phase. |
+| P4-D02 | Decision | Resolved | Release owner / infrastructure owner | Phase 4 runtime flags are fail-closed. Staging may explicitly enable the isolated synthetic lane; production promotion writes all Phase 4 flags off and `onboarding_real_execution=off`. |
+| P4-R01 | Risk | Locally resolved; operational evidence open | Backend/release owner | Local 51-test suite, migration rehearsal through `20260918_0010`, frontend typecheck, durable 15-step success/retry/recovery, CAS contention, secret-safe logs, and direct-provisioning denial pass. Run the immutable-candidate staging smoke and attach its non-secret artifact. |
+| P4-R02 | Risk | Open pending staging | Release owner / infrastructure owner | Staging deployment, synthetic worker completion, exact-record cleanup, and rollback/readback evidence have not yet been recorded for an immutable PLAT-P4 candidate. |
+| P4-B01 | Blocker | Open | Release owner / GitHub administrator | Commit/materialize the candidate, run protected staging with `phase4_synthetic_state=on`, review the artifact, then use the separately approved production workflow with Phase 4 flags off. |
+| P4-R03 | Accepted limitation | Open by design | Delivery owner / Champion acceptance authority | C03 remains `defined`; no Champion data, final domain, or real customer provisioning is permitted under PLAT-P4. |

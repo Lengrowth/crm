@@ -102,12 +102,8 @@ def test_api_provision_and_poll():
                 f"/organizations/{organization.id}/tenants/{tenant.id}/provision",
                 json=payload,
             )
-            assert r.status_code == 202
-            provision_id = r.json()["id"]
-
-            r2 = client.get(f"/provisioning/{provision_id}")
-            assert r2.status_code == 200
-            assert r2.json()["status"] in ("running", "success")
+            assert r.status_code == 403
+            assert r.json()["detail"] == "Direct provisioning is disabled. Use an approved onboarding request."
     finally:
         test_app.dependency_overrides.clear()
         session.close()

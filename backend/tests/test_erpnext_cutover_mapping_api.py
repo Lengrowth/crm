@@ -10,6 +10,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.api.dependencies import get_current_user
 from app.db.base import Base
+from app.core.config import settings
 from app.db.session import get_db_session
 from app.main import app
 from app.models.domain import Organization, SaaSUser, Tenant
@@ -18,6 +19,8 @@ from app.models.erpnext import ERPNextIntegrationMetadata
 
 @pytest.fixture()
 def client_with_tenant():
+    previous_feature_flags = settings.feature_flags
+    settings.feature_flags = f"{settings.feature_flags},legacy_erpnext_mapping_mutations=true"
     temp_dir = tempfile.TemporaryDirectory()
     db_path = Path(temp_dir.name) / "erpnext-cutover-mapping.db"
     engine = create_engine(
@@ -70,6 +73,7 @@ def client_with_tenant():
         with TestClient(app) as client:
             yield client, session, tenant
     finally:
+        settings.feature_flags = previous_feature_flags
         app.dependency_overrides.clear()
         session.close()
         engine.dispose()

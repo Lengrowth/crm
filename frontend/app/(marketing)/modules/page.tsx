@@ -257,6 +257,9 @@ export default async function ModulesPage() {
               double-entry, no broken handoffs between teams.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
+              <MarketingButtonLink href="/onboarding">
+                Request onboarding
+              </MarketingButtonLink>
               <MarketingButtonLink href="/demo">
                 Book a demo
               </MarketingButtonLink>

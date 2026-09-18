@@ -85,6 +85,37 @@ class ModuleEntitlementService:
     def list_public_catalog(self, session: Session) -> list[Module]:
         return [module for module in self.list_catalog(session) if module.is_active and module.is_marketed and module.administrative_visibility == "public"]
 
+    def module_by_code(self, session: Session, code: str) -> Optional[Module]:
+        """Resolve a public/stable module key to its canonical catalog row."""
+        catalog = self._catalog(session)
+        return catalog.get(self._canonical_code(catalog, code))
+
+    def resolve_requested_codes(
+        self,
+        session: Session,
+        requested_codes: list[str],
+        bundle_key: Optional[str] = None,
+        bundle_version: Optional[int] = None,
+    ) -> list[str]:
+        catalog = self._catalog(session)
+        selected = {self._canonical_code(catalog, code) for code in requested_codes}
+        if bundle_key:
+            bundle = self._find_bundle(session, bundle_key, bundle_version)
+            selected.update(self._canonical_code(catalog, item.code) for item in self._bundle_items(session, bundle.id))
+        closed = self._close_dependencies(catalog, selected)
+        self._validate_selection(catalog, closed)
+        return sorted(closed, key=lambda code: (catalog[code].display_order, code))
+
+    def validate_requested_selection(
+        self,
+        session: Session,
+        requested_codes: list[str],
+        bundle_key: Optional[str] = None,
+        bundle_version: Optional[int] = None,
+    ) -> list[str]:
+        """Validate public request metadata without creating entitlements."""
+        return self.resolve_requested_codes(session, requested_codes, bundle_key, bundle_version)
+
     def resolve(self, session: Session, organization_id: str, *, enable_codes: Optional[list[str]] = None, disable_codes: Optional[list[str]] = None, clear_codes: Optional[list[str]] = None, bundle_key: Optional[str] = None, bundle_version: Optional[int] = None) -> ModuleEffectiveRead:
         catalog = self._catalog(session)
         canonical = {code: module for code, module in catalog.items() if module.alias_of is None}

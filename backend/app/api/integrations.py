@@ -6,6 +6,7 @@ from typing import NoReturn, Optional, Union, cast
 from fastapi import APIRouter, Body, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.api.dependencies import (
     get_accessible_tenant,
     get_current_user,
@@ -180,6 +181,11 @@ def upsert_tenant_erpnext_mapping(
     session: Session = Depends(get_db_session),
     current_user: SaaSUser = Depends(get_current_user),
 ):
+    if not settings.feature_flag_map.get("legacy_erpnext_mapping_mutations", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Direct ERPNext mapping mutation is disabled. Use an approved onboarding workflow.",
+        )
     try:
         tenant = control_plane_service.get_tenant(session, current_user, tenant_id)
         control_plane_service._ensure_organization_write_access(
@@ -256,22 +262,13 @@ def provision_tenant(
     session: Session = Depends(get_db_session),
     tenant: Tenant = Depends(require_tenant_write_access),
 ):
-    """Create a DB-backed provisioning record and run the current safe worker path."""
+    """Reject the retired direct provisioning bypass."""
     if tenant.organization_id != organization_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="tenant not found")
-
-    site_options = {
-        **(payload.options or {}),
-        **{"custom_app": payload.custom_app, "domain": payload.domain},
-    }
-
-    try:
-        worker = ProvisioningWorker(client=get_erpnext_client())
-    except ERPNextConfigurationError as exc:
-        raise _integration_unavailable(str(exc)) from exc
-
-    provision_id = worker.run(session, tenant.organization_id, tenant.id, site_options)
-    return {"id": provision_id}
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Direct provisioning is disabled. Use an approved onboarding request.",
+    )
 
 
 @router.get("/provisioning/{provision_id}")
@@ -373,6 +370,11 @@ def tenant_bind_domain(
     session: Session = Depends(get_db_session),
     _: Tenant = Depends(require_tenant_write_access),
 ):
+    if not settings.feature_flag_map.get("legacy_domain_mutations", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Direct domain mutation is disabled. Use an approved onboarding workflow.",
+        )
     resolved_site_id = _resolve_site_id(session, tenant_id, site_id)
     result = _get_erp_service().bind_domain(resolved_site_id, domain)
 

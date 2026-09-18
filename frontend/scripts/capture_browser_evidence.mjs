@@ -24,7 +24,9 @@ if (!runtimeReleaseUrl) throw new Error("RUNTIME_RELEASE_URL is required");
 await mkdir(outputDir, { recursive: true });
 
 const routes = [
+  "/onboarding",
   "/app",
+  "/app/onboarding",
   "/app/organizations",
   "/app/organizations/new",
   `/app/organizations/${organizationId}`,

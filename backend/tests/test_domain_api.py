@@ -11,6 +11,7 @@ from sqlalchemy.orm import sessionmaker
 from app import models as _models  # noqa: F401
 from app.api.dependencies import get_current_user, get_db_session
 from app.db.base import Base
+from app.core.config import settings
 from app.main import app
 from app.schemas.auth import AuthRegisterRequest
 from app.schemas.domain_management import DomainCreateRequest
@@ -40,6 +41,8 @@ class DomainAPITestCase(unittest.TestCase):
     def setUp(self) -> None:
         self.session = self.Session()
         self.auth_service = AuthService()
+        self._previous_feature_flags = settings.feature_flags
+        settings.feature_flags = f"{settings.feature_flags},legacy_domain_mutations=true"
 
         # Create a platform admin user for testing
         reg = self.auth_service.register(
@@ -87,6 +90,7 @@ class DomainAPITestCase(unittest.TestCase):
         self.client = TestClient(app)
 
     def tearDown(self) -> None:
+        settings.feature_flags = self._previous_feature_flags
         self.session.close()
         app.dependency_overrides.clear()
 

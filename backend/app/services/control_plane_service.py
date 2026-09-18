@@ -77,6 +77,11 @@ class ControlPlaneService:
             raise ControlPlaneNotFoundError("Tenant not found.")
         self._ensure_organization_write_access(session, current_user, tenant.organization_id)
 
+        if tenant.provisioning_status != "ready":
+            raise ControlPlaneValidationError(
+                "Only a tenant that completed provisioning verification can be reactivated."
+            )
+
         tenant.status = "ready"
         session.commit()
         session.refresh(tenant)
@@ -206,6 +211,11 @@ class ControlPlaneService:
         self._require_organization_exists(session, resolved_organization_id)
         self._ensure_organization_write_access(session, current_user, resolved_organization_id)
 
+        if payload.status != "planned" or payload.provisioning_status != "pending":
+            raise ControlPlaneValidationError(
+                "Tenant lifecycle is managed by the approved onboarding workflow."
+            )
+
         tenant = Tenant(
             organization_id=resolved_organization_id,
             tenant_slug=payload.tenant_slug,
@@ -246,6 +256,10 @@ class ControlPlaneService:
         self._ensure_organization_write_access(session, current_user, tenant.organization_id)
 
         update_data = payload.model_dump(exclude_unset=True)
+        if "status" in update_data or "provisioning_status" in update_data:
+            raise ControlPlaneValidationError(
+                "Tenant lifecycle is managed by the approved onboarding workflow."
+            )
         for field, value in update_data.items():
             if isinstance(value, str):
                 value = value.strip()

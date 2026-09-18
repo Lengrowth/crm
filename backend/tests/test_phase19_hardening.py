@@ -14,7 +14,7 @@ from app.core.config import settings
 from app.core.hardening import rate_limiter
 from app.db.base import Base
 from app.main import app
-from app.models.domain import AuditLog
+from app.models.domain import AuditLog, Tenant
 from app.schemas.auth import AuthRegisterRequest
 from app.schemas.control import OrganizationCreateRequest, TenantCreateRequest, TenantLifecycleActionRequest
 from app.services.auth_service import AuthService
@@ -80,22 +80,22 @@ class Phase19HardeningTestCase(unittest.TestCase):
             ),
         )
         self.organization = organization
-        self.tenant = self.control_service.create_tenant(
-            self.session,
-            self.user,
-            TenantCreateRequest(
-                organization_id=organization.id,
-                tenant_slug=f"phase19-client-{self._testMethodName}",
-                environment="production",
-                status="ready",
-                primary_domain="phase19.example.test",
-                custom_domain="ops.phase19.example.test",
-                erpnext_site_name="phase19.example.test",
-                erpnext_base_url="https://phase19.example.test",
-                provisioning_status="ready",
-            ),
-            organization.id,
+        # This fixture represents a tenant that already completed the protected
+        # provisioning workflow; direct control-plane creation cannot set ready.
+        self.tenant = Tenant(
+            organization_id=organization.id,
+            tenant_slug=f"phase19-client-{self._testMethodName}",
+            environment="production",
+            status="ready",
+            primary_domain="phase19.example.test",
+            custom_domain="ops.phase19.example.test",
+            erpnext_site_name="phase19.example.test",
+            erpnext_base_url="https://phase19.example.test",
+            provisioning_status="ready",
         )
+        self.session.add(self.tenant)
+        self.session.commit()
+        self.session.refresh(self.tenant)
 
         def override_get_db_session():
             try:

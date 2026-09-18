@@ -117,7 +117,7 @@ class StripeBillingProvider(BillingProvider):
             self._stripe = stripe
             logger.info("StripeBillingProvider initialized with STRIPE_API_KEY")
         except Exception as e:  # ImportError or other
-            logger.exception("Failed to initialize stripe SDK: %s", e)
+            logger.warning("Failed to initialize stripe SDK")
             raise BillingProviderConfigurationError(
                 "StripeBillingProvider could not initialize the Stripe SDK."
             ) from e
@@ -136,8 +136,8 @@ class StripeBillingProvider(BillingProvider):
                 metadata={"organization_id": organization.get("id")},
             )
             return getattr(customer, "id", None) or customer.get("id")
-        except Exception as e:
-            logger.exception("Stripe create_customer failed: %s", e)
+        except Exception:
+            logger.warning("Stripe create_customer failed")
             return None
 
     def create_subscription(
@@ -165,8 +165,8 @@ class StripeBillingProvider(BillingProvider):
                 metadata=metadata or {},
             )
             return getattr(sub, "id", None) or sub.get("id")
-        except Exception as e:
-            logger.exception("Stripe create_subscription failed: %s", e)
+        except Exception:
+            logger.warning("Stripe create_subscription failed")
             return None
 
     def create_invoice(
@@ -210,8 +210,8 @@ class StripeBillingProvider(BillingProvider):
             except Exception:
                 # If finalize fails, return the created invoice id
                 return getattr(invoice, "id", None) or invoice.get("id")
-        except Exception as e:
-            logger.exception("Stripe create_invoice failed: %s", e)
+        except Exception:
+            logger.warning("Stripe create_invoice failed")
             return None
 
     def charge(
@@ -228,9 +228,9 @@ class StripeBillingProvider(BillingProvider):
             intent_id = getattr(intent, "id", None) or intent.get("id")
             status = getattr(intent, "status", None) or intent.get("status")
             return {"status": status, "payment_intent_id": intent_id}
-        except Exception as e:
-            logger.exception("Stripe charge failed: %s", e)
-            return {"status": "error", "error": str(e)}
+        except Exception:
+            logger.warning("Stripe charge failed")
+            return {"status": "error", "error": "billing provider request failed"}
 
 
 def get_billing_provider(provider_name: Optional[str] = None) -> BillingProvider:

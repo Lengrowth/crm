@@ -82,6 +82,26 @@ jobs:
                   line = 'FEATURE_FLAGS=' + ','.join(entries)
               output.append(line)
           path.write_text('\n'.join(output) + '\n', encoding='utf-8')
+
+      - name: Keep Phase 4 onboarding and execution fail-closed in production
+        run: |
+          sudo python3 - /opt/saas-control/shared/env/backend.env <<'PY'
+          from pathlib import Path
+          path = Path('/opt/saas-control/shared/env/backend.env')
+          names = ('onboarding_public_intake', 'onboarding_operator_view', 'onboarding_conversion', 'onboarding_execution', 'onboarding_synthetic_allowlist', 'onboarding_real_execution')
+          lines = path.read_text(encoding='utf-8').splitlines()
+          output = []
+          updated = False
+          for line in lines:
+              if line.startswith('FEATURE_FLAGS='):
+                  entries = [entry for entry in line.removeprefix('FEATURE_FLAGS=').split(',') if entry and entry.split('=', 1)[0].strip() not in names]
+                  entries.extend([f'{name}=off' for name in names])
+                  line = 'FEATURE_FLAGS=' + ','.join(entries)
+                  updated = True
+              output.append(line)
+          if not updated:
+              output.append('FEATURE_FLAGS=' + ','.join([f'{name}=off' for name in names]))
+          path.write_text('\n'.join(output) + '\n', encoding='utf-8')
           PY
 
       - name: Require explicit Phase 3 migration approval
