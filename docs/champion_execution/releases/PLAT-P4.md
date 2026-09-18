@@ -4,8 +4,9 @@ Status: **PASS — exact-candidate staging evidence and protected production pro
 Release identity: `PLAT-P4`
 Record date: 2026-09-18
 Operator: Codex, working with the delivery owner
-Implementation base: `82e7b4e3600aedf37d24dbb9273a3dba408a0746` (exact tested candidate)
-Candidate identity: `82e7b4e3600aedf37d24dbb9273a3dba408a0746`; main merge containing the candidate: `15ecf19097e3e901277fe4e2d6786f4b5159e6ab`
+Implementation commit: `9432a354f0e0ac960c50751369c4bff6754e37c4`
+Exact tested and promoted release candidate: `2cfc9aa71c13a09e41ef42c7484d5aafbe5e51b9`
+Main merge containing the implementation: `c5f3989b77dfb21c01bbc94c458a2a0c04de20b3`
 
 ## Scope and safety decision
 
@@ -104,7 +105,7 @@ promotion explicitly writes every Phase 4 flag to off.
 
 | Check | Result | Evidence |
 |---|---|---|
-| Backend suite | PASS | `python -m pytest backend/tests -q` — 51 passed |
+| Backend suite | PASS | `python -m pytest backend/tests -q` — 56 passed, 21 warnings |
 | Phase 4 workflow/recovery tests | PASS | public idempotency/conflict/revision, 15-step synthetic success, CAS contention, secret-safe logs, injected failure, retry, and recovery |
 | Migration rehearsal | PASS | `backend/tests/test_phase3_migration_rehearsal.py` upgrades/downgrades through `20260918_0010` on disposable SQLite |
 | Python compilation | PASS | `python -m compileall -q backend/app backend/tests` |
@@ -117,30 +118,31 @@ promotion explicitly writes every Phase 4 flag to off.
 
 ## Staging and production evidence
 
-The guarded workflow was run against the exact candidate with
+The guarded workflow was run against the exact promoted release candidate with
 `phase4_synthetic_state=on` in staging:
 
-- [Protected staging run 35343845948](https://github.com/Lengrowth/crm/actions/runs/35343845948) completed successfully for `82e7b4e3600aedf37d24dbb9273a3dba408a0746`.
-- The success and injected-recovery evidence were uploaded as
-  `phase4-synthetic-evidence-35343845948`; both records report `status=passed`,
-  `state=ready`, `worker_status=success`, and 15 persisted steps.
+- [Exact-candidate staging run 35371519119](https://github.com/Lengrowth/crm/actions/runs/35371519119) completed successfully for release `2cfc9aa71c13a09e41ef42c7484d5aafbe5e51b9`.
+- Synthetic success and injected-recovery evidence were uploaded as artifact
+  `10558804260` (`phase4-synthetic-evidence-35371519119`). Both records report
+  `status=passed`, `state=ready`, `worker_status=success`, and 15 persisted
+  steps. The real Frappe provider readback confirms the isolated bench,
+  database, files, queues, installed `frappe`/`erpnext`/`lenerp_core` apps, and
+  the approved `crm`/`projects`/`field_ops` module set.
 - Recovery intentionally failed at `health_checks`, recovered through the
-  durable retry path, and reached `ready`. Cleanup removed the exact synthetic
-  records: 1 request, 1 version, 1 management credential, 3 decisions, 1
-  organization, 1 membership, 1 tenant, 1 project, 5 tasks, 1 domain, 3
-  organization modules, 1 entitlement audit, 3 module application statuses, 1
-  job, 15 steps, 15 events, 1 outbox event, 1 first-login handoff, and 1
-  synthetic administrator. The mock provider reported no external-site delete
-  because the isolated cleanup client observed the site as already absent;
-  there were no real provider, DNS, billing, or customer side effects.
-- Browser/accessibility evidence was uploaded as
-  `staging-browser-evidence-82e7b4e3600aedf37d24dbb9273a3dba408a0746`.
+  durable retry path, and reached `ready`. Each run deleted one isolated ERP
+  site and removed the exact synthetic records: 1 request, 1 version, 1
+  management credential, 3 decisions, 1 organization, 1 membership, 1 tenant,
+  1 project, 5 tasks, 1 domain, 3 organization modules, 1 entitlement audit,
+  3 module application statuses, 1 job, 15 steps, 15 events, 1 outbox event,
+  1 first-login handoff, and 1 synthetic administrator.
+- Browser/accessibility evidence was uploaded as artifact `10558549671`
+  (`staging-browser-evidence-2cfc9aa71c13a09e41ef42c7484d5aafbe5e51b9`).
 
 The separately approved protected production promotion was then completed:
 
-- [Protected production run 35344906840](https://github.com/Lengrowth/crm/actions/runs/35344906840) promoted the exact tested candidate with backup and off-host-backup verification approved, additive Phase 3 migration/catalog sync successful, Phase 4 flags explicitly off, authorized Phase 2 CRUD/tenant-isolation smoke successful, disposable identity removed, and non-secret readback uploaded.
-- Production readback reports `current_release=/opt/saas-control/releases/82e7b4e3600aedf37d24dbb9273a3dba408a0746`, backend/frontend/nginx and the R2 backup timer active, R2 lifecycle rules enabled, and all Phase 2 and smoke cleanup counts zero.
-- Read-only observation on 2026-09-18: SaaS root `200`, canonical API `/health` `200` with database `ready` and live ERP policy, ERP root `200`, and `/runtime/release` `200` reporting commit `82e7b4e3600aedf37d24dbb9273a3dba408a0746`. Runtime flags show `onboarding_public_intake=false`, `onboarding_operator_view=false`, `onboarding_conversion=false`, `onboarding_execution=false`, `onboarding_synthetic_allowlist=false`, and `onboarding_real_execution=false`.
+- [Protected production run 35370954773](https://github.com/Lengrowth/crm/actions/runs/35370954773) promoted the exact tested candidate with verified application/off-host backups, additive Phase 3 migration/catalog sync successful, Phase 4 flags explicitly off, authorized Phase 2 CRUD/tenant-isolation smoke successful, disposable identity removed, and non-secret readback artifact `10558687851` uploaded.
+- Production readback reports `current_release=/opt/saas-control/releases/2cfc9aa71c13a09e41ef42c7484d5aafbe5e51b9`, `previous_release=/opt/saas-control/releases/82e7b4e3600aedf37d24dbb9273a3dba408a0746`, database revision `20260918_0011` before and after, backend/frontend/nginx and the R2 backup timer active, R2 lifecycle rules enabled, and zero Phase 2/smoke resources remaining. Phase 4 production counts are zero for requests, versions, decisions, organizations, tenants, jobs, steps, events, outbox events, handoffs, credentials, memberships, projects, tasks, module state, and leases; the domain count is unavailable in this readback (`null`), not a surviving resource.
+- Read-only observation on 2026-09-18: local health HTTP `200`, `/runtime/release` reports commit `2cfc9aa71c13a09e41ef42c7484d5aafbe5e51b9` with `environment=production` and staging build metadata, and the production ERP Phase 4 site count is `0`. Runtime flags show `platform_phase1_shell=true`, all Phase 3 entitlement-write flags false, and `onboarding_public_intake=false`, `onboarding_operator_view=false`, `onboarding_conversion=false`, `onboarding_execution=false`, `onboarding_synthetic_allowlist=false`, and `onboarding_real_execution=false`.
 - Production Phase 4 execution was not enabled; all Phase 4 testing remained isolated synthetic staging activity.
 
 ## Closed gate and handover
@@ -150,6 +152,6 @@ production promotion, read-only observation, and cleanup are complete. The
 working-tree-only `frontend/tsconfig.tsbuildinfo` change was preserved and was
 not staged, reset, or overwritten. Rollback remains available through the
 immutable `current`/`previous` release pointers, with the prior production
-release retained as `86fcde5b822b06e40980f904d81b87854903dfc6`.
+release retained as `82e7b4e3600aedf37d24dbb9273a3dba408a0746`.
 
 Final verdict: **PLAT-P4: PASS**.
