@@ -3,33 +3,34 @@
 Status: **IN DEVELOPMENT — not staged, accepted, or released**  
 Package: C01 — Company, product name, and branding  
 Release identity: `CHAMP-C01-R1`  
-Record date: 2026-09-18
+Record date: 2026-09-19
 
 ## Candidate identity
 
 - CRM control-plane baseline: `08224008142bd8a387f908b656b3565dd1754ae5` on
   authoritative `Lengrowth/crm` `main`
 - `lenerp_core` branch: `codex/champ-c01-r1`
-- `lenerp_core` commit: `ed551dc`
+- `lenerp_core` commit: `223bdfb83ce0e82898aa9b6c89220f806686ef15` on
+  `codex/champ-c01-r1`
 - `lenerp_core` version: `0.2.0`
 - Frappe reference: `15.119.1`,
   `edae775dd36b6c4ad7acab10230262bd74040765`
 - ERPNext reference: `15.120.0`,
   `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`
-- Schema revision: not installed; no database migration
+- Schema revision: additive custom DocTypes/workflow/report/print metadata; staging migration pending
 - Runtime flag: no branding application or domain cutover enabled
-- CRM release-path commit on the active branch: `8115e42` (cherry-picked from
-  source commit `4eaa7ad`) parameterizes
-  `EXPECTED_CUSTOM_APP_VERSION`; the existing `0.1.0` default is preserved,
-  and C01 staging must invoke the smoke with `EXPECTED_CUSTOM_APP_VERSION=0.2.0`.
+- CRM release path now fetches the exact `lenerp_core` ref in the protected
+  staging workflow, installs/migrates it only on the isolated ERP staging
+  bench, and runs the explicit synthetic seed/status smoke.
 
 ## Scope and exclusions
 
-This development slice adds a value-free `LenERP Branding Settings` Single
-DocType to the approved custom-app boundary. It contains fields for the
-required company, product, asset, branding-mode, and final-domain inputs, but
-stores no defaults, Champion data, or assets. It is restricted to `System
-Manager` and does not replace standard ERPNext settings.
+This development release keeps the value-free `LenERP Branding Settings`
+boundary and adds the reversible C01–C08 synthetic demonstration: Champion
+role profiles, Well Site and Drilling Job DocTypes, workflow transitions,
+standard ERPNext seed coverage, source-backed operations reporting/API, and a
+job completion print format. The explicit demo seed creates only fictitious
+records and is never called by install/migrate.
 
 Excluded until approved: exact company values, product name, logos/colors,
 domain ownership/timing, branding application, generated-link changes, print
@@ -40,13 +41,13 @@ branding, domain cutover, production configuration, and real Champion data.
 | Gate | Result | Evidence |
 |---|---|---|
 | Upstream source clean | PASS | Approved local Frappe/ERPNext reference trees have no working-tree changes |
-| Static schema contract | PASS | `python -m pytest -q tests` — 1 passed |
+| Static schema contract | PASS | `python -m pytest -q tests` — 4 passed |
 | Python compilation | PASS | `python -m compileall -q lenerp_core` |
 | Wheel build | PASS | `lenerp_core-0.2.0-py3-none-any.whl` |
-| Wheel metadata inclusion | PASS | Wheel contains `lenerp_branding_settings.json` |
+| Wheel metadata inclusion | PASS | Wheel contains custom DocTypes, report, workspace, and seed modules |
 | `git diff --check` | PASS | Clean on custom-app and CRM changes |
-| Frappe install/migrate on disposable staging | NOT RUN | No local `bench`; approved host SSH inventory timed out |
-| Browser/responsive/print evidence | NOT RUN | Requires approved values and staging candidate |
+| Frappe install/migrate on isolated staging | PENDING WORKFLOW | Protected workflow now installs exact app ref and runs `erp_demo_smoke.sh` |
+| Browser/responsive/print evidence | LOCAL PASS / STAGING PENDING | Local customer pages pass responsive overflow checks; ERP browser evidence requires staged app access |
 | Champion UAT/acceptance | NOT RUN | Acceptance authority and Project Start decisions unavailable |
 | Production promotion | NOT AUTHORIZED | Package is not accepted and no production behavior is enabled |
 
@@ -62,4 +63,4 @@ branding, domain cutover, production configuration, and real Champion data.
 - Data correction: correct/remove the additive settings document; do not treat
   code rollback as data correction.
 
-Current package verdict: **BLOCKED pending approved inputs and staging access**.
+Current package verdict: **IN DEVELOPMENT — synthetic demonstration ready for protected staging validation**.

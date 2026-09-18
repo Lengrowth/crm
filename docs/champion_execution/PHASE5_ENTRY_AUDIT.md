@@ -1,9 +1,17 @@
 # Phase 5 Champion Solution Workstream — Entry Audit
 
-Status: **BLOCKED for Champion acceptance; safe synthetic preparation in progress**  
+Status: **SYNTHETIC DEMO: READY FOR STAGING VALIDATION**
 Audit date: 2026-09-18  
 Overall workstream release identity: none — use only the package identities
 `CHAMP-C01-R1` through `CHAMP-C08-R1` (and later package revisions).
+
+Delivery boundary: the pre-kickoff demonstration is implemented with
+synthetic, reversible records and remains separate from Champion acceptance.
+The following are still explicitly pending or unauthorized:
+
+- `CHAMPION-SPECIFIC ACCEPTANCE: PENDING PROJECT START`
+- `REAL-DATA MIGRATION: NOT AUTHORIZED`
+- `PRODUCTION ACTIVATION: NOT AUTHORIZED`
 
 ## Authority and precedence
 
@@ -112,14 +120,14 @@ Project Start data was changed during the recheck.
 
 | Package release | Classification | State | Immediate blocker |
 |---|---|---|---|
-| `CHAMP-C01-R1` | Included | In development, synthetic/value-free foundation | `ORG-01`, `BRD-01`–`BRD-03`, approved assets/domain, staging evidence, acceptance actor |
-| `CHAMP-C02-R1` | Included | Proposed/blocked | `AGR-02`, `ORG-02`–`ORG-06`, confidential-data boundaries and approval limits |
-| `CHAMP-C03-R1` | Included platform profile | Defined, synthetic-only | Approved module/workspace matrix and ERP application/verification evidence |
-| `CHAMP-C04-R1` | Included | Proposed/blocked | `JOB-06`–`JOB-07`, `CRM-02`, representative decisions and C02 permissions |
-| `CHAMP-C05-R1` | Included | Proposed/blocked | C02/C04 plus `JOB-01`–`JOB-05`, `JOB-08`–`JOB-12` |
-| `CHAMP-C06-R1` | Included | Proposed/blocked | C02/C05 plus `INV-01`–`INV-06` |
-| `CHAMP-C07-R1` | Included | Proposed/blocked | C02/C05 plus `CRM-03`–`CRM-04`, `ACC-01`–`ACC-08`; accounting ambiguity is a blocker |
-| `CHAMP-C08-R1` | Included | Proposed/blocked | C04–C07 plus `JOB-12`, `REP-01`–`REP-04`, forms/print inputs |
+| `CHAMP-C01-R1` | Included | `in_development` | Synthetic branding boundary implemented; approved values and staging evidence pending |
+| `CHAMP-C02-R1` | Included | `in_development` | Synthetic roles and permission boundary implemented; approved user matrix pending |
+| `CHAMP-C03-R1` | Included platform profile | `in_development` | Synthetic workspace implemented; approved module matrix and staging verification pending |
+| `CHAMP-C04-R1` | Included | `in_development` | Well Site schema, links, coordinates, validation, and permissions implemented; approval pending |
+| `CHAMP-C05-R1` | Included | `in_development` | Job workflow, assignment, completion validation, and print path implemented; approval pending |
+| `CHAMP-C06-R1` | Included | `in_development` | Standard ERPNext inventory/buying/assets seed path implemented; approval pending |
+| `CHAMP-C07-R1` | Included | `in_development` | Synthetic lead-to-payment path implemented; accounting decisions pending |
+| `CHAMP-C08-R1` | Included | `in_development` | Source-backed report/API and print path implemented; KPI/alert definitions pending |
 
 Detailed package records are in `docs/champion_execution/packages/`. The
 proposal-to-package matrix is in `TRACEABILITY_MATRIX.md`.
@@ -136,6 +144,22 @@ proposal-to-package matrix is in `TRACEABILITY_MATRIX.md`.
 5. Provide C02 role/approval inputs, then approve the C03 module/workspace
    matrix before ERP verification is claimed.
 
-Until these decisions and evidence exist, the correct workstream verdict is:
+## Synthetic pre-kickoff result
 
-`PHASE 5 / CHAMPION SOLUTION WORKSTREAM: BLOCKED`
+The unanswered Project Start record does not block reversible synthetic work.
+The canonical `lenerp_core` app now contains the C01–C08 demonstration
+boundary: configurable branding settings, Champion role profiles, persisted
+Well Site and Drilling Job DocTypes, a workflow, source-backed reporting/API,
+standard ERPNext document seed coverage, and exact reset tooling. The CRM
+repository contains the staging smoke contract and the customer-facing demo
+runbook. The exact staging/browser evidence remains a release gate item; until
+it is attached, package states remain `in_development` and no package is
+accepted or released.
+
+The correct current workstream verdict is:
+
+`SYNTHETIC DEMO: READY FOR STAGING VALIDATION`
+
+`CHAMPION ACCEPTANCE: PENDING PROJECT START`
+`REAL-DATA MIGRATION: BLOCKED BY CREDENTIAL ROTATION AND DATA AUTHORIZATION`
+`PRODUCTION ACTIVATION: NOT AUTHORIZED`

@@ -42,15 +42,15 @@ const modules = [
   },
   {
     icon: "eye" as const,
-    title: "GPS Field Tracking",
+    title: "Location-aware well sites",
     description:
-      "Real-time location of crews, rigs, and vehicles. Automatic job site check-in and check-out so dispatch always has an accurate picture of who is where.",
+      "Keep well coordinates, site notes, equipment assignments, and scheduled work together. Live tracking remains a separately reviewed future decision.",
   },
   {
     icon: "grid" as const,
-    title: "QR Product Ordering",
+    title: "Mobile-friendly material requests",
     description:
-      "Field workers scan a product QR code on site, submit an order from their phone, and Champion routes it to the right supplier at the right price.",
+      "Give field teams a clear way to review assigned materials and capture what was used. A separate QR ordering workflow remains subject to confirmation.",
   },
   {
     icon: "layers" as const,
@@ -353,20 +353,19 @@ export default function ChampionWellDrillingPage() {
               className="mt-4 text-xl font-semibold tracking-[-0.02em]"
               style={{ color: "var(--text)" }}
             >
-              GPS field tracking
+              Well and equipment visibility
             </h3>
             <p className="mt-3 text-sm leading-6" style={{ color: "var(--muted)" }}>
-              The office can see where every crew and rig is without making a
-              phone call. Job site arrivals and departures are logged
-              automatically, so dispatch knows who is available and how long
-              each visit takes.
+              The office can see each well, assigned equipment, scheduled job,
+              and field note in one place. Live GPS arrival and departure
+              tracking remains a separately reviewed future decision.
             </p>
             <ul className="mt-6 space-y-2.5">
               {[
-                "Live map of all crews and vehicles",
-                "Automatic check-in and check-out at job sites",
-                "Route history for every service call",
-                "Idle time and mileage visible to office and management",
+                "Well coordinates and site details",
+                "Assigned crews, rigs, and trucks",
+                "Scheduled and completed job history",
+                "Field notes visible to the office",
               ].map((f) => (
                 <li key={f} className="flex items-center gap-2.5">
                   <span
@@ -392,21 +391,19 @@ export default function ChampionWellDrillingPage() {
               className="mt-4 text-xl font-semibold tracking-[-0.02em]"
               style={{ color: "var(--text)" }}
             >
-              QR code product ordering
+              Materials and supplier requests
             </h3>
             <p className="mt-3 text-sm leading-6" style={{ color: "var(--muted)" }}>
-              Every product in the catalogue has a QR code. A field worker scans
-              it on site, a lightweight mobile page opens, and they submit a
-              parts or supply order directly from the field. Champion's team
-              reviews the request, applies the right price for that customer or
-              job, and routes the order to the correct supplier or partner.
+              Field teams can review items, record materials used, and send a
+              clear request to the office. A QR-based ordering workflow can be
+              evaluated after Champion confirms the process and controls.
             </p>
             <ul className="mt-6 space-y-2.5">
               {[
-                "Mobile-first order page — scan, tap, done",
-                "Variable pricing per customer, job type, or partner agreement",
-                "Orders route automatically to the right supplier",
-                "Full order status visible to office from request to delivery",
+                "Mobile-friendly item and material views",
+                "Supplier and warehouse context",
+                "Materials linked to the job record",
+                "Clear status from request through issue",
               ].map((f) => (
                 <li key={f} className="flex items-center gap-2.5">
                   <span
