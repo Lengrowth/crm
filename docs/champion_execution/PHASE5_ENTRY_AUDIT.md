@@ -102,11 +102,10 @@ Project Start data was changed during the recheck.
   port 22. No production change was attempted.
 - `lenerp_core` had no DocTypes, fixtures, patches, hooks, roles, workspaces,
   reports, print formats, or tests before the C01 foundation slice.
-- The proposal question source contains stale literal `$32,000` and `$80/hour`
-  strings, while the canonical commercial config/proposal is `$30,000` and
-  `$55/hour`; runtime registry normalization currently hides the mismatch. It
-  must be corrected or explicitly reconciled before treating the question
-  source as a commercial record.
+- The proposal question source mismatch was corrected in
+  `champion-forecast` commit `9d6975e`: the source now carries the canonical
+  `$30,000` and `$55/hour` values directly, the runtime normalization was
+  removed, and a regression test prevents the stale literals from returning.
 
 ## Current package disposition
 
