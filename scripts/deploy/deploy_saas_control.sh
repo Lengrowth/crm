@@ -19,6 +19,7 @@ FRONTEND_ENV_FILE="${FRONTEND_ENV_FILE:-$APP_ROOT/shared/env/staging-frontend.en
 STAGING_SERVICE_USER="${STAGING_SERVICE_USER:-saas-staging}"
 BACKEND_SERVICE="${BACKEND_SERVICE:-saas-control-staging-backend}"
 FRONTEND_SERVICE="${FRONTEND_SERVICE:-saas-control-staging-frontend}"
+WORKER_SERVICE="${WORKER_SERVICE:-saas-control-staging-worker}"
 SYSTEMCTL_BIN="${SYSTEMCTL_BIN:-/usr/bin/systemctl}"
 NGINX_BIN="${NGINX_BIN:-/usr/sbin/nginx}"
 LOCK_FILE="${LOCK_FILE:-/tmp/saas-control-staging-deploy.lock}"
@@ -45,7 +46,7 @@ atomic_link() {
 }
 restart_services() {
   [[ "${SKIP_SERVICE_RESTART:-false}" == "true" ]] && return 0
-  sudo "$SYSTEMCTL_BIN" restart "$BACKEND_SERVICE" "$FRONTEND_SERVICE"
+  sudo "$SYSTEMCTL_BIN" restart "$BACKEND_SERVICE" "$FRONTEND_SERVICE" "$WORKER_SERVICE"
   for _ in {1..30}; do
     if curl -fsS -o /dev/null --max-time 3 "${STAGING_BACKEND_URL:-http://127.0.0.1:18001}/health" \
       && curl -fsS -o /dev/null --max-time 3 "${STAGING_BASE_URL:-http://127.0.0.1:13001}/"; then
@@ -80,6 +81,12 @@ rollback() {
     sudo "$SYSTEMCTL_BIN" stop "$BACKEND_SERVICE" "$FRONTEND_SERVICE" || true
   fi
   validate_nginx || log "Nginx validation after staging rollback failed; manual recovery may be required."
+}
+install_worker_unit() {
+  local unit_file="$CANDIDATE_DIR/ops/staging/saas-control-staging-worker.service"
+  [[ -f "$unit_file" ]] || { echo "Staging worker unit is missing from the candidate." >&2; return 1; }
+  sudo install -m 0644 "$unit_file" "/etc/systemd/system/$WORKER_SERVICE.service"
+  sudo "$SYSTEMCTL_BIN" daemon-reload
 }
 
 exec 9>"$LOCK_FILE"
@@ -118,6 +125,10 @@ OLD_PREVIOUS="$(readlink -f "$PREVIOUS_LINK" 2>/dev/null || true)"
 [[ "$OLD_TARGET" == "$CURRENT_LINK" || ! -d "$OLD_TARGET" ]] && OLD_TARGET=""
 [[ "$OLD_PREVIOUS" == "$PREVIOUS_LINK" || ! -d "$OLD_PREVIOUS" ]] && OLD_PREVIOUS=""
 atomic_link "$CANDIDATE_DIR" "$CURRENT_LINK"
+if ! install_worker_unit; then
+  rollback "$OLD_TARGET" "$OLD_PREVIOUS"
+  exit 1
+fi
 if ! restart_services; then
   rollback "$OLD_TARGET" "$OLD_PREVIOUS"
   exit 1

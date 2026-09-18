@@ -17,7 +17,7 @@ does not require public DNS.
 | ERP site/database/files | `/opt/frappe-staging-bench`, site `erp-staging.example.test`, separate MariaDB schema and files | production bench/site and backup set |
 | Environment files | `/opt/saas-control-staging/shared/env/*` | `/opt/saas-control/shared/env/*` |
 | Host policy | private access or `staging.example.test` host-header allowlist | approved production hostnames |
-| Services/workers | `saas-control-staging-*` units and queues | production units and queues |
+| Services/workers | `saas-control-staging-backend`, `saas-control-staging-frontend`, and `saas-control-staging-worker` units plus ERP queue services | production units and queues |
 
 The EC2 ERP staging lane uses the following private-only endpoints and units:
 
@@ -54,7 +54,7 @@ separate disposable Frappe site; the production site must never be reused.
 
 ```bash
 ss -ltnp | grep -E ':13001|:18001'
-systemctl status saas-control-staging-backend saas-control-staging-frontend
+systemctl status saas-control-staging-backend saas-control-staging-frontend saas-control-staging-worker
 curl -fsS -H 'Host: staging.example.test' http://127.0.0.1:13001/
 curl -fsS -H 'Host: staging.example.test' http://127.0.0.1:18001/health
 ```

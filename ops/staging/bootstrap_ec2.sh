@@ -37,9 +37,10 @@ install -m 0644 "$SCRIPT_DIR/ec2-staging-backend.env" "$APP_ROOT/shared/env/stag
 install -m 0644 "$SCRIPT_DIR/ec2-staging-frontend.env" "$APP_ROOT/shared/env/staging-frontend.env"
 install -m 0644 "$SCRIPT_DIR/saas-control-staging-backend.service" /etc/systemd/system/saas-control-staging-backend.service
 install -m 0644 "$SCRIPT_DIR/saas-control-staging-frontend.service" /etc/systemd/system/saas-control-staging-frontend.service
+install -m 0644 "$SCRIPT_DIR/saas-control-staging-worker.service" /etc/systemd/system/saas-control-staging-worker.service
 
 chown -R "$STAGING_USER:$STAGING_GROUP" "$APP_ROOT/shared/data" "$APP_ROOT/shared/logs" /run/saas-control-staging
 chmod 0750 "$APP_ROOT/shared/data" "$APP_ROOT/shared/logs" /run/saas-control-staging
 systemctl daemon-reload
-systemctl enable saas-control-staging-backend.service saas-control-staging-frontend.service
+systemctl enable saas-control-staging-backend.service saas-control-staging-frontend.service saas-control-staging-worker.service
 echo "Staging control-plane lane bootstrapped at $APP_ROOT; services are enabled but not started until a candidate is deployed."
