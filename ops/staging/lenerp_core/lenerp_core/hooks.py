@@ -9,4 +9,5 @@ app_license = "MIT"
 # reusable roles and workflow metadata; demo values are opt-in through the
 # explicit `bench execute lenerp_core.demo_seed.seed` command.
 after_install = "lenerp_core.install.after_install"
+before_migrate = "lenerp_core.install.before_migrate"
 after_migrate = "lenerp_core.install.after_migrate"

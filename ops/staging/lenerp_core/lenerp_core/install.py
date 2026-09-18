@@ -24,6 +24,35 @@ def _ensure_roles() -> None:
             )
 
 
+def _ensure_workflow_links() -> None:
+    """Create linked workflow metadata before Frappe validates existing workflows."""
+    states = {
+        "Planned": "Primary",
+        "Scheduled": "Info",
+        "In Progress": "Warning",
+        "Completed": "Success",
+        "Reopened": "Danger",
+    }
+    for state, style in states.items():
+        if not frappe.db.exists("Workflow State", state):
+            frappe.get_doc(
+                {
+                    "doctype": "Workflow State",
+                    "workflow_state_name": state,
+                    "style": style,
+                }
+            ).insert(ignore_permissions=True)
+
+    for action in ("Schedule", "Start work", "Complete", "Reopen"):
+        if not frappe.db.exists("Workflow Action Master", action):
+            frappe.get_doc(
+                {
+                    "doctype": "Workflow Action Master",
+                    "workflow_action_name": action,
+                }
+            ).insert(ignore_permissions=True)
+
+
 def _ensure_workflow() -> None:
     """Create the job workflow only when the standard workflow is absent."""
     if frappe.db.exists("Workflow", "Champion Drilling Job"):
@@ -110,14 +139,22 @@ def _ensure_standard_permissions() -> None:
 
 def after_install() -> None:
     _ensure_roles()
+    _ensure_workflow_links()
     _ensure_workflow()
     _ensure_print_format()
     _ensure_standard_permissions()
     frappe.db.commit()
 
 
+def before_migrate() -> None:
+    _ensure_roles()
+    _ensure_workflow_links()
+    frappe.db.commit()
+
+
 def after_migrate() -> None:
     _ensure_roles()
+    _ensure_workflow_links()
     _ensure_workflow()
     _ensure_print_format()
     _ensure_standard_permissions()
