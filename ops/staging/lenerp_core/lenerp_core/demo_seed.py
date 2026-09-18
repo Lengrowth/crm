@@ -340,7 +340,21 @@ def reset() -> dict[str, int]:
 
 def status() -> dict[str, Any]:
     """Return persisted demo counts for runbook evidence."""
-    doctypes = ("Company", "Customer", "Contact", "LenERP Well Site", "LenERP Drilling Job", "Supplier", "Item", "Quotation", "Sales Invoice", "Payment Entry", "Asset")
-    result = {doctype: frappe.db.count(doctype, {"name": ["like", "DEMO-%"]}) for doctype in doctypes}
-    result["Company"] = int(_exists("Company", DEMO_COMPANY))
+    # Several ERPNext doctypes intentionally derive ``name`` from a series or
+    # a business field. Count using the persisted synthetic identifiers and
+    # links instead of assuming every document name starts with DEMO-.
+    prefix = f"{DEMO_PREFIX}%"
+    result = {
+        "Company": int(_exists("Company", DEMO_COMPANY)),
+        "Customer": frappe.db.count("Customer", {"customer_name": ["like", prefix]}),
+        "Contact": frappe.db.count("Contact", {"first_name": ["like", prefix]}),
+        "LenERP Well Site": frappe.db.count("LenERP Well Site", {"customer": ["like", prefix]}),
+        "LenERP Drilling Job": frappe.db.count("LenERP Drilling Job", {"customer": ["like", prefix]}),
+        "Supplier": frappe.db.count("Supplier", {"supplier_name": ["like", prefix]}),
+        "Item": frappe.db.count("Item", {"item_code": ["like", prefix]}),
+        "Quotation": frappe.db.count("Quotation", {"party_name": ["like", prefix]}),
+        "Sales Invoice": frappe.db.count("Sales Invoice", {"customer": ["like", prefix]}),
+        "Payment Entry": frappe.db.count("Payment Entry", {"party": ["like", prefix]}),
+        "Asset": frappe.db.count("Asset", {"asset_name": ["like", prefix]}),
+    }
     return result
