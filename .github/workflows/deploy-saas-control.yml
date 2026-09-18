@@ -61,6 +61,13 @@ jobs:
           ref: ${{ inputs.candidate_ref || github.sha }}
           fetch-depth: 0
 
+      - name: Resolve immutable candidate commit
+        id: candidate
+        run: |
+          candidate_sha="$(git rev-parse HEAD)"
+          [[ "$candidate_sha" =~ ^[0-9a-f]{40}$ ]] || { echo "Candidate checkout is not a commit: $candidate_sha" >&2; exit 1; }
+          echo "sha=$candidate_sha" >> "$GITHUB_OUTPUT"
+
       - name: Make release scripts executable
         run: chmod +x scripts/release/*.sh scripts/deploy/*.sh
 
@@ -204,8 +211,8 @@ jobs:
       - name: Build and deploy exact candidate to staging
         env:
           DEPLOY_TARGET: staging
-          TARGET_REF: ${{ inputs.candidate_ref || github.sha }}
-          RELEASE_ID: ${{ inputs.candidate_ref || github.sha }}
+          TARGET_REF: ${{ steps.candidate.outputs.sha }}
+          RELEASE_ID: ${{ steps.candidate.outputs.sha }}
           REQUIRE_AUTH_SMOKE: "true"
         run: ./scripts/deploy/deploy_saas_control.sh
 
@@ -306,7 +313,7 @@ jobs:
         # Keep this capture step adjacent to the deployed release dependencies.
         env:
           EXPECTED_PHASE_ONE_SHELL: ${{ inputs.phase1_shell_state || 'off' }}
-          EXPECTED_RELEASE: ${{ inputs.candidate_ref || github.sha }}
+          EXPECTED_RELEASE: ${{ steps.candidate.outputs.sha }}
           RUNTIME_RELEASE_URL: http://127.0.0.1:18001/runtime/release
           ROLLOUT_STAGE: ${{ inputs.rollout_stage || 'operator-validation' }}
           HEADLESS: "false"
@@ -384,7 +391,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: staging-browser-evidence-${{ inputs.candidate_ref || github.sha }}
+            name: staging-browser-evidence-${{ steps.candidate.outputs.sha }}
           path: staging-browser-evidence
           if-no-files-found: error
           retention-days: 30
