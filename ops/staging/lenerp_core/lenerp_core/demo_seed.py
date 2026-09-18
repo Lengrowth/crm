@@ -299,6 +299,7 @@ def seed() -> dict[str, Any]:
     frappe.db.commit()
     result = {"company": company, **core, **commercial, **inventory}
     result["counts"] = {key: len(value) if isinstance(value, list) else 1 for key, value in result.items() if key != "company"}
+    print(f"{DEMO_PREFIX} synthetic seed complete")
     return result
 
 

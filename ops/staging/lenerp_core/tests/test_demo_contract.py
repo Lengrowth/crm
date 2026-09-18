@@ -45,6 +45,7 @@ def test_seed_is_explicit_and_reset_is_demo_prefix_scoped():
     assert '"All Territories"' in seed
     assert '"workflow_state": "Planned"' in seed
     assert 'frappe.db.set_value' in seed
+    assert 'synthetic seed complete' in seed
     assert "real_data" not in seed.lower()
 
 
