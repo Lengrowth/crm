@@ -1,14 +1,14 @@
 # `CHAMP-C01-R1` — C01 development release record
 
-Status: **IN DEVELOPMENT — not staged, accepted, or released**  
+Status: **IN DEVELOPMENT — synthetic staging pass; Champion acceptance pending**
 Package: C01 — Company, product name, and branding  
 Release identity: `CHAMP-C01-R1`  
 Record date: 2026-09-19
 
 ## Candidate identity
 
-- CRM control-plane baseline: `08224008142bd8a387f908b656b3565dd1754ae5` on
-  authoritative `Lengrowth/crm` `main`
+- CRM candidate: `14de22b278cf44386e4446aecce30d4d105a7575` on
+  `codex/plat-p4-readback-docs`
 - `lenerp_core` branch: `codex/champ-c01-r1`
 - `lenerp_core` commit: `617ea2d67be070b9fe1e389635d3e191edb66d3f` on
   `codex/champ-c01-r1`
@@ -17,7 +17,7 @@ Record date: 2026-09-19
   `edae775dd36b6c4ad7acab10230262bd74040765`
 - ERPNext reference: `15.120.0`,
   `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`
-- Schema revision: additive custom DocTypes/workflow/report/print metadata; staging migration pending
+- Schema revision: additive custom DocTypes/workflow/report/print metadata; isolated staging migration passed
 - Runtime flag: no branding application or domain cutover enabled
 - CRM release path now fetches the exact `lenerp_core` ref in the protected
   staging workflow, installs/migrates it only on the isolated ERP staging
@@ -46,8 +46,9 @@ branding, domain cutover, production configuration, and real Champion data.
 | Wheel build | PASS | `lenerp_core-0.2.0-py3-none-any.whl` |
 | Wheel metadata inclusion | PASS | Wheel contains custom DocTypes, report, workspace, and seed modules |
 | `git diff --check` | PASS | Clean on custom-app and CRM changes |
-| Frappe install/migrate on isolated staging | PENDING WORKFLOW | Protected workflow now installs exact app ref and runs `erp_demo_smoke.sh` |
-| Browser/responsive/print evidence | LOCAL PASS / STAGING PENDING | Local customer pages pass responsive overflow checks; ERP browser evidence requires staged app access |
+| Frappe install/migrate on isolated staging | PASS | Protected run [35405329393](https://github.com/Lengrowth/crm/actions/runs/35405329393) installed/migrated the exact candidate and passed ERP health/auth checks |
+| Synthetic ERP seed/status | PASS — core scope | Persisted status: Company 1, Customer 3, Contact 3, Well Site 3, Drilling Job 4; optional ERPNext commercial/inventory records remained zero because standard prerequisites were unavailable |
+| Browser/responsive/accessibility evidence | PASS — operator-validation staging | Browser artifact [10572755648](https://github.com/Lengrowth/crm/actions/runs/35405329393/artifacts/10572755648); 23 files, SHA256 `c1346746bf27ffc033ff1656118832e843439ee561c5b717e6f1ee2242f791cb` |
 | Champion UAT/acceptance | NOT RUN | Acceptance authority and Project Start decisions unavailable |
 | Production promotion | NOT AUTHORIZED | Package is not accepted and no production behavior is enabled |
 
@@ -63,4 +64,11 @@ branding, domain cutover, production configuration, and real Champion data.
 - Data correction: correct/remove the additive settings document; do not treat
   code rollback as data correction.
 
-Current package verdict: **IN DEVELOPMENT — synthetic demonstration ready for protected staging validation**.
+Current package verdict: **IN DEVELOPMENT — synthetic core demonstration passed protected staging; Champion acceptance and optional ERPNext prerequisite decisions remain open**.
+
+## Protected staging evidence
+
+- Candidate run: [35405329393](https://github.com/Lengrowth/crm/actions/runs/35405329393), exact CRM commit `14de22b278cf44386e4446aecce30d4d105a7575`.
+- Artifact: [staging-browser-evidence-14de22b278cf44386e4446aecce30d4d105a7575](https://github.com/Lengrowth/crm/actions/runs/35405329393/artifacts/10572755648), artifact ID `10572755648`, 23 files.
+- Configuration: `operator-validation`, Phase 1 shell `off`, Phase 4 synthetic state `off`; no Phase 4 evidence or production activation is claimed.
+- The run is synthetic staging evidence only. Project Start decisions, Champion UAT, acceptance authority, real-data migration, final domain, and production promotion remain pending.

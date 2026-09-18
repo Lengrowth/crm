@@ -39,10 +39,13 @@ password or token in this runbook, source, screenshots, or evidence.
    scheduled, and planned records; open the completed job and print the job
    completion record.
 6. Show the standard ERPNext Buying, Stock, Assets, Selling, and Accounting
-   workspaces. Use the synthetic supplier/item/warehouse/equipment records.
-7. Follow the commercial journey: Lead → Opportunity → Customer → Quotation →
-   Job → Sales Invoice → Payment Entry. Point out that accounting values are
-   standard demo values, not Champion-approved decisions.
+   workspaces as available. The protected staging evidence currently populates
+   the custom Champion core records only; do not imply optional supplier/item/
+   warehouse/equipment records exist until their standard prerequisites pass.
+7. Walk the commercial journey only when the optional prerequisites have been
+   satisfied: Lead → Opportunity → Customer → Quotation → Job → Sales Invoice
+   → Payment Entry. Point out that accounting values are standard demo values,
+   not Champion-approved decisions.
 8. Open Champion Operations Summary and the dashboard API. Explain that every
    row and count is read from persisted records, not decorative KPI data.
 9. Sign in as a Field Technician and show the reduced record set. Attempt a
@@ -70,10 +73,10 @@ after reset and record zero counts before releasing the staging site.
 
 - 1 fictitious company, 3 customers, 3 contacts, and 3 well/site records.
 - 4 jobs across Planned, Scheduled, In Progress, and Completed states.
-- 1 lead, 1 opportunity, 1 supplier, 1 item, 1 yard warehouse, and up to 2
-  equipment assets, depending on standard ERPNext prerequisites.
-- 1 quotation, 1 sales invoice, and a payment entry when the staging chart of
-  accounts and ERPNext payment prerequisites are available.
+- The current protected staging pass confirms zero optional lead/opportunity,
+  supplier/item/warehouse/asset, quotation/invoice/payment records because
+  standard ERPNext prerequisites were unavailable; this is an explicit follow-
+  up boundary, not a fabricated demo result.
 - All locations, names, notes, and values are synthetic and replaceable.
 
 ## Fallback procedure
