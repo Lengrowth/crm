@@ -115,29 +115,44 @@ class FrappeBenchERPNextClient(ERPNextClient):
         return f"{self.site_prefix}{re.sub(r'[^a-z0-9-]', '-', tenant_id.lower())[:32]}.staging.example.test"
 
     def _list_apps(self, site_id: str) -> dict[str, str]:
+        # Frappe's text output includes a branch column, while the JSON form
+        # is stable across bench versions and preserves app names reliably.
+        ok, output = self._run(["--site", site_id, "list-apps", "--format", "json"])
+        if ok:
+            try:
+                payload = json.loads(output)
+            except json.JSONDecodeError:
+                payload = None
+            if isinstance(payload, dict):
+                installed = payload.get(site_id)
+                if isinstance(installed, list):
+                    return {str(name): "" for name in installed if str(name).strip()}
+                if isinstance(installed, dict):
+                    return {str(name): str(version) for name, version in installed.items()}
+
+        # Keep a text fallback for older Frappe releases without JSON output.
         ok, output = self._run(["--site", site_id, "list-apps"])
         if not ok:
             return {}
         apps: dict[str, str] = {}
         for line in output.splitlines():
-            match = re.match(r"^\s*([a-zA-Z0-9_]+)\s+([^\s]+)\s*$", line)
+            match = re.match(r"^\s*([a-zA-Z0-9_]+)(?:\s+([^\s]+))?", line)
             if match and match.group(1).lower() not in {"app", "name"}:
-                apps[match.group(1)] = match.group(2)
+                apps[match.group(1)] = match.group(2) or ""
         return apps
 
     def _show_config(self, site_id: str) -> dict[str, object]:
-        ok, output = self._run(["--site", site_id, "show-config"])
+        ok, output = self._run(["--site", site_id, "show-config", "--format", "json"])
         if not ok:
             return {}
-        start = output.find("{")
-        end = output.rfind("}")
-        if start < 0 or end < start:
-            return {}
         try:
-            payload = json.loads(output[start : end + 1])
+            payload = json.loads(output)
         except json.JSONDecodeError:
             return {}
-        return payload if isinstance(payload, dict) else {}
+        if not isinstance(payload, dict):
+            return {}
+        site_config = payload.get(site_id)
+        return site_config if isinstance(site_config, dict) else payload
 
     def _set_config(self, site_id: str, key: str, value: object) -> bool:
         encoded = json.dumps(value, separators=(",", ":"))
