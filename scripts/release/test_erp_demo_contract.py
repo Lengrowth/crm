@@ -21,9 +21,12 @@ def test_staging_smoke_defaults_to_the_synthetic_demo_app_version():
     assert "EXPECTED_CUSTOM_APP_VERSION:-0.2.0" in script
 
 
-def test_staging_workflow_installs_the_exact_custom_app_ref():
+def test_staging_workflow_verifies_the_installed_custom_app_candidate():
     workflow = (ROOT / ".github" / "workflows" / "deploy-saas-control.yml").read_text(encoding="utf-8")
-    assert "Len-OS/lenerp_core" in workflow
-    assert "custom_app_ref" in workflow
-    assert "bench --site erp-staging.example.test migrate" in workflow
+    baseline = (ROOT / "ops" / "production" / "release-runtime-baseline.json").read_text(encoding="utf-8")
+    assert 'CUSTOM_APP_VERSION: "0.2.0"' in workflow
+    assert 'CUSTOM_APP_COMMIT: "b9343ac1eb95bc44b8f4bb2254e77047ade645e3"' in workflow
+    assert '"version": "0.2.0"' in baseline
+    assert '"commit": "b9343ac1eb95bc44b8f4bb2254e77047ade645e3"' in baseline
+    assert "erp_staging_smoke.sh" in workflow
     assert "erp_demo_smoke.sh" in workflow

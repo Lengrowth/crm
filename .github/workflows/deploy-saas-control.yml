@@ -38,11 +38,6 @@ on:
         options:
           - "off"
           - "on"
-      custom_app_ref:
-        description: Exact lenerp_core ref to install on the isolated ERP staging bench
-        required: false
-        default: "main"
-        type: string
 
 permissions:
   contents: read
@@ -72,20 +67,6 @@ jobs:
           candidate_sha="$(git rev-parse HEAD)"
           [[ "$candidate_sha" =~ ^[0-9a-f]{40}$ ]] || { echo "Candidate checkout is not a commit: $candidate_sha" >&2; exit 1; }
           echo "sha=$candidate_sha" >> "$GITHUB_OUTPUT"
-
-      - name: Check out the exact LenERP Core app for staging
-        uses: actions/checkout@v4
-        with:
-          repository: Len-OS/lenerp_core
-          ref: ${{ inputs.custom_app_ref || 'main' }}
-          path: staging-lenerp-core-source
-          fetch-depth: 0
-
-      - name: Validate the exact LenERP Core app
-        working-directory: ${{ github.workspace }}/staging-lenerp-core-source
-        run: |
-          python3 -m compileall -q lenerp_core
-          python3 -m pytest -q
 
       - name: Make release scripts executable
         run: chmod +x scripts/release/*.sh scripts/deploy/*.sh
@@ -319,22 +300,10 @@ jobs:
           DEPLOY_TARGET: staging
           TARGET_REF: ${{ steps.candidate.outputs.sha }}
           RELEASE_ID: ${{ steps.candidate.outputs.sha }}
-          CUSTOM_APP_REPO: ${{ github.workspace }}/staging-lenerp-core-source
-          CUSTOM_APP_REF: HEAD
+          CUSTOM_APP_VERSION: "0.2.0"
+          CUSTOM_APP_COMMIT: "b9343ac1eb95bc44b8f4bb2254e77047ade645e3"
           REQUIRE_AUTH_SMOKE: "true"
         run: ./scripts/deploy/deploy_saas_control.sh
-
-      - name: Install and migrate the exact custom app on ERP staging
-        env:
-          CUSTOM_APP_REPO: ${{ github.workspace }}/staging-lenerp-core-source
-        run: |
-          sudo rsync -a --delete --exclude='.git' "$CUSTOM_APP_REPO/" /opt/frappe-staging-bench/apps/lenerp_core/
-          sudo chown -R frappe:frappe /opt/frappe-staging-bench/apps/lenerp_core
-          if ! sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test list-apps | grep -Eq '^lenerp_core[[:space:]]'"; then
-            sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test install-app lenerp_core"
-          fi
-          sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test migrate"
-          sudo systemctl restart frappe-staging-web.service frappe-staging-worker-short.service frappe-staging-schedule.service
 
       - name: Verify the dedicated ERP staging bench and queues
         run: sudo scripts/release/erp_staging_smoke.sh
