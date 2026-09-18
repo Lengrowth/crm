@@ -288,6 +288,7 @@ jobs:
           sudo install -m 0644 ops/staging/saas-control-staging-backend.service /etc/systemd/system/saas-control-staging-backend.service
           sudo systemctl daemon-reload
           sudo systemctl restart saas-control-staging-backend
+          sudo systemctl restart saas-control-staging-worker
           sudo install -m 0440 /dev/stdin /etc/sudoers.d/saas-staging-frappe-bench <<'EOF'
           saas-staging ALL=(frappe) NOPASSWD: /usr/local/bin/bench
           EOF
