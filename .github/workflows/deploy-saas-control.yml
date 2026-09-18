@@ -185,9 +185,16 @@ jobs:
 
           candidates = [
               Path('/root/.my.cnf'),
+              Path('/home/frappe/.my.cnf'),
+              Path('/home/ubuntu/.my.cnf'),
+              Path('/etc/mysql/my.cnf'),
+              Path('/etc/mysql/mariadb.cnf'),
               Path('/opt/frappe-staging-bench/sites/common_site_config.json'),
+              Path('/opt/frappe-staging-bench/config/common_site_config.json'),
               Path('/opt/frappe-staging-bench/sites/erp-staging.example.test/site_config.json'),
           ]
+          candidates.extend(Path('/opt/frappe-staging-bench').glob('**/*.cnf'))
+          candidates.extend(Path('/opt/frappe-staging-bench/sites').glob('**/*.json'))
           for path in candidates:
               if not path.is_file():
                   continue
