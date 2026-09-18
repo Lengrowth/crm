@@ -176,6 +176,17 @@ jobs:
 
       - name: Configure the dedicated staging Frappe bench adapter
         run: |
+          db_root_username="saas_phase4_bench"
+          db_root_password="$(openssl rand -hex 32)"
+          sudo mariadb --protocol=socket --batch <<SQL
+          CREATE USER IF NOT EXISTS '${db_root_username}'@'localhost' IDENTIFIED BY '${db_root_password}';
+          CREATE USER IF NOT EXISTS '${db_root_username}'@'%' IDENTIFIED BY '${db_root_password}';
+          ALTER USER '${db_root_username}'@'localhost' IDENTIFIED BY '${db_root_password}';
+          ALTER USER '${db_root_username}'@'%' IDENTIFIED BY '${db_root_password}';
+          GRANT ALL PRIVILEGES ON *.* TO '${db_root_username}'@'localhost' WITH GRANT OPTION;
+          GRANT ALL PRIVILEGES ON *.* TO '${db_root_username}'@'%' WITH GRANT OPTION;
+          FLUSH PRIVILEGES;
+          SQL
           sudo python3 - /opt/saas-control-staging/shared/env/staging-backend.env <<'PY'
           from pathlib import Path
           import sys
@@ -202,6 +213,15 @@ jobs:
           output.extend(f'{key}={value}' for key, value in required.items() if key not in seen)
           path.write_text('\n'.join(output) + '\n', encoding='utf-8')
           PY
+          sudo install -d -o root -g saas-staging -m 0750 /run/saas-control-staging
+          sudo tee /run/saas-control-staging/frappe-bench.env >/dev/null <<EOF
+          ERPNEXT_DB_ROOT_USERNAME=$db_root_username
+          ERPNEXT_DB_ROOT_PASSWORD=$db_root_password
+          EOF
+          sudo chown root:saas-staging /run/saas-control-staging/frappe-bench.env
+          sudo chmod 0640 /run/saas-control-staging/frappe-bench.env
+          sudo install -m 0644 ops/staging/saas-control-staging-backend.service /etc/systemd/system/saas-control-staging-backend.service
+          sudo systemctl daemon-reload
           sudo install -m 0440 /dev/stdin /etc/sudoers.d/saas-staging-frappe-bench <<'EOF'
           saas-staging ALL=(frappe) NOPASSWD: /usr/local/bin/bench
           EOF
@@ -224,21 +244,23 @@ jobs:
         env:
           RUN_ID: phase4-${{ github.run_id }}
         run: |
-          set -a
-          . /opt/saas-control-staging/shared/env/staging-backend.env
-          set +a
           token_file=/run/saas-control-staging/smoke/auth-token
           evidence_file="/tmp/phase4-synthetic-evidence-${RUN_ID}.json"
           trap 'sudo rm -f -- "$evidence_file"' EXIT
           set +e
-          sudo -n -E -u saas-staging env \
+          sudo -n -u saas-staging env RUN_ID="$RUN_ID" TOKEN_FILE="$token_file" EVIDENCE_FILE="$evidence_file" bash -c '
+            set -a
+            . /opt/saas-control-staging/shared/env/staging-backend.env
+            . /run/saas-control-staging/frappe-bench.env
+            set +a
             PYTHONPATH=/opt/saas-control-staging/current/backend \
-            /opt/saas-control-staging/shared/backend-venv/bin/python \
-            /opt/saas-control-staging/current/scripts/release/phase4_synthetic_smoke.py \
-            --base-url http://127.0.0.1:18001 \
-            --admin-token-file "$token_file" \
-            --run-id "$RUN_ID" \
-            --output "$evidence_file"
+              /opt/saas-control-staging/shared/backend-venv/bin/python \
+              /opt/saas-control-staging/current/scripts/release/phase4_synthetic_smoke.py \
+              --base-url http://127.0.0.1:18001 \
+              --admin-token-file "$TOKEN_FILE" \
+              --run-id "$RUN_ID" \
+              --output "$EVIDENCE_FILE"
+          '
           smoke_status=$?
           set -e
           if [[ -f "$evidence_file" ]]; then
@@ -253,22 +275,24 @@ jobs:
         env:
           RUN_ID: phase4-recovery-${{ github.run_id }}
         run: |
-          set -a
-          . /opt/saas-control-staging/shared/env/staging-backend.env
-          set +a
           token_file=/run/saas-control-staging/smoke/auth-token
           evidence_file="/tmp/phase4-synthetic-recovery-evidence-${RUN_ID}.json"
           trap 'sudo rm -f -- "$evidence_file"' EXIT
           set +e
-          sudo -n -E -u saas-staging env \
+          sudo -n -u saas-staging env RUN_ID="$RUN_ID" TOKEN_FILE="$token_file" EVIDENCE_FILE="$evidence_file" bash -c '
+            set -a
+            . /opt/saas-control-staging/shared/env/staging-backend.env
+            . /run/saas-control-staging/frappe-bench.env
+            set +a
             PYTHONPATH=/opt/saas-control-staging/current/backend \
-            /opt/saas-control-staging/shared/backend-venv/bin/python \
-            /opt/saas-control-staging/current/scripts/release/phase4_synthetic_smoke.py \
-            --base-url http://127.0.0.1:18001 \
-            --admin-token-file "$token_file" \
-            --run-id "$RUN_ID" \
-            --failure-step health_checks \
-            --output "$evidence_file"
+              /opt/saas-control-staging/shared/backend-venv/bin/python \
+              /opt/saas-control-staging/current/scripts/release/phase4_synthetic_smoke.py \
+              --base-url http://127.0.0.1:18001 \
+              --admin-token-file "$TOKEN_FILE" \
+              --run-id "$RUN_ID" \
+              --failure-step health_checks \
+              --output "$EVIDENCE_FILE"
+          '
           smoke_status=$?
           set -e
           if [[ -f "$evidence_file" ]]; then
