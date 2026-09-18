@@ -13,6 +13,7 @@ OnboardingState = Literal[
     "approved",
     "provisioning",
     "validation",
+    "failed",
     "ready",
     "rejected",
     "cancelled",

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import timedelta
+
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
@@ -140,7 +142,7 @@ def test_failed_step_is_not_ready_and_can_resume_after_injection_removed():
         failed_attempt = run_next_job(session, client=client)
         assert failed_attempt is not None and failed_attempt.status == "queued"
         request = session.get(OnboardingRequest, created.request_id)
-        assert request is not None and request.state == "provisioning"
+        assert request is not None and request.state == "validation"
         version.snapshot_json = {key: value for key, value in snapshot.items() if key != "failure_inject_step"}
         job = session.get(ProvisioningJob, converted.provisioning_job_id)
         assert job is not None
@@ -153,3 +155,29 @@ def test_failed_step_is_not_ready_and_can_resume_after_injection_removed():
     finally:
         settings.feature_flags = original_flags
         session.close()
+
+
+def test_expired_validation_lease_is_reclaimed_and_fenced():
+    session = make_session()
+    tenant = Tenant(organization_id="org-lease", tenant_slug="lease-tenant", environment="staging")
+    session.add(tenant)
+    session.commit()
+    job = provisioning_service.queue_provisioning_job(session, tenant.id, "provision_tenant")
+    first = provisioning_service.claim_next_job(session, "crashed-worker")
+    assert first is not None
+    first.status = "validation"
+    first.lease_expires_at = utcnow() - timedelta(seconds=1)
+    stale_token = first.lease_token
+    first.lease_token = stale_token
+    step = ProvisioningStep(job_id=first.id, step_key="validate_approved_request", ordinal=1, status="running", worker_id="crashed-worker")
+    session.add_all([first, step])
+    session.commit()
+
+    reclaimed = provisioning_service.claim_next_job(session, "replacement-worker")
+    assert reclaimed is not None
+    assert reclaimed.status == "running"
+    assert reclaimed.worker_id == "replacement-worker"
+    assert reclaimed.lease_token and reclaimed.lease_token != stale_token
+    session.refresh(step)
+    assert step.status == "queued"
+    assert step.worker_id is None

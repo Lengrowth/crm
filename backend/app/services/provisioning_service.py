@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import re
+import secrets
 from datetime import timedelta
 from typing import Any, Optional
 from uuid import uuid4
 
-from sqlalchemy import or_, select, update
+from sqlalchemy import and_, or_, select, update
 from sqlalchemy.orm import Session
 
 from app.models.domain import ProvisioningEvent, ProvisioningJob, ProvisioningStep, utcnow
@@ -73,6 +74,7 @@ class ProvisioningService:
             job.finished_at = utcnow()
             job.lease_expires_at = None
             job.worker_id = None
+            job.lease_token = None
         if err:
             job.error_message = sanitize_value(err)
         session.add(job)
@@ -82,22 +84,114 @@ class ProvisioningService:
 
     def claim_next_job(self, session: Session, worker_id: str, lease_seconds: int = 120) -> Optional[ProvisioningJob]:
         now = utcnow()
-        candidate = session.execute(select(ProvisioningJob).where(ProvisioningJob.status == "queued", or_(ProvisioningJob.next_attempt_at.is_(None), ProvisioningJob.next_attempt_at <= now), or_(ProvisioningJob.lease_expires_at.is_(None), ProvisioningJob.lease_expires_at <= now)).order_by(ProvisioningJob.created_at).limit(1)).scalar_one_or_none()
+        queued = and_(
+            ProvisioningJob.status == "queued",
+            or_(ProvisioningJob.next_attempt_at.is_(None), ProvisioningJob.next_attempt_at <= now),
+        )
+        expired = and_(
+            ProvisioningJob.status.in_(("running", "validation")),
+            ProvisioningJob.lease_expires_at.is_not(None),
+            ProvisioningJob.lease_expires_at <= now,
+        )
+        candidate = session.execute(
+            select(ProvisioningJob)
+            .where(or_(queued, expired))
+            .order_by(ProvisioningJob.created_at)
+            .limit(1)
+        ).scalar_one_or_none()
         if candidate is None:
             return None
         lease_until = now + timedelta(seconds=max(15, lease_seconds))
-        result = session.execute(update(ProvisioningJob).where(ProvisioningJob.id == candidate.id, ProvisioningJob.status == "queued", or_(ProvisioningJob.lease_expires_at.is_(None), ProvisioningJob.lease_expires_at <= now)).values(status="running", worker_id=worker_id, lease_expires_at=lease_until, heartbeat_at=now, started_at=candidate.started_at or now, attempt_count=ProvisioningJob.attempt_count + 1))
+        lease_token = secrets.token_urlsafe(32)
+        if candidate.status in {"running", "validation"}:
+            stale_worker_id = candidate.worker_id
+            reclaimed = session.execute(
+                update(ProvisioningJob)
+                .execution_options(synchronize_session=False)
+                .where(
+                    ProvisioningJob.id == candidate.id,
+                    ProvisioningJob.status.in_(("running", "validation")),
+                    ProvisioningJob.lease_expires_at <= now,
+                )
+                .values(
+                    status="queued",
+                    worker_id=None,
+                    lease_token=None,
+                    lease_expires_at=None,
+                    heartbeat_at=None,
+                    next_attempt_at=now,
+                    error_message="Worker lease expired; the durable job was reclaimed.",
+                )
+            )
+            if reclaimed.rowcount != 1:
+                session.rollback()
+                return None
+            session.execute(
+                update(ProvisioningStep)
+                .execution_options(synchronize_session=False)
+                .where(
+                    ProvisioningStep.job_id == candidate.id,
+                    ProvisioningStep.status == "running",
+                    ProvisioningStep.worker_id == stale_worker_id,
+                )
+                .values(status="queued", worker_id=None, lease_expires_at=None, next_attempt_at=now)
+            )
+        result = session.execute(
+            update(ProvisioningJob)
+            .execution_options(synchronize_session=False)
+            .where(
+                ProvisioningJob.id == candidate.id,
+                ProvisioningJob.status == "queued",
+                or_(ProvisioningJob.next_attempt_at.is_(None), ProvisioningJob.next_attempt_at <= now),
+            )
+            .values(
+                status="running",
+                worker_id=worker_id,
+                lease_token=lease_token,
+                lease_expires_at=lease_until,
+                heartbeat_at=now,
+                started_at=candidate.started_at or now,
+                attempt_count=ProvisioningJob.attempt_count + 1,
+            )
+        )
         if result.rowcount != 1:
             session.rollback()
             return None
         session.commit()
         return session.get(ProvisioningJob, candidate.id)
 
-    def renew_lease(self, session: Session, job_id: str, worker_id: str, lease_seconds: int = 120) -> bool:
+    def renew_lease(self, session: Session, job_id: str, worker_id: str, lease_seconds: int = 120, lease_token: Optional[str] = None) -> bool:
         now = utcnow()
-        result = session.execute(update(ProvisioningJob).where(ProvisioningJob.id == job_id, ProvisioningJob.status.in_(("running", "validation")), ProvisioningJob.worker_id == worker_id).values(heartbeat_at=now, lease_expires_at=now + timedelta(seconds=max(15, lease_seconds))))
+        conditions = [
+            ProvisioningJob.id == job_id,
+            ProvisioningJob.status.in_(("running", "validation")),
+            ProvisioningJob.worker_id == worker_id,
+            ProvisioningJob.lease_expires_at > now,
+        ]
+        if lease_token is not None:
+            conditions.append(ProvisioningJob.lease_token == lease_token)
+        result = session.execute(
+            update(ProvisioningJob)
+            .execution_options(synchronize_session=False)
+            .where(*conditions)
+            .values(heartbeat_at=now, lease_expires_at=now + timedelta(seconds=max(15, lease_seconds)))
+        )
         session.commit()
         return result.rowcount == 1
+
+    def assert_lease(self, session: Session, job_id: str, worker_id: str, lease_token: Optional[str]) -> None:
+        now = utcnow()
+        job = session.execute(
+            select(ProvisioningJob).where(
+                ProvisioningJob.id == job_id,
+                ProvisioningJob.status.in_(("running", "validation")),
+                ProvisioningJob.worker_id == worker_id,
+                ProvisioningJob.lease_token == lease_token,
+                ProvisioningJob.lease_expires_at > now,
+            )
+        ).scalar_one_or_none()
+        if job is None:
+            raise RuntimeError("The provisioning worker lease was lost; external work will be reconciled on retry.")
 
     def release_for_retry(self, session: Session, job: ProvisioningJob, worker_id: str, delay_seconds: int, message: str) -> ProvisioningJob:
         if job.worker_id != worker_id:

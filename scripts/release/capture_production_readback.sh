@@ -57,6 +57,10 @@ def runtime_release() -> dict[str, object]:
         "commit": payload.get("commit"),
         "environment": payload.get("environment"),
         "platform_phase1_shell": payload.get("feature_flags", {}).get("platform_phase1_shell"),
+        "feature_flags": payload.get("feature_flags", {}),
+        "manifest_build_environment": payload.get("manifest", {}).get("build_environment", payload.get("manifest", {}).get("environment")),
+        "database_revision_before": payload.get("manifest", {}).get("database_revision_before"),
+        "database_revision_after": payload.get("manifest", {}).get("database_revision_after"),
     }
 
 
@@ -130,6 +134,65 @@ def phase2_cleanup_evidence() -> dict[str, object]:
     }
 
 
+def database_revision() -> dict[str, object]:
+    database_url = os.environ.get("DATABASE_URL", "")
+    if not database_url.startswith("sqlite:///"):
+        return {"available": False, "reason": "non-sqlite revision query requires the configured application database adapter"}
+    database_path = database_url.removeprefix("sqlite:///")
+    result = subprocess.run(
+        ["sqlite3", database_path, "SELECT version_num FROM alembic_version ORDER BY version_num DESC LIMIT 1;"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    revision = result.stdout.strip() if result.returncode == 0 else ""
+    return {"available": bool(revision), "revision": revision or None}
+
+
+def phase4_cleanup_evidence() -> dict[str, object]:
+    database_url = os.environ.get("DATABASE_URL", "")
+    if not database_url.startswith("sqlite:///"):
+        return {"available": False, "reason": "phase4 fixture query requires the configured application database adapter"}
+    database_path = database_url.removeprefix("sqlite:///")
+    queries = {
+        "requests": "SELECT count(*) FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%';",
+        "request_versions": "SELECT count(*) FROM onboarding_request_versions WHERE request_id IN (SELECT id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%');",
+        "management_credentials": "SELECT count(*) FROM onboarding_management_credentials WHERE request_id IN (SELECT id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%');",
+        "decisions": "SELECT count(*) FROM onboarding_decisions WHERE request_id IN (SELECT id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%');",
+        "organizations": "SELECT count(*) FROM organizations WHERE id IN (SELECT organization_id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%');",
+        "memberships": "SELECT count(*) FROM organization_memberships WHERE organization_id IN (SELECT organization_id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%');",
+        "tenants": "SELECT count(*) FROM tenants WHERE id IN (SELECT tenant_id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%');",
+        "projects": "SELECT count(*) FROM implementation_projects WHERE id IN (SELECT implementation_project_id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%');",
+        "tasks": "SELECT count(*) FROM implementation_tasks WHERE implementation_project_id IN (SELECT implementation_project_id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%');",
+        "domains": "SELECT count(*) FROM domain_mappings WHERE tenant_id IN (SELECT tenant_id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%');",
+        "organization_modules": "SELECT count(*) FROM organization_modules WHERE organization_id IN (SELECT organization_id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%') AND source_type = 'onboarding';",
+        "module_entitlement_audits": "SELECT count(*) FROM module_entitlement_audits WHERE organization_id IN (SELECT organization_id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%') AND source_type = 'onboarding';",
+        "module_application_statuses": "SELECT count(*) FROM module_application_statuses WHERE tenant_id IN (SELECT tenant_id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%');",
+        "jobs": "SELECT count(*) FROM provisioning_jobs WHERE onboarding_request_id IN (SELECT id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%');",
+        "active_leases": "SELECT count(*) FROM provisioning_jobs WHERE onboarding_request_id IN (SELECT id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%') AND lease_expires_at IS NOT NULL;",
+        "steps": "SELECT count(*) FROM provisioning_steps WHERE job_id IN (SELECT provisioning_job_id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%');",
+        "events": "SELECT count(*) FROM provisioning_events WHERE job_id IN (SELECT provisioning_job_id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%');",
+        "outbox_events": "SELECT count(*) FROM provisioning_outbox_events WHERE aggregate_id IN (SELECT id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%');",
+        "first_login_handoffs": "SELECT count(*) FROM first_login_handoffs WHERE request_id IN (SELECT id FROM onboarding_requests WHERE idempotency_key LIKE 'phase4-%');",
+        "synthetic_admins": "SELECT count(*) FROM saas_users WHERE email LIKE 'phase4-admin-%@acmephase4.com';",
+    }
+    counts: dict[str, int | None] = {}
+    for key, sql in queries.items():
+        result = subprocess.run(["sqlite3", database_path, sql], check=False, capture_output=True, text=True)
+        value = result.stdout.strip()
+        counts[key] = int(value) if result.returncode == 0 and value.isdigit() else None
+    counts["all_remaining_counts_zero"] = all(value == 0 for value in counts.values() if isinstance(value, int)) and all(value is not None for value in counts.values())
+    counts["database_path_exposed"] = False
+    return {"available": True, "counts": counts}
+
+
+def production_erp_phase4_site_count() -> int | None:
+    sites_root = Path("/home/frappe/frappe-bench/sites")
+    if not sites_root.is_dir():
+        return None
+    return sum(1 for path in sites_root.glob("phase4-*") if path.is_dir())
+
+
 lifecycle_raw = subprocess.run(
     ["aws", "s3api", "get-bucket-lifecycle-configuration", "--bucket", bucket, "--endpoint-url", endpoint, "--output", "json"],
     check=False,
@@ -177,8 +240,11 @@ data = {
     },
     "r2_backup_timer_enabled": command("systemctl", "is-enabled", "saas-control-r2-backup.timer") or "unknown",
     "local_health_http": command("curl", "-sS", "-o", "/dev/null", "-w", "%{http_code}", "http://127.0.0.1:8001/health"),
+    "database_revision": database_revision(),
     "smoke_cleanup": database_counts(),
     "phase2_cleanup": phase2_cleanup_evidence(),
+    "phase4_cleanup": phase4_cleanup_evidence(),
+    "production_erp_phase4_site_count": production_erp_phase4_site_count(),
     "source_trees": [
         git_state(Path("/home/frappe/frappe-bench/apps/frappe")),
         git_state(Path("/home/frappe/frappe-bench/apps/erpnext")),

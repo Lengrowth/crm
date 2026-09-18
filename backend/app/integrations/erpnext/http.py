@@ -138,5 +138,14 @@ class ERPNextHTTPClient(ERPNextClient):
     def delete_site(self, site_id: str) -> OperationResult:
         return OperationResult(self._request("DELETE", f"/api/v1/sites/{site_id}"))
 
+    def apply_site_configuration(self, site_id: str, configuration: dict[str, object]) -> OperationResult:
+        return OperationResult(self._request("POST", f"/api/v1/sites/{site_id}/configuration", configuration))
+
+    def get_site_inventory(self, site_id: str) -> dict[str, object]:
+        return self._request("GET", f"/api/v1/sites/{site_id}/inventory")
+
+    def verify_site_configuration(self, site_id: str, requested_modules: list[str]) -> OperationResult:
+        return OperationResult(self._request("POST", f"/api/v1/sites/{site_id}/verify", {"modules": requested_modules}))
+
 
 HttpERPNextClient = ERPNextHTTPClient

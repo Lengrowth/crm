@@ -60,3 +60,12 @@ class ERPNextClient(ABC):
     @abstractmethod
     def delete_site(self, site_id: str) -> OperationResult:
         raise NotImplementedError
+
+    def apply_site_configuration(self, site_id: str, configuration: dict[str, object]) -> OperationResult:
+        return OperationResult({"status": "unsupported", "site_id": site_id})
+
+    def get_site_inventory(self, site_id: str) -> dict[str, object]:
+        return {"status": "unsupported", "site_id": site_id}
+
+    def verify_site_configuration(self, site_id: str, requested_modules: list[str]) -> OperationResult:
+        return OperationResult({"status": "unsupported", "site_id": site_id, "requested_modules": requested_modules})

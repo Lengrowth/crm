@@ -23,7 +23,7 @@ from pathlib import Path
 from sqlalchemy import select
 
 from app.db.session import SessionLocal
-from app.integrations.mock_erpnext import MockERPNextClient
+from app.integrations.erpnext_runtime import get_erpnext_client
 from app.models.domain import (
     DomainMapping,
     FirstLoginHandoff,
@@ -132,11 +132,15 @@ def cleanup(request_id: str, admin_email: str, site_id: str | None) -> dict[str,
         counts["synthetic_admins"] = session.query(SaaSUser).filter(SaaSUser.email == admin_email).delete(synchronize_session=False)
         session.commit()
         if site_id:
-            client = MockERPNextClient()
+            client = get_erpnext_client()
             result = client.delete_site(site_id)
             if result.get("status") not in {"success", "not_found"}:
-                raise RuntimeError("synthetic isolated site cleanup did not complete")
+                raise RuntimeError("isolated staging ERP site cleanup did not complete")
             counts["external_site_deleted"] = int(result.get("status") == "success")
+            after = client.get_site_status(site_id)
+            counts["external_site_cleanup_verified"] = after.get("status") == "not_found"
+            if not counts["external_site_cleanup_verified"]:
+                raise RuntimeError("isolated staging ERP site cleanup could not be verified")
         return counts
 
 
@@ -233,7 +237,12 @@ def main() -> int:
             if step.get("step_key") == "create_isolated_site":
                 evidence_json = step.get("evidence_json") or {}
                 site_id = str(evidence_json.get("site_id") or "") or None
-        evidence.update({"status": "passed", "request_id": request_id, "job_id": job_id, "state": last_status, "step_count": len(detail.get("steps", [])), "worker_status": detail.get("status"), "recovery_run": bool(parsed.failure_step), "failure_step": parsed.failure_step})
+        provider_steps = {
+            str(step.get("step_key")): step.get("evidence_json")
+            for step in detail.get("steps", [])
+            if step.get("step_key") in {"create_isolated_site", "health_checks", "verify_apps_modules"}
+        }
+        evidence.update({"status": "passed", "request_id": request_id, "job_id": job_id, "state": last_status, "step_count": len(detail.get("steps", [])), "worker_status": detail.get("status"), "recovery_run": bool(parsed.failure_step), "failure_step": parsed.failure_step, "provider_readback": provider_steps})
         exit_code = 0
     except Exception as exc:
         evidence["error"] = str(exc)[:500]

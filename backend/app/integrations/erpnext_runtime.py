@@ -5,13 +5,14 @@ from typing import Literal, Optional
 from urllib.parse import urlparse
 
 from app.core.config import settings
+from app.integrations.frappe_bench import FrappeBenchERPNextClient
 from app.integrations.erpnext.http import ERPNextHTTPClient
 from app.integrations.erpnext_client import ERPNextClient
 from app.integrations.mock_erpnext import MockERPNextClient
 
 logger = logging.getLogger(__name__)
 
-ERPNextMode = Literal["mock", "live", "disabled"]
+ERPNextMode = Literal["mock", "live", "bench", "disabled"]
 
 
 class ERPNextConfigurationError(RuntimeError):
@@ -27,12 +28,12 @@ def _normalize_mode(mode: Optional[str]) -> Optional[ERPNextMode]:
         return "mock"
     if normalized == "live":
         return "live"
+    if normalized in {"bench", "staging_bench"}:
+        return "bench"
     if normalized == "disabled":
         return "disabled"
 
-    raise ERPNextConfigurationError(
-        "ERPNEXT_MODE must be one of: mock, live, disabled."
-    )
+    raise ERPNextConfigurationError("ERPNEXT_MODE must be one of: mock, live, bench, disabled.")
 
 
 def _configured_auth_mode() -> Optional[str]:
@@ -103,6 +104,25 @@ def get_erpnext_client() -> ERPNextClient:
         )
         return MockERPNextClient()
 
+    if mode == "bench":
+        if settings.normalized_environment != "staging" or not settings.erpnext_bench_root:
+            raise ERPNextConfigurationError(
+                "ERPNEXT_MODE=bench is restricted to staging and requires ERPNEXT_BENCH_ROOT."
+            )
+        logger.info(
+            "ERPNext client selection: mode=bench environment=%s bench_root=%s",
+            settings.normalized_environment,
+            settings.erpnext_bench_root,
+        )
+        return FrappeBenchERPNextClient(
+            bench_root=settings.erpnext_bench_root,
+            site_prefix=settings.erpnext_bench_site_prefix,
+            run_as_user=settings.erpnext_bench_run_as_user,
+            bench_command=settings.erpnext_bench_command,
+            web_url=settings.erpnext_bench_web_url,
+            db_root_password=settings.erpnext_db_root_password,
+        )
+
     if mode == "live":
         base_url, auth_mode = _validate_live_configuration()
         logger.info(
@@ -115,7 +135,8 @@ def get_erpnext_client() -> ERPNextClient:
 
     raise ERPNextConfigurationError(
         "ERPNext integration is disabled for this environment. Use ERPNEXT_MODE=mock "
-        + "for local development, or configure ERPNEXT_MODE=live intentionally for Phase 18 cutover."
+        + "for local development, ERPNEXT_MODE=bench only for the isolated staging bench, "
+        + "or configure ERPNEXT_MODE=live intentionally for the approved production cutover."
     )
 
 
@@ -137,6 +158,22 @@ def get_erpnext_runtime_summary() -> dict[str, str]:
             "policy": "local_safe_default",
             "message": "Mock ERPNext behavior is active for local/test development only.",
             "target": "mock-runtime",
+        }
+
+    if mode == "bench":
+        if settings.normalized_environment != "staging" or not settings.erpnext_bench_root:
+            return {
+                "environment": settings.normalized_environment,
+                "mode": "invalid",
+                "policy": "configuration_error",
+                "message": "Staging bench ERPNext mode requires an explicit staging bench root.",
+            }
+        return {
+            "environment": settings.normalized_environment,
+            "mode": "bench",
+            "policy": "isolated_staging_bench",
+            "message": "The dedicated staging Frappe bench is active for isolated synthetic provisioning.",
+            "target": settings.erpnext_bench_root,
         }
 
     if mode == "live":

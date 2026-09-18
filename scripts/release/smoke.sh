@@ -4,6 +4,9 @@ set -euo pipefail
 BASE_URL="${BASE_URL:?Set BASE_URL for the lane under test}"
 BACKEND_URL="${BACKEND_URL:-$BASE_URL}"
 EXPECTED_RELEASE="${EXPECTED_RELEASE:-}"
+EXPECTED_RUNTIME_ENVIRONMENT="${EXPECTED_RUNTIME_ENVIRONMENT:-}"
+EXPECTED_BUILD_ENVIRONMENT="${EXPECTED_BUILD_ENVIRONMENT:-}"
+EXPECTED_DATABASE_REVISION="${EXPECTED_DATABASE_REVISION:-}"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 AUTH_TOKEN_FILE="${AUTH_TOKEN_FILE:-}"
 REQUIRE_AUTH_SMOKE="${REQUIRE_AUTH_SMOKE:-false}"
@@ -29,16 +32,20 @@ check_http "public root" "$BASE_URL/"
 check_http "backend health" "$BACKEND_URL/health"
 check_http "ERP runtime summary" "$BACKEND_URL/integrations/erpnext/runtime"
 release_payload="$(curl "${CURL_ARGS[@]}" -fsS --max-time 20 "$BACKEND_URL/runtime/release")"
-"$PYTHON_BIN" - "$EXPECTED_RELEASE" "$release_payload" <<'PY'
+"$PYTHON_BIN" - "$EXPECTED_RELEASE" "$EXPECTED_RUNTIME_ENVIRONMENT" "$EXPECTED_BUILD_ENVIRONMENT" "$EXPECTED_DATABASE_REVISION" "$release_payload" <<'PY'
 import json
 import sys
-expected, raw = sys.argv[1:]
+expected, expected_runtime_environment, expected_build_environment, expected_database_revision, raw = sys.argv[1:]
 payload = json.loads(raw)
 if expected and payload.get("release_id") != expected:
     raise SystemExit(f"release identity mismatch: expected {expected}")
+if expected_runtime_environment and payload.get("environment") != expected_runtime_environment:
+    raise SystemExit(f"runtime environment mismatch: expected {expected_runtime_environment}")
 manifest = payload.get("manifest")
 if not isinstance(manifest, dict):
     raise SystemExit("release manifest is missing from runtime metadata")
+if expected_build_environment and manifest.get("build_environment", manifest.get("environment")) != expected_build_environment:
+    raise SystemExit(f"release build environment mismatch: expected {expected_build_environment}")
 required = {
     "control_plane_commit",
     "custom_app_commit",
@@ -68,6 +75,8 @@ for field in (
 ):
     if manifest.get(field) in {None, "", "unknown", "not-installed"}:
         raise SystemExit(f"release manifest has incomplete runtime field: {field}")
+if expected_database_revision and manifest.get("database_revision_after") != expected_database_revision:
+    raise SystemExit(f"release database revision mismatch: expected {expected_database_revision}")
 PY
 printf 'release metadata and installed-app inventory passed\n'
 

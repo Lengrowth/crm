@@ -93,6 +93,11 @@ if [[ "$REQUIRE_AUTH_SMOKE" == "true" ]]; then
   }
 fi
 
+[[ "${EXPECTED_RUNTIME_ENVIRONMENT:-production}" == "production" ]] || {
+  echo "Production promotion requires EXPECTED_RUNTIME_ENVIRONMENT=production." >&2
+  exit 1
+}
+
 exec 9>"$LOCK_FILE"
 flock -n 9 || { echo "Another production promotion is already running." >&2; exit 1; }
 
@@ -111,6 +116,9 @@ fi
 if ! AUTH_TOKEN_FILE="$AUTH_TOKEN_FILE" REQUIRE_AUTH_SMOKE="$REQUIRE_AUTH_SMOKE" \
   BASE_URL="${PRODUCTION_BASE_URL:?Set PRODUCTION_BASE_URL}" \
   BACKEND_URL="${PRODUCTION_BACKEND_URL:?Set PRODUCTION_BACKEND_URL}" \
+  EXPECTED_RUNTIME_ENVIRONMENT="${EXPECTED_RUNTIME_ENVIRONMENT:-production}" \
+  EXPECTED_BUILD_ENVIRONMENT="${EXPECTED_BUILD_ENVIRONMENT:-staging}" \
+  EXPECTED_DATABASE_REVISION="${EXPECTED_DATABASE_REVISION:-}" \
   EXPECTED_RELEASE="$RELEASE_ID" bash "$CANDIDATE_DIR/scripts/release/smoke.sh"; then
   rollback "$OLD_TARGET" "$OLD_PREVIOUS" || echo "CRITICAL: production rollback after smoke failure was not fully verified." >&2
   echo "Production smoke failed; previous release restored." >&2
@@ -122,6 +130,7 @@ if [[ "${RUN_SHELL_SMOKE:-false}" == "true" ]]; then
     BASE_URL="${PRODUCTION_BASE_URL:?Set PRODUCTION_BASE_URL}" \
     BACKEND_URL="${PRODUCTION_BACKEND_URL:?Set PRODUCTION_BACKEND_URL}" \
     EXPECTED_RELEASE="$RELEASE_ID" \
+    EXPECTED_RUNTIME_ENVIRONMENT="${EXPECTED_RUNTIME_ENVIRONMENT:-production}" \
     EXPECTED_PHASE_ONE_SHELL="${EXPECTED_PHASE_ONE_SHELL:?Set EXPECTED_PHASE_ONE_SHELL}" \
     bash "$CANDIDATE_DIR/scripts/release/shell_smoke.sh"; then
     rollback "$OLD_TARGET" "$OLD_PREVIOUS" || echo "CRITICAL: production rollback after shell smoke failure was not fully verified." >&2

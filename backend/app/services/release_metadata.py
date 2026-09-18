@@ -10,6 +10,7 @@ _SAFE_MANIFEST_KEYS = {
     "release_id",
     "control_plane_commit",
     "environment",
+    "build_environment",
     "build_time_utc",
     "custom_app_version",
     "custom_app_commit",
@@ -44,7 +45,10 @@ def get_release_metadata() -> dict[str, object]:
     return {
         "release_id": manifest.get("release_id", settings.release_id),
         "commit": manifest.get("control_plane_commit", settings.release_commit),
-        "environment": manifest.get("environment", settings.normalized_environment),
+        # Runtime environment is server configuration. The manifest's
+        # environment records where the immutable artifact was built (staging)
+        # and must not override the production runtime identity.
+        "environment": settings.normalized_environment,
         "feature_flags": settings.feature_flag_map,
         "manifest": manifest,
     }

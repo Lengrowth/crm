@@ -167,6 +167,40 @@ jobs:
           path.write_text('\n'.join(output) + '\n', encoding='utf-8')
           PY
 
+      - name: Configure the dedicated staging Frappe bench adapter
+        run: |
+          sudo python3 - /opt/saas-control-staging/shared/env/staging-backend.env <<'PY'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          required = {
+              'ERPNEXT_MODE': 'bench',
+              'ERPNEXT_BENCH_ROOT': '/opt/frappe-staging-bench',
+              'ERPNEXT_BENCH_SITE_PREFIX': 'phase4-',
+              'ERPNEXT_BENCH_RUN_AS_USER': 'frappe',
+              'ERPNEXT_BENCH_COMMAND': '/usr/local/bin/bench',
+              'ERPNEXT_BENCH_WEB_URL': 'http://127.0.0.1:28000',
+          }
+          lines = path.read_text(encoding='utf-8').splitlines()
+          output = []
+          seen = set()
+          for line in lines:
+              key, separator, _ = line.partition('=')
+              if separator and key in required:
+                  output.append(f'{key}={required[key]}')
+                  seen.add(key)
+              else:
+                  output.append(line)
+          output.extend(f'{key}={value}' for key, value in required.items() if key not in seen)
+          path.write_text('\n'.join(output) + '\n', encoding='utf-8')
+          PY
+          sudo install -m 0440 /dev/stdin /etc/sudoers.d/saas-staging-frappe-bench <<'EOF'
+          saas-staging ALL=(frappe) NOPASSWD: /usr/local/bin/bench
+          EOF
+          sudo visudo -cf /etc/sudoers.d/saas-staging-frappe-bench
+          sudo -n -u frappe /usr/local/bin/bench --version
+
       - name: Build and deploy exact candidate to staging
         env:
           DEPLOY_TARGET: staging
@@ -174,6 +208,9 @@ jobs:
           RELEASE_ID: ${{ inputs.candidate_ref || github.sha }}
           REQUIRE_AUTH_SMOKE: "true"
         run: ./scripts/deploy/deploy_saas_control.sh
+
+      - name: Verify the dedicated ERP staging bench and queues
+        run: sudo scripts/release/erp_staging_smoke.sh
 
       - name: Run isolated synthetic Phase 4 onboarding smoke
         if: ${{ (inputs.phase4_synthetic_state || 'off') == 'on' }}
