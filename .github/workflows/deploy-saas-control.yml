@@ -94,6 +94,11 @@ jobs:
       - name: Reclaim only the disposable npm cache on the staging runner
         run: npm cache clean --force
 
+      - name: Reclaim disposable npm and Next.js temp directories
+        run: |
+          sudo find /tmp -maxdepth 1 -mindepth 1 \( -name 'npm-*' -o -name 'next-*' \) -exec rm -rf -- {} +
+          df -h / /home /opt
+
       - name: Scan tracked and untracked candidate inputs for credential patterns
         run: python3 scripts/release/secret_scan.py
 
