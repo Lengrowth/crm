@@ -115,8 +115,8 @@ normal browser action has no ERP verification control.
   [#51](https://github.com/Lengrowth/crm/pull/51), [#52](https://github.com/Lengrowth/crm/pull/52),
   [#53](https://github.com/Lengrowth/crm/pull/53). The verified baseline
   `7cd9c2d2cc3e5a4507e380f8b122983a3ad76d9d` is an ancestor.
-- Final-main staging for the actual final remote `main`: run
-  [35278665942](https://github.com/Lengrowth/crm/actions/runs/35278665942),
+- Candidate-bound staging for production candidate `86fcde5b822b06e40980f904d81b87854903dfc6`:
+  run [35278665942](https://github.com/Lengrowth/crm/actions/runs/35278665942),
   browser artifact
   [10521149490](https://github.com/Lengrowth/crm/actions/runs/35278665942/artifacts/10521149490).
   Runtime identity matched the candidate. The Phase 3 artifact records backend
@@ -124,10 +124,17 @@ normal browser action has no ERP verification control.
   bundle preview/apply/retry, invalid and dependent-disable rejection, company
   Modules view, audit before/after, reversal, non-admin denial, and cleanup
   manifest; accessibility reported zero violations.
-  Post-reconciliation final-main staging also passed in run
-  [35280212957](https://github.com/Lengrowth/crm/actions/runs/35280212957),
+- Final remote-main staging for the documentation-bearing sign-off content:
+  run [35281045275](https://github.com/Lengrowth/crm/actions/runs/35281045275),
   browser artifact
-  [10521857797](https://github.com/Lengrowth/crm/actions/runs/35280212957/artifacts/10521857797).
+  [10522837696](https://github.com/Lengrowth/crm/actions/runs/35281045275/artifacts/10522837696).
+  The run head is `6bb59b2ab1349351ee8e9fc80a06f454a8f8b772`, the final remote
+  `main` at sign-off. Its staging artifact reports
+  `platform_phase1_shell=false` because staging workflow flags are isolated;
+  protected production readback [35279102175](https://github.com/Lengrowth/crm/actions/runs/35279102175)
+  / artifact [10522240159](https://github.com/Lengrowth/crm/actions/runs/35279102175/artifacts/10522240159)
+  and live production observations independently verify
+  `platform_phase1_shell=true` for the production candidate.
 - Database migration: staging rehearsal upgraded representative legacy schema
   `20260528_0007` through `20260918_0009`, downgraded, and upgraded again while
   preserving a legacy `inventory` assignment. The protected production
