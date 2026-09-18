@@ -154,7 +154,9 @@ def main() -> int:
         raise SystemExit("Phase 4 synthetic smoke refuses production hostnames")
     admin_token = Path(parsed.admin_token_file).read_text(encoding="utf-8").strip()
     request_id: str | None = None
+    job_id: str | None = None
     site_id: str | None = None
+    last_status = "not_started"
     exit_code = 1
     admin_email = f"phase4-admin-{run_id}@acmephase4.com"
     evidence: dict[str, object] = {"status": "failed", "run_id": run_id, "started_at": datetime.now(timezone.utc).isoformat()}
@@ -180,6 +182,7 @@ def main() -> int:
         status, created = request(base_url, "POST", "/public/onboarding-requests", payload={"idempotency_key": f"phase4-{run_id}", "payload": payload})
         if created.get("request_id"):
             request_id = str(created["request_id"])
+            evidence["request_id"] = request_id
         if status not in (200, 201) or not created.get("request_id") or not created.get("management_token"):
             detail = created.get("detail") or created.get("message") or "no response detail"
             raise RuntimeError(f"public synthetic onboarding request was not accepted (HTTP {status}: {detail})")
@@ -199,6 +202,7 @@ def main() -> int:
         if status != 200 or authorized.get("state") != "provisioning":
             raise RuntimeError("synthetic execution authorization failed")
         job_id = str(converted["provisioning_job_id"])
+        evidence["job_id"] = job_id
         if parsed.failure_step:
             with SessionLocal() as session:
                 version = session.execute(select(OnboardingRequestVersion).where(OnboardingRequestVersion.request_id == request_id, OnboardingRequestVersion.version == 1)).scalar_one()
@@ -242,10 +246,29 @@ def main() -> int:
             for step in detail.get("steps", [])
             if step.get("step_key") in {"create_isolated_site", "health_checks", "verify_apps_modules"}
         }
-        evidence.update({"status": "passed", "request_id": request_id, "job_id": job_id, "state": last_status, "step_count": len(detail.get("steps", [])), "worker_status": detail.get("status"), "recovery_run": bool(parsed.failure_step), "failure_step": parsed.failure_step, "provider_readback": provider_steps})
+        evidence.update({"status": "passed", "state": last_status, "step_count": len(detail.get("steps", [])), "worker_status": detail.get("status"), "recovery_run": bool(parsed.failure_step), "failure_step": parsed.failure_step, "provider_readback": provider_steps})
         exit_code = 0
     except Exception as exc:
         evidence["error"] = str(exc)[:500]
+        evidence["state"] = last_status
+        if request_id and job_id:
+            try:
+                status, failed_detail = request(base_url, "GET", f"/operator/provisioning-jobs/{job_id}", token=admin_token)
+                if status == 200:
+                    evidence["worker_status"] = failed_detail.get("status")
+                    evidence["step_count"] = len(failed_detail.get("steps", []))
+                    evidence["worker_error"] = failed_detail.get("error_message") or failed_detail.get("error")
+                    evidence["worker_steps"] = [
+                        {
+                            "step_key": step.get("step_key"),
+                            "status": step.get("status"),
+                            "error_message": step.get("error_message"),
+                            "evidence_json": step.get("evidence_json"),
+                        }
+                        for step in failed_detail.get("steps", [])
+                    ]
+            except Exception as detail_exc:
+                evidence["worker_detail_error"] = str(detail_exc)[:300]
     finally:
         if request_id:
             try:
