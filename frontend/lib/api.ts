@@ -5,6 +5,7 @@ import type { ImplementationPortfolio } from "@/features/implementation/types";
 import type { DomainRecord, ProvisioningJobRecord, TenantRecord } from "@/features/tenants/types";
 import type { OrganizationRecord } from "@/features/organizations/types";
 import type { ModuleAudit, ModuleBundle, ModuleEffective, ModulePreview, ModuleSummary } from "@/features/modules/types";
+import type { OperatorOnboardingRead, ProvisioningEventRead, ProvisioningJobDetailRead, PublicOnboardingRead, PublicOnboardingResult } from "@/features/onboarding/types";
 
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) { super(message); this.name = "ApiError"; }
@@ -57,7 +58,6 @@ export function suspendTenant(tenantId: string, reason?: string) { return reques
 export function reactivateTenant(tenantId: string, reason?: string) { return requestJson<TenantRecord>(`/tenants/${tenantId}/reactivate`, { method: "POST", body: JSON.stringify({ reason }) }); }
 export function listTenantDomains(tenantId: string) { return requestJson<DomainRecord[]>(`/tenants/${tenantId}/domains`); }
 export function manualActivateDomain(tenantId: string, domainId: string, payload: Record<string, unknown>) { return requestJson<DomainRecord>(`/tenants/${tenantId}/domains/${domainId}/manual_activate`, { method: "POST", body: JSON.stringify(payload) }); }
-export function provisionTenant(organizationId: string, tenantId: string, payload: Record<string, unknown>) { return requestJson<{ id: string }>(`/organizations/${organizationId}/tenants/${tenantId}/provision`, { method: "POST", body: JSON.stringify(payload) }); }
 export function getProvisioningStatus(provisionId: string) { return requestJson<{ id: string; status: string }>(`/provisioning/${provisionId}`); }
 export function listProvisioningJobs(tenantId: string) { return requestJson<ProvisioningJobRecord[]>(`/tenants/${tenantId}/provisioning_jobs`); }
 export function fetchModuleCatalog() { return requestJson<ModuleSummary[]>("/catalog/modules"); }
@@ -67,3 +67,23 @@ export function fetchOrganizationModules(organizationId: string) { return reques
 export function previewOrganizationModules(organizationId: string, payload: Record<string, unknown>) { return requestJson<ModulePreview>(`/organizations/${organizationId}/modules/preview`, { method: "POST", body: JSON.stringify({ ...payload, organization_id: organizationId }) }); }
 export function applyOrganizationModules(organizationId: string, payload: Record<string, unknown>) { return requestJson<{ operation: string; replayed: boolean; audit_id: string | null; effective: ModuleEffective }>(`/organizations/${organizationId}/modules/apply`, { method: "POST", body: JSON.stringify({ ...payload, organization_id: organizationId }) }); }
 export function fetchOrganizationModuleAudit(organizationId: string) { return requestJson<ModuleAudit[]>(`/organizations/${organizationId}/modules/audit`); }
+
+export type PublicOnboardingPayload = {
+  company_name: string; legal_name?: string; industry?: string; country?: string; timezone?: string;
+  billing_email?: string; administrator_name: string; administrator_email: string; requested_modules: string[];
+  bundle_key?: string; bundle_version?: number; branding: Record<string, string>; expected_users: Array<Record<string, string>>;
+  data_import_needs?: string; desired_domain?: string; desired_infrastructure: "isolated_staging" | "isolated_synthetic";
+  billing_contact?: string; implementation_notes?: string; applicant_revision: number;
+};
+export function createPublicOnboarding(idempotencyKey: string, payload: PublicOnboardingPayload) { return requestJson<PublicOnboardingResult>("/public/onboarding-requests", { method: "POST", body: JSON.stringify({ idempotency_key: idempotencyKey, payload }) }, false); }
+export function fetchPublicOnboarding(requestId: string, token: string) { return requestJson<PublicOnboardingRead>(`/public/onboarding-requests/${requestId}`, { headers: { "X-Onboarding-Token": token } }, false); }
+export function revisePublicOnboarding(requestId: string, token: string, idempotencyKey: string, payload: PublicOnboardingPayload) { return requestJson<PublicOnboardingResult>(`/public/onboarding-requests/${requestId}/revisions`, { method: "POST", headers: { "X-Onboarding-Token": token }, body: JSON.stringify({ idempotency_key: idempotencyKey, payload }) }, false); }
+export function submitPublicOnboarding(requestId: string, token: string) { return requestJson<PublicOnboardingResult>(`/public/onboarding-requests/${requestId}/submit`, { method: "POST", headers: { "X-Onboarding-Token": token } }, false); }
+export function fetchOperatorOnboarding(state?: string) { return requestJson<OperatorOnboardingRead[]>(`/operator/onboarding-requests${state ? `?state=${encodeURIComponent(state)}` : ""}`); }
+export function beginOperatorOnboardingReview(requestId: string, version: number, reason: string) { return requestJson<OperatorOnboardingRead>(`/operator/onboarding-requests/${requestId}/under-review`, { method: "POST", body: JSON.stringify({ version, reason }) }); }
+export function approveOperatorOnboarding(requestId: string, version: number, reason: string) { return requestJson<OperatorOnboardingRead>(`/operator/onboarding-requests/${requestId}/approve`, { method: "POST", body: JSON.stringify({ version, reason }) }); }
+export function convertOperatorOnboarding(requestId: string) { return requestJson<OperatorOnboardingRead>(`/operator/onboarding-requests/${requestId}/convert`, { method: "POST" }); }
+export function authorizeOperatorOnboarding(requestId: string, version: number, reason: string) { return requestJson<OperatorOnboardingRead>(`/operator/onboarding-requests/${requestId}/authorize-execution`, { method: "POST", body: JSON.stringify({ version, confirmation: "authorize_isolated_synthetic_execution", reason }) }); }
+export function fetchOperatorProvisioningJob(jobId: string) { return requestJson<ProvisioningJobDetailRead>(`/operator/provisioning-jobs/${jobId}`); }
+export function fetchOperatorProvisioningEvents(jobId: string) { return requestJson<ProvisioningEventRead[]>(`/operator/provisioning-jobs/${jobId}/events`); }
+export function retryOperatorProvisioningStep(jobId: string, stepKey: string, confirmation: "retry_safe_step" | "confirm_irreversible_step", reason: string) { return requestJson<ProvisioningJobDetailRead>(`/operator/provisioning-jobs/${jobId}/retry`, { method: "POST", body: JSON.stringify({ step_key: stepKey, confirmation, reason }) }); }

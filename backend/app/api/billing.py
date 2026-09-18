@@ -5,6 +5,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.api.dependencies import (
     get_accessible_organization,
     get_db_session,
@@ -29,6 +30,14 @@ from app.services.billing_service import (
 
 router = APIRouter(prefix="/billing", tags=["billing"])
 service = BillingService()
+
+
+def _require_legacy_billing_mutation() -> None:
+    if not settings.feature_flag_map.get("legacy_billing_mutations", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Direct billing mutation is disabled for this release.",
+        )
 
 
 @router.get("/plans", response_model=list[PlanOut])
@@ -66,6 +75,7 @@ def subscribe_organization(
     payload: SubscribeRequest,
     session: Session = Depends(get_db_session),
 ):
+    _require_legacy_billing_mutation()
     try:
         sub = service.subscribe_organization(
             session, organization_id, payload.plan_slug, payload.tenant_id
@@ -108,6 +118,7 @@ def create_invoice(
     payload: Optional[InvoiceCreateRequest] = None,
     session: Session = Depends(get_db_session),
 ):
+    _require_legacy_billing_mutation()
     # Find subscription for organization
     sub = service.get_subscription_for_organization(session, organization_id)
     if sub is None:

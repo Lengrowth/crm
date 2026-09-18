@@ -52,6 +52,7 @@ export const dashboardNav = [
   { href: "/app/organizations", label: "Organizations" },
   { href: "/app/tenants", label: "Tenants" },
   { href: "/app/modules", label: "Modules" },
+  { href: "/app/onboarding", label: "Onboarding" },
   { href: "/app/implementation", label: "Implementation" },
   { href: "/app/settings", label: "Settings" },
 ];
@@ -147,6 +148,13 @@ export const operatorNavigation: NavigationGroup[] = [
         id: "implementations",
         label: "Implementations",
         href: "/app/implementation",
+        icon: "route",
+        permission: "platform_admin",
+      },
+      {
+        id: "onboarding",
+        label: "Onboarding",
+        href: "/app/onboarding",
         icon: "route",
         permission: "platform_admin",
       },

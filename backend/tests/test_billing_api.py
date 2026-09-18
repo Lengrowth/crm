@@ -54,6 +54,8 @@ class BillingAPITestCase(unittest.TestCase):
 
     def setUp(self) -> None:
         self.session = self.Session()
+        self._previous_feature_flags = settings.feature_flags
+        settings.feature_flags = f"{settings.feature_flags},legacy_billing_mutations=true"
         register_response = self.auth_service.register(
             self.session,
             AuthRegisterRequest(
@@ -75,6 +77,7 @@ class BillingAPITestCase(unittest.TestCase):
 
     def tearDown(self) -> None:
         app.dependency_overrides.pop(get_current_user, None)
+        settings.feature_flags = self._previous_feature_flags
         self.session.close()
 
     def test_endpoints_subscribe_and_invoice(self) -> None:

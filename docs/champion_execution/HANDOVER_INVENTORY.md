@@ -64,6 +64,24 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; `PLAT-P3` PASS; 
 - C03 remains `defined` and synthetic-only; no Champion data, final domain, or
   unresolved role/module decision is carried forward as accepted.
 
+## Phase 4 implementation status
+
+- The local PLAT-P4 implementation is on `codex/plat-p4` from authoritative
+  `lengrowth/main` `2a697a831d04a41aaabb3e6f2413f53ce4e749c6`; the candidate is
+  not yet committed or materialized as an immutable release.
+- Migration `20260918_0010` adds versioned onboarding requests, management
+  credential hashes, operator decisions, durable provisioning steps/events/
+  outbox, first-login handoff state, and job lease/retry metadata.
+- Public intake, operator review/approval/conversion, synthetic-only execution,
+  exact cleanup, and the retired direct-provisioning guard pass the local
+  validation suite. `frontend/tsconfig.tsbuildinfo` remains an expected local
+  change and must be preserved.
+- Staging has a guarded workflow input and
+  `scripts/release/phase4_synthetic_smoke.py`; no immutable-candidate staging
+  artifact or protected production Phase 4 evidence exists yet. Do not claim
+  PLAT-P4 PASS or enable Phase 4 flags in production until those artifacts are
+  reconciled.
+
 ## Phase 2 baseline
 
 - Phase 2 implementation is isolated on branch `codex/plat-p2` from verified

@@ -36,14 +36,13 @@ def create_provisioning_job(
     _: object = Depends(require_tenant_write_access),
     current_user: SaaSUser = Depends(get_current_user),
 ):
-    rec = provisioning_service.queue_provisioning_job(
-        session,
-        tenant_id=tenant_id,
-        job_type=payload.job_type,
-        requested_by_user_id=current_user.id if current_user else None,
-        payload=payload.payload,
+    # This legacy endpoint is intentionally read-only in Phase 4.  Arbitrary
+    # job types and caller-supplied payloads were a provisioning bypass.  Real
+    # execution is created only by the approved onboarding conversion path.
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Direct provisioning is disabled. Use an approved onboarding request.",
     )
-    return rec
 
 
 @router.get(

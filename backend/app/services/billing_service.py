@@ -121,13 +121,10 @@ class BillingService:
             provider_customer_id = None
             try:
                 provider_customer_id = self.provider.create_customer(org_payload)
-            except Exception as e:  # provider errors should not break local flow
-                # log and continue
+            except Exception:  # provider errors should not break local flow
                 import logging
 
-                logging.getLogger(__name__).exception(
-                    "billing provider create_customer failed: %s", e
-                )
+                logging.getLogger(__name__).warning("billing provider create_customer failed")
 
             provider_subscription_id = None
             try:
@@ -142,12 +139,10 @@ class BillingService:
                     plan_payload,
                     metadata={"local_subscription_id": subscription.id},
                 )
-            except Exception as e:
+            except Exception:
                 import logging
 
-                logging.getLogger(__name__).exception(
-                    "billing provider create_subscription failed: %s", e
-                )
+                logging.getLogger(__name__).warning("billing provider create_subscription failed")
 
             # persist provider refs into subscription metadata if available
             metadata = subscription.metadata_json or {}
@@ -251,12 +246,10 @@ class BillingService:
                         session.add(invoice)
                         session.commit()
                         session.refresh(invoice)
-                except Exception as e:
+                except Exception:
                     import logging
 
-                    logging.getLogger(__name__).exception(
-                        "billing provider create_invoice failed: %s", e
-                    )
+                    logging.getLogger(__name__).warning("billing provider create_invoice failed")
         except Exception:
             pass
 

@@ -119,3 +119,13 @@ Phase 7 may begin only when:
 - final name, domain, ownership accounts, users, trainers, validators, and acceptance authority are recorded;
 - blocking defects and scope decisions are closed or explicitly accepted;
 - the final candidate and recovery points are identified.
+
+## Phase 4 operational gate
+
+PLAT-P4 is not released by local tests alone. The candidate must pass additive
+migration rehearsal, candidate-bound secret scan and validation, isolated
+staging synthetic onboarding with exact cleanup, and the protected promotion
+workflow with all Phase 4 production flags off. A later operator execution
+enablement must remain synthetic-only and separately authorized; it does not
+authorize Champion data, real billing, DNS mutation, or real customer
+provisioning.

@@ -17,7 +17,11 @@ from app.schemas.control import (
     TenantUpdateRequest,
 )
 from app.services.auth_service import AuthService
-from app.services.control_plane_service import ControlPlaneAccessError, ControlPlaneService
+from app.services.control_plane_service import (
+    ControlPlaneAccessError,
+    ControlPlaneService,
+    ControlPlaneValidationError,
+)
 
 
 class ControlPlaneTestCase(unittest.TestCase):
@@ -94,14 +98,16 @@ class ControlPlaneTestCase(unittest.TestCase):
                 client_org.id,
                 OrganizationUpdateRequest(status="active"),
             )
-            updated_tenant = self.control_service.update_tenant(
-                admin_session,
-                admin_context.user,
-                tenant.id,
-                TenantUpdateRequest(status="ready"),
-            )
+            with self.assertRaises(ControlPlaneValidationError):
+                self.control_service.update_tenant(
+                    admin_session,
+                    admin_context.user,
+                    tenant.id,
+                    TenantUpdateRequest(status="ready"),
+                )
             self.assertEqual(updated_org.status, "active")
-            self.assertEqual(updated_tenant.status, "ready")
+            admin_session.refresh(tenant)
+            self.assertEqual(tenant.status, "planned")
         finally:
             admin_session.close()
 

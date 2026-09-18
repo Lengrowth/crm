@@ -14,6 +14,10 @@ Release safety scripts are intentionally split by responsibility:
 - `release/erp_staging_smoke.sh` validates the isolated EC2 ERP staging bench,
   pinned Frappe/ERPNext/custom-app inventory, private ports, workers, and
   unauthenticated ERP API behavior.
+- `release/phase4_synthetic_smoke.py` drives one isolated, synthetic-only
+  onboarding request through review, conversion, separately authorized worker
+  execution, status/event checks, and exact cleanup; it refuses production
+  hostnames and never sends first-login credentials or creates billing records.
 - Set `REQUIRE_AUTH_SMOKE=true` and provide an operator token through `AUTH_TOKEN_FILE` for authenticated `/auth/me` and API checks; the token contents are never printed.
 - `release/local_smoke.py` runs that smoke contract against disposable local frontend/backend services and a temporary SQLite database.
   When the repository-local `backend/.venv` is unavailable, pass an explicit

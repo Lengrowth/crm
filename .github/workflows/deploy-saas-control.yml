@@ -30,6 +30,14 @@ on:
         options:
           - "off"
           - "on"
+      phase4_synthetic_state:
+        description: Staging-only Phase 4 public/operator synthetic workflow state
+        required: true
+        default: "off"
+        type: choice
+        options:
+          - "off"
+          - "on"
 
 permissions:
   contents: read
@@ -52,16 +60,6 @@ jobs:
         with:
           ref: ${{ inputs.candidate_ref || github.sha }}
           fetch-depth: 0
-
-      - name: Prepare current browser evidence harness
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.candidate_ref != '' }}
-        run: |
-          git fetch origin main --depth=1
-          git show origin/main:frontend/scripts/capture_browser_evidence.mjs > "$RUNNER_TEMP/capture_browser_evidence.mjs"
-          git show origin/main:scripts/release/prepare_staging_smoke_auth.py > "$RUNNER_TEMP/prepare_staging_smoke_auth.py"
-          chmod a+r "$RUNNER_TEMP/capture_browser_evidence.mjs" "$RUNNER_TEMP/prepare_staging_smoke_auth.py"
-          install -m 644 "$RUNNER_TEMP/capture_browser_evidence.mjs" "$GITHUB_WORKSPACE/frontend/scripts/current_capture_browser_evidence.mjs"
-          install -m 644 "$RUNNER_TEMP/prepare_staging_smoke_auth.py" /tmp/saas-control-prepare-staging-smoke-auth.py
 
       - name: Make release scripts executable
         run: chmod +x scripts/release/*.sh scripts/deploy/*.sh
@@ -141,6 +139,32 @@ jobs:
           if not updated:
               output.append('FEATURE_FLAGS=' + ','.join([f'module_entitlement_writes={values[0]}', f'module_entitlement_operator_only={values[1]}', f'module_entitlement_general={values[2]}']))
           path.write_text('\n'.join(output) + '\n', encoding='utf-8')
+
+      - name: Set staging-only Phase 4 synthetic rollout flags
+        env:
+          PHASE4_SYNTHETIC_STATE: ${{ inputs.phase4_synthetic_state || 'off' }}
+        run: |
+          case "$PHASE4_SYNTHETIC_STATE" in on|off) ;; *) echo "Invalid Phase 4 synthetic state" >&2; exit 1 ;; esac
+          sudo python3 - /opt/saas-control-staging/shared/env/staging-backend.env "$PHASE4_SYNTHETIC_STATE" <<'PY'
+          from pathlib import Path
+          import sys
+          path = Path(sys.argv[1])
+          state = sys.argv[2]
+          names = ('onboarding_public_intake', 'onboarding_operator_view', 'onboarding_conversion', 'onboarding_execution', 'onboarding_synthetic_allowlist')
+          lines = path.read_text(encoding='utf-8').splitlines()
+          output = []
+          updated = False
+          for line in lines:
+              if line.startswith('FEATURE_FLAGS='):
+                  entries = [entry for entry in line.removeprefix('FEATURE_FLAGS=').split(',') if entry and entry.split('=', 1)[0].strip() not in names and entry.split('=', 1)[0].strip() != 'onboarding_real_execution']
+                  entries.extend([f'{name}={state}' for name in names])
+                  entries.append('onboarding_real_execution=off')
+                  line = 'FEATURE_FLAGS=' + ','.join(entries)
+                  updated = True
+              output.append(line)
+          if not updated:
+              output.append('FEATURE_FLAGS=' + ','.join([f'{name}={state}' for name in names] + ['onboarding_real_execution=off']))
+          path.write_text('\n'.join(output) + '\n', encoding='utf-8')
           PY
 
       - name: Build and deploy exact candidate to staging
@@ -150,6 +174,50 @@ jobs:
           RELEASE_ID: ${{ inputs.candidate_ref || github.sha }}
           REQUIRE_AUTH_SMOKE: "true"
         run: ./scripts/deploy/deploy_saas_control.sh
+
+      - name: Run isolated synthetic Phase 4 onboarding smoke
+        if: ${{ (inputs.phase4_synthetic_state || 'off') == 'on' }}
+        env:
+          RUN_ID: phase4-${{ github.run_id }}
+        run: |
+          token_file="$RUNNER_TEMP/saas-staging-phase4-token"
+          sudo install -m 600 -o "$(id -u)" -g "$(id -g)" /run/saas-control-staging/smoke/auth-token "$token_file"
+          trap 'rm -f -- "$token_file"' EXIT
+          PYTHONPATH=/opt/saas-control-staging/current/backend \
+            /opt/saas-control-staging/shared/backend-venv/bin/python \
+            /opt/saas-control-staging/current/scripts/release/phase4_synthetic_smoke.py \
+            --base-url http://127.0.0.1:18001 \
+            --admin-token-file "$token_file" \
+            --run-id "$RUN_ID" \
+            --output "$GITHUB_WORKSPACE/phase4-synthetic-evidence.json"
+
+      - name: Run controlled Phase 4 failure and recovery smoke
+        if: ${{ (inputs.phase4_synthetic_state || 'off') == 'on' }}
+        env:
+          RUN_ID: phase4-recovery-${{ github.run_id }}
+        run: |
+          token_file="$RUNNER_TEMP/saas-staging-phase4-recovery-token"
+          sudo install -m 600 -o "$(id -u)" -g "$(id -g)" /run/saas-control-staging/smoke/auth-token "$token_file"
+          trap 'rm -f -- "$token_file"' EXIT
+          PYTHONPATH=/opt/saas-control-staging/current/backend \
+            /opt/saas-control-staging/shared/backend-venv/bin/python \
+            /opt/saas-control-staging/current/scripts/release/phase4_synthetic_smoke.py \
+            --base-url http://127.0.0.1:18001 \
+            --admin-token-file "$token_file" \
+            --run-id "$RUN_ID" \
+            --failure-step health_checks \
+            --output "$GITHUB_WORKSPACE/phase4-synthetic-recovery-evidence.json"
+
+      - name: Upload non-secret Phase 4 synthetic evidence
+        if: ${{ always() && (inputs.phase4_synthetic_state || 'off') == 'on' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase4-synthetic-evidence-${{ github.run_id }}
+          path: |
+            phase4-synthetic-evidence.json
+            phase4-synthetic-recovery-evidence.json
+          if-no-files-found: warn
+          retention-days: 30
 
       - name: Install browser runtime for durable staging evidence
         run: /opt/saas-control-staging/current/frontend/node_modules/.bin/playwright install --with-deps chromium
@@ -163,7 +231,6 @@ jobs:
           . /opt/saas-control-staging/shared/env/staging-backend.env
           set +a
           auth_script="/opt/saas-control-staging/current/scripts/release/prepare_staging_smoke_auth.py"
-          if [[ -f "/tmp/saas-control-prepare-staging-smoke-auth.py" ]]; then auth_script="/tmp/saas-control-prepare-staging-smoke-auth.py"; fi
           sudo -n -E -u saas-staging env \
             PYTHONPATH=/opt/saas-control-staging/current/backend \
             STAGING_SMOKE_EMAIL="$NON_ADMIN_SMOKE_EMAIL" \
@@ -191,10 +258,6 @@ jobs:
           browser_path="$(find "$HOME/.cache/ms-playwright" -type f -name chrome -path '*/chrome*/chrome' -print -quit 2>/dev/null || true)"
           [[ -n "$browser_path" ]] || { echo "Installed Chromium executable was not found" >&2; exit 1; }
           evidence_script="/opt/saas-control-staging/current/frontend/scripts/capture_browser_evidence.mjs"
-          if [[ -f "$GITHUB_WORKSPACE/frontend/scripts/current_capture_browser_evidence.mjs" ]]; then
-            sudo install -m 644 "$GITHUB_WORKSPACE/frontend/scripts/current_capture_browser_evidence.mjs" /opt/saas-control-staging/current/frontend/scripts/current_capture_browser_evidence.mjs
-            evidence_script="/opt/saas-control-staging/current/frontend/scripts/current_capture_browser_evidence.mjs"
-          fi
           AUTH_TOKEN_FILE="$token_file" NON_ADMIN_AUTH_TOKEN_FILE="$non_admin_token_file" BROWSER_EXECUTABLE_PATH="$browser_path" node "$evidence_script"
           rm -f -- "$token_file" "$non_admin_token_file"
 
@@ -207,7 +270,6 @@ jobs:
           . /opt/saas-control-staging/shared/env/staging-backend.env
           set +a
           auth_script="/opt/saas-control-staging/current/scripts/release/prepare_staging_smoke_auth.py"
-          if [[ -f "/tmp/saas-control-prepare-staging-smoke-auth.py" ]]; then auth_script="/tmp/saas-control-prepare-staging-smoke-auth.py"; fi
           sudo -n -E -u saas-staging env \
             PYTHONPATH=/opt/saas-control-staging/current/backend \
             /opt/saas-control-staging/shared/backend-venv/bin/python \
@@ -216,8 +278,6 @@ jobs:
             --token-file /run/saas-control-staging/smoke/non-admin-auth-token \
             --cleanup
           sudo rm -f -- /run/saas-control-staging/smoke/non-admin-auth-token
-          rm -f -- "$GITHUB_WORKSPACE/frontend/scripts/current_capture_browser_evidence.mjs" /tmp/saas-control-prepare-staging-smoke-auth.py
-          sudo rm -f -- /opt/saas-control-staging/current/frontend/scripts/current_capture_browser_evidence.mjs
 
       - name: Remove exact Phase 2 synthetic browser records
         if: always()
