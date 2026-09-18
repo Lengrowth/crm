@@ -186,6 +186,7 @@ jobs:
           token_file=/run/saas-control-staging/smoke/auth-token
           evidence_file="/tmp/phase4-synthetic-evidence-${RUN_ID}.json"
           trap 'sudo rm -f -- "$evidence_file"' EXIT
+          set +e
           sudo -n -E -u saas-staging env \
             PYTHONPATH=/opt/saas-control-staging/current/backend \
             /opt/saas-control-staging/shared/backend-venv/bin/python \
@@ -194,7 +195,14 @@ jobs:
             --admin-token-file "$token_file" \
             --run-id "$RUN_ID" \
             --output "$evidence_file"
-          sudo install -m 644 -o "$(id -u)" -g "$(id -g)" "$evidence_file" "$GITHUB_WORKSPACE/phase4-synthetic-evidence.json"
+          smoke_status=$?
+          set -e
+          if [[ -f "$evidence_file" ]]; then
+            sudo install -m 644 -o "$(id -u)" -g "$(id -g)" "$evidence_file" "$GITHUB_WORKSPACE/phase4-synthetic-evidence.json"
+          else
+            echo "Phase 4 smoke did not produce an evidence file" >&2
+          fi
+          if [[ "$smoke_status" -ne 0 ]]; then exit "$smoke_status"; fi
 
       - name: Run controlled Phase 4 failure and recovery smoke
         if: ${{ (inputs.phase4_synthetic_state || 'off') == 'on' }}
@@ -207,6 +215,7 @@ jobs:
           token_file=/run/saas-control-staging/smoke/auth-token
           evidence_file="/tmp/phase4-synthetic-recovery-evidence-${RUN_ID}.json"
           trap 'sudo rm -f -- "$evidence_file"' EXIT
+          set +e
           sudo -n -E -u saas-staging env \
             PYTHONPATH=/opt/saas-control-staging/current/backend \
             /opt/saas-control-staging/shared/backend-venv/bin/python \
@@ -216,7 +225,14 @@ jobs:
             --run-id "$RUN_ID" \
             --failure-step health_checks \
             --output "$evidence_file"
-          sudo install -m 644 -o "$(id -u)" -g "$(id -g)" "$evidence_file" "$GITHUB_WORKSPACE/phase4-synthetic-recovery-evidence.json"
+          smoke_status=$?
+          set -e
+          if [[ -f "$evidence_file" ]]; then
+            sudo install -m 644 -o "$(id -u)" -g "$(id -g)" "$evidence_file" "$GITHUB_WORKSPACE/phase4-synthetic-recovery-evidence.json"
+          else
+            echo "Phase 4 recovery smoke did not produce an evidence file" >&2
+          fi
+          if [[ "$smoke_status" -ne 0 ]]; then exit "$smoke_status"; fi
 
       - name: Upload non-secret Phase 4 synthetic evidence
         if: ${{ always() && (inputs.phase4_synthetic_state || 'off') == 'on' }}

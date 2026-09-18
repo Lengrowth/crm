@@ -40,6 +40,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: saas-control-production-promotion
@@ -66,6 +67,7 @@ jobs:
       - name: Materialize the exact tested staging candidate
         env:
           RELEASE_ID: ${{ inputs.release_id }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: ./scripts/release/materialize_production_candidate.sh
 
       - name: Keep Phase 3 entitlement writes fail-closed during promotion
