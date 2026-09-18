@@ -13,7 +13,8 @@ EnvironmentFile=-/run/saas-control-staging/frappe-bench.env
 ExecStart=/opt/saas-control-staging/shared/backend-venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 18001
 Restart=on-failure
 RestartSec=5
-NoNewPrivileges=true
+# The staging ERP adapter uses a narrowly allowlisted sudo transition to the frappe user.
+NoNewPrivileges=false
 PrivateTmp=true
 
 [Install]

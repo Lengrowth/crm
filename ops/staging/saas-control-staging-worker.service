@@ -14,7 +14,8 @@ Environment=PROVISIONING_WORKER_POLL_SECONDS=2
 ExecStart=/opt/saas-control-staging/shared/backend-venv/bin/python -m app.workers.provisioning_loop
 Restart=always
 RestartSec=5
-NoNewPrivileges=true
+# The staging ERP adapter uses a narrowly allowlisted sudo transition to the frappe user.
+NoNewPrivileges=false
 PrivateTmp=true
 
 [Install]

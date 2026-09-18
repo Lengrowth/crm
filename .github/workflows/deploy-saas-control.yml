@@ -286,13 +286,13 @@ jobs:
           sudo chown root:saas-staging /run/saas-control-staging/frappe-bench.env
           sudo chmod 0640 /run/saas-control-staging/frappe-bench.env
           sudo install -m 0644 ops/staging/saas-control-staging-backend.service /etc/systemd/system/saas-control-staging-backend.service
-          sudo systemctl daemon-reload
-          sudo systemctl restart saas-control-staging-backend
-          sudo systemctl restart saas-control-staging-worker
           sudo install -m 0440 /dev/stdin /etc/sudoers.d/saas-staging-frappe-bench <<'EOF'
           saas-staging ALL=(frappe) NOPASSWD: /usr/local/bin/bench
           EOF
           sudo visudo -cf /etc/sudoers.d/saas-staging-frappe-bench
+          sudo systemctl daemon-reload
+          sudo systemctl restart saas-control-staging-backend
+          sudo systemctl restart saas-control-staging-worker
           sudo -n -u frappe /usr/local/bin/bench --version
 
       - name: Build and deploy exact candidate to staging
