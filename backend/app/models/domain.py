@@ -473,6 +473,7 @@ class ProvisioningJob(Base, UUIDMixin, TimestampMixin):
     onboarding_version: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     workflow_version: Mapped[str] = mapped_column(String(32), nullable=False, default="legacy-1")
     worker_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    lease_token: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     lease_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     heartbeat_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     next_attempt_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

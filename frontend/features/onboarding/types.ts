@@ -1,4 +1,4 @@
-export type OnboardingState = "draft" | "submitted" | "under_review" | "approved" | "provisioning" | "validation" | "ready" | "rejected" | "cancelled";
+export type OnboardingState = "draft" | "submitted" | "under_review" | "approved" | "provisioning" | "validation" | "failed" | "ready" | "rejected" | "cancelled";
 
 export type PublicOnboardingResult = {
   request_id: string;

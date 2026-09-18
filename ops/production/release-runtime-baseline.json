@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "database_revision": "20260528_0007",
+  "database_revision": "20260918_0011",
   "upstream_frappe_commit": "edae775dd36b6c4ad7acab10230262bd74040765",
   "upstream_erpnext_commit": "945e825bee3d0d645f6cb59bcaab90fcbfb98ce3",
   "runtime_apps": {

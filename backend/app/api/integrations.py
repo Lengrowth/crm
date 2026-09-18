@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.api.dependencies import (
     get_accessible_tenant,
     get_current_user,
+    require_platform_admin,
     require_tenant_write_access,
 )
 from app.db.session import get_db_session
@@ -327,11 +328,12 @@ def tenant_site_status(
 @router.post("/tenants/{tenant_id}/backup")
 def tenant_backup(
     tenant_id: str,
-    site_id: Optional[str] = None,
     session: Session = Depends(get_db_session),
-    _: Tenant = Depends(require_tenant_write_access),
+    _: SaaSUser = Depends(require_platform_admin),
 ):
-    resolved_site_id = _resolve_site_id(session, tenant_id, site_id)
+    if not settings.feature_flag_map.get("legacy_erpnext_backup_mutations", False):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Direct ERP backup mutation is disabled. Use an approved operator workflow.")
+    resolved_site_id = _resolve_site_id(session, tenant_id)
     backup = _get_erp_service().backup_site(resolved_site_id)
 
     return BackupRecordSchema(
@@ -345,11 +347,12 @@ def tenant_backup(
 def tenant_restore(
     tenant_id: str,
     backup_id: str = Body(..., embed=True),
-    site_id: Optional[str] = None,
     session: Session = Depends(get_db_session),
-    _: Tenant = Depends(require_tenant_write_access),
+    _: SaaSUser = Depends(require_platform_admin),
 ):
-    resolved_site_id = _resolve_site_id(session, tenant_id, site_id)
+    if not settings.feature_flag_map.get("legacy_erpnext_restore_mutations", False):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Direct ERP restore mutation is disabled. Use an approved operator workflow.")
+    resolved_site_id = _resolve_site_id(session, tenant_id)
     result = _get_erp_service().restore_site(resolved_site_id, backup_id)
 
     return OperationResultSchema(
@@ -366,7 +369,6 @@ def tenant_restore(
 def tenant_bind_domain(
     tenant_id: str,
     domain: str = Body(..., embed=True),
-    site_id: Optional[str] = None,
     session: Session = Depends(get_db_session),
     _: Tenant = Depends(require_tenant_write_access),
 ):
@@ -375,7 +377,7 @@ def tenant_bind_domain(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Direct domain mutation is disabled. Use an approved onboarding workflow.",
         )
-    resolved_site_id = _resolve_site_id(session, tenant_id, site_id)
+    resolved_site_id = _resolve_site_id(session, tenant_id)
     result = _get_erp_service().bind_domain(resolved_site_id, domain)
 
     return OperationResultSchema(

@@ -39,6 +39,13 @@ install -m 0644 "$SCRIPT_DIR/saas-control-staging-backend.service" /etc/systemd/
 install -m 0644 "$SCRIPT_DIR/saas-control-staging-frontend.service" /etc/systemd/system/saas-control-staging-frontend.service
 install -m 0644 "$SCRIPT_DIR/saas-control-staging-worker.service" /etc/systemd/system/saas-control-staging-worker.service
 
+# The control-plane worker is not granted general shell access to the ERP
+# host. It may invoke only the bench executable as the dedicated frappe user;
+# the adapter itself enforces the phase4-* site namespace and staging bench
+# root before any command is issued.
+printf '%s\n' "$STAGING_USER ALL=(frappe) NOPASSWD: /usr/local/bin/bench" | install -m 0440 /dev/stdin /etc/sudoers.d/saas-staging-frappe-bench
+visudo -cf /etc/sudoers.d/saas-staging-frappe-bench
+
 chown -R "$STAGING_USER:$STAGING_GROUP" "$APP_ROOT/shared/data" "$APP_ROOT/shared/logs" /run/saas-control-staging
 chmod 0750 "$APP_ROOT/shared/data" "$APP_ROOT/shared/logs" /run/saas-control-staging
 systemctl daemon-reload

@@ -4,6 +4,7 @@ set -euo pipefail
 BASE_URL="${BASE_URL:?Set BASE_URL to the authenticated application origin}"
 BACKEND_URL="${BACKEND_URL:?Set BACKEND_URL to the backend origin}"
 EXPECTED_RELEASE="${EXPECTED_RELEASE:-}"
+EXPECTED_RUNTIME_ENVIRONMENT="${EXPECTED_RUNTIME_ENVIRONMENT:-}"
 EXPECTED_PHASE_ONE_SHELL="${EXPECTED_PHASE_ONE_SHELL:?Set EXPECTED_PHASE_ONE_SHELL to true or false}"
 AUTH_TOKEN_FILE="${AUTH_TOKEN_FILE:?Set AUTH_TOKEN_FILE to the temporary smoke token path}"
 AUTH_COOKIE_NAME="${AUTH_COOKIE_NAME:-crm-auth-token}"
@@ -17,14 +18,16 @@ token="$(<"$AUTH_TOKEN_FILE")"
 
 runtime_nonce="$(date +%s%N)"
 release_payload="$(curl "${curl_args[@]}" -fsS --max-time 20 -H 'Cache-Control: no-cache' "$BACKEND_URL/runtime/release?phase1_smoke_nonce=$runtime_nonce")"
-python3 - "$EXPECTED_RELEASE" "$EXPECTED_PHASE_ONE_SHELL" "$release_payload" <<'PY'
+python3 - "$EXPECTED_RELEASE" "$EXPECTED_PHASE_ONE_SHELL" "$EXPECTED_RUNTIME_ENVIRONMENT" "$release_payload" <<'PY'
 import json
 import sys
 
-expected_release, expected_flag, raw = sys.argv[1:]
+expected_release, expected_flag, expected_runtime_environment, raw = sys.argv[1:]
 payload = json.loads(raw)
 if expected_release and payload.get("release_id") != expected_release:
     raise SystemExit("shell smoke release identity mismatch")
+if expected_runtime_environment and payload.get("environment") != expected_runtime_environment:
+    raise SystemExit("shell smoke runtime environment mismatch")
 actual = bool(payload.get("feature_flags", {}).get("platform_phase1_shell", False))
 if actual != (expected_flag.lower() == "true"):
     raise SystemExit("shell smoke feature flag mismatch")

@@ -104,6 +104,13 @@ def test_api_provision_and_poll():
             )
             assert r.status_code == 403
             assert r.json()["detail"] == "Direct provisioning is disabled. Use an approved onboarding request."
+            restore = client.post(
+                f"/tenants/{tenant.id}/restore",
+                params={"site_id": "caller-controlled-site"},
+                json={"backup_id": "caller-controlled-backup"},
+            )
+            assert restore.status_code == 403
+            assert "Direct ERP restore mutation is disabled" in restore.json()["detail"]
     finally:
         test_app.dependency_overrides.clear()
         session.close()

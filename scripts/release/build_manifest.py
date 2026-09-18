@@ -134,6 +134,7 @@ def main() -> int:
         "release_id": args.release_id,
         "control_plane_commit": args.control_plane_commit,
         "environment": args.environment,
+        "build_environment": args.environment,
         "build_time_utc": datetime.now(timezone.utc).isoformat(),
         "operator": args.operator,
         "upstream_frappe_commit": upstream_frappe,

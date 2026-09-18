@@ -19,6 +19,7 @@ required = {
     "release_id",
     "control_plane_commit",
     "environment",
+    "build_environment",
     "build_time_utc",
     "custom_app_version",
     "custom_app_commit",
@@ -35,6 +36,8 @@ if missing:
     raise SystemExit(f"manifest missing required fields: {', '.join(missing)}")
 if not payload["release_id"] or not payload["control_plane_commit"]:
     raise SystemExit("manifest release identity is empty")
+if payload.get("build_environment") != payload.get("environment"):
+    raise SystemExit("manifest build_environment must match artifact environment")
 if not isinstance(payload["installed_apps"], dict):
     raise SystemExit("manifest installed_apps must be an object")
 for app_name in ("frappe", "erpnext"):

@@ -56,7 +56,7 @@ from app.services.provisioning_service import provisioning_service
 from app.workers.provisioning_worker import run_next_job
 
 
-ONBOARDING_STATES = {"draft", "submitted", "under_review", "approved", "provisioning", "validation", "ready", "rejected", "cancelled"}
+ONBOARDING_STATES = {"draft", "submitted", "under_review", "approved", "provisioning", "validation", "failed", "ready", "rejected", "cancelled"}
 STEP_DEFINITIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("validate_approved_request", ()),
     ("reserve_site_name", ("validate_approved_request",)),
@@ -323,7 +323,11 @@ class Phase4OnboardingService:
         session.add(ProvisioningOutboxEvent(aggregate_type="onboarding_request", aggregate_id=request.id, event_type="onboarding.conversion_committed", idempotency_key=f"onboarding-conversion:{request.id}:{version.version}", payload_json={"request_id": request.id, "version": version.version, "job_id": job.id}))
         session.add(FirstLoginHandoff(request_id=request.id, tenant_id=tenant.id, user_id=admin.id, status="pending_provisioning", delivery_status="disabled"))
         request.organization_id, request.tenant_id, request.implementation_project_id, request.provisioning_job_id, request.converted_at = org.id, tenant.id, project.id, job.id, now
-        session.commit()
+        try:
+            session.commit()
+        except Exception as exc:
+            session.rollback()
+            raise OnboardingError("Approved onboarding conversion rolled back safely.") from exc
         session.refresh(request)
         return self._operator_read(session, request)
 
@@ -373,7 +377,12 @@ class Phase4OnboardingService:
         if step.step_key in {"create_isolated_site", "bind_domain_ssl"} and action.confirmation != "confirm_irreversible_step":
             raise OnboardingAccessError("This step requires explicit operator confirmation before retry.")
         step.status, step.failure_category, step.sanitized_error, step.rollback_state = "pending", None, None, "not_started"
-        job.status, job.worker_id, job.lease_expires_at, job.next_attempt_at = "queued", None, None, utcnow()
+        job.status, job.worker_id, job.lease_token, job.lease_expires_at, job.next_attempt_at = "queued", None, None, None, utcnow()
+        if request := session.get(OnboardingRequest, job.onboarding_request_id) if job.onboarding_request_id else None:
+            if request.state == "failed":
+                request.state = "provisioning"
+                request.applicant_visible_status = "provisioning"
+                session.add(request)
         provisioning_service._append_without_commit(job, {"event": "operator_retry_authorized", "message": action.reason, "step_key": action.step_key, "actor": actor.id})
         session.add_all([job, step])
         session.commit()

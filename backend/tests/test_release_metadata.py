@@ -47,3 +47,19 @@ def test_runtime_release_exposes_identity_and_server_flags(monkeypatch, tmp_path
     assert payload["feature_flags"] == {"future_menu": False, "new_flow": True}
     assert payload["manifest"]["installed_apps"]["lenerp_core"]["version"] == "0.1.0"
     assert "secret_value" not in payload["manifest"]
+
+
+def test_runtime_environment_is_server_controlled_not_build_manifest(monkeypatch, tmp_path) -> None:
+    manifest_path = tmp_path / "release-manifest.json"
+    manifest_path.write_text(
+        json.dumps({"release_id": "candidate", "control_plane_commit": "abc", "environment": "staging", "build_environment": "staging"}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(settings, "release_manifest_path", str(manifest_path))
+    monkeypatch.setattr(settings, "environment", "production")
+
+    response = TestClient(app).get("/runtime/release")
+
+    assert response.status_code == 200
+    assert response.json()["environment"] == "production"
+    assert response.json()["manifest"]["build_environment"] == "staging"

@@ -32,6 +32,13 @@ class Settings(BaseSettings):
     erpnext_base_url: Optional[str] = None
     erpnext_api_key: Optional[str] = None
     erpnext_api_secret: Optional[str] = None
+    erpnext_bench_root: Optional[str] = None
+    erpnext_bench_site_prefix: str = "phase4-"
+    erpnext_bench_run_as_user: Optional[str] = "frappe"
+    erpnext_bench_command: str = "/usr/local/bin/bench"
+    erpnext_bench_web_url: str = "http://127.0.0.1:28000"
+    erpnext_db_root_username: str = "root"
+    erpnext_db_root_password: Optional[str] = None
 
     auth_session_days: int = 30
     auth_password_reset_token_minutes: int = 60

@@ -24,10 +24,9 @@ on:
       phase1_shell_state:
         description: Set the server-controlled operator shell flag for this promotion
         required: true
-        default: "off"
+        default: "on"
         type: choice
         options:
-          - "off"
           - "on"
       phase3_migration_approved:
         description: Approve the additive Phase 3 migration and catalog sync after backup verification
@@ -103,6 +102,26 @@ jobs:
               output.append(line)
           if not updated:
               output.append('FEATURE_FLAGS=' + ','.join([f'{name}=off' for name in names]))
+          path.write_text('\n'.join(output) + '\n', encoding='utf-8')
+          PY
+
+      - name: Set canonical production runtime environment
+        run: |
+          sudo python3 - /opt/saas-control/shared/env/backend.env <<'PY'
+          from pathlib import Path
+          import sys
+          path = Path(sys.argv[1])
+          lines = path.read_text(encoding='utf-8').splitlines()
+          output = []
+          updated = False
+          for line in lines:
+              if line.startswith('ENVIRONMENT='):
+                  output.append('ENVIRONMENT=production')
+                  updated = True
+              else:
+                  output.append(line)
+          if not updated:
+              output.append('ENVIRONMENT=production')
           path.write_text('\n'.join(output) + '\n', encoding='utf-8')
           PY
 
@@ -182,7 +201,10 @@ jobs:
           PRODUCTION_BASE_URL: https://lenerp.lengrowth.com
           PRODUCTION_BACKEND_URL: https://lenerp-api.lengrowth.com
           RUN_SHELL_SMOKE: "true"
-          EXPECTED_PHASE_ONE_SHELL: ${{ inputs.phase1_shell_state == 'on' }}
+          EXPECTED_PHASE_ONE_SHELL: "true"
+          EXPECTED_RUNTIME_ENVIRONMENT: production
+          EXPECTED_BUILD_ENVIRONMENT: staging
+          EXPECTED_DATABASE_REVISION: 20260918_0011
         run: ./scripts/deploy/promote_saas_control.sh
 
       - name: Run authorized Phase 2 production CRUD and tenant-isolation smoke

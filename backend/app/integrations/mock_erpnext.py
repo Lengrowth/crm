@@ -61,6 +61,7 @@ class MockERPNextClient(ERPNextClient):
             "apps": [],
             "domains": [],
             "ssl": {},
+            "configuration": {"modules": [], "roles": [], "workspaces": [], "branding": {}},
         }
 
         # Simulate creation finishing shortly after
@@ -107,8 +108,32 @@ class MockERPNextClient(ERPNextClient):
             )
         self.sites[site_id]["apps"].append(app_name)
         return OperationResult(
-            {"status": "success", "site_id": site_id, "app": app_name}
+            {"status": "success", "site_id": site_id, "app": app_name, "provider": "mock"}
         )
+
+    def apply_site_configuration(self, site_id: str, configuration: dict[str, object]) -> OperationResult:
+        if site_id not in self.sites:
+            return OperationResult({"status": "not_found", "site_id": site_id})
+        if self._should_fail("apply_site_configuration"):
+            return OperationResult({"status": "failed", "site_id": site_id, "error": "simulated"})
+        self.sites[site_id]["configuration"].update(configuration)
+        return OperationResult({"status": "success", "site_id": site_id, "provider": "mock", "provider_verified": True, "configuration": self.sites[site_id]["configuration"]})
+
+    def get_site_inventory(self, site_id: str) -> dict[str, object]:
+        site = self.sites.get(site_id)
+        if site is None:
+            return {"status": "not_found", "site_id": site_id}
+        return {"status": "success", "site_id": site_id, "provider": "mock", "provider_verified": True, "site_name": site["site_name"], "installed_apps": sorted(site["apps"]), "configuration": site["configuration"]}
+
+    def verify_site_configuration(self, site_id: str, requested_modules: list[str]) -> OperationResult:
+        inventory = self.get_site_inventory(site_id)
+        if inventory.get("status") != "success":
+            return OperationResult(inventory)
+        configuration = inventory.get("configuration") or {}
+        installed = set(inventory.get("installed_apps") or [])
+        modules = set(configuration.get("modules") or []) if isinstance(configuration, dict) else set()
+        verified = {"erpnext", "lenerp_core"}.issubset(installed) and set(requested_modules).issubset(modules)
+        return OperationResult({"status": "success" if verified else "failed", "site_id": site_id, "provider": "mock", "provider_verified": verified, "installed_apps": sorted(installed), "modules": sorted(modules)})
 
     def bind_domain(self, site_id: str, domain: str) -> OperationResult:
         if site_id not in self.sites:
@@ -126,7 +151,7 @@ class MockERPNextClient(ERPNextClient):
             {"domain": domain, "status": "dns_pending"}
         )
         return OperationResult(
-            {"status": "success", "site_id": site_id, "domain": domain}
+            {"status": "success", "site_id": site_id, "domain": domain, "provider": "mock", "provider_verified": True}
         )
 
     def issue_ssl(self, site_id: str, domain: str) -> OperationResult:
@@ -147,7 +172,7 @@ class MockERPNextClient(ERPNextClient):
             "issued_at": self.clock().isoformat(),
         }
         return OperationResult(
-            {"status": "success", "site_id": site_id, "domain": domain, "ssl": "issued"}
+            {"status": "success", "site_id": site_id, "domain": domain, "ssl": "issued", "provider": "mock", "provider_verified": True}
         )
 
     def backup_site(self, site_id: str) -> BackupRecord:

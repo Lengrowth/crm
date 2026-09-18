@@ -10,7 +10,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.integrations.erpnext_client import ERPNextClient
-from app.integrations.mock_erpnext import MockERPNextClient
 from app.integrations.erpnext_runtime import get_erpnext_client
 from app.models.domain import (
     FirstLoginHandoff,
@@ -55,6 +54,10 @@ class StepFailure(RuntimeError):
         self.manual_confirmation = manual_confirmation
 
 
+class LeaseLost(RuntimeError):
+    """The worker lost its fenced lease while an external operation was running."""
+
+
 class ProvisioningWorker:
     def __init__(self, client: Optional[ERPNextClient] = None) -> None:
         self.client = client or get_erpnext_client()
@@ -76,13 +79,10 @@ def run_next_job(session: Session, client: Optional[ERPNextClient] = None, max_a
     job = provisioning_service.claim_next_job(session, worker_id, lease_seconds=120)
     if job is None:
         return None
+    lease_token = job.lease_token
     if job.workflow_version == "phase4-1":
-        isolation = job.target_isolation_json or {}
-        if job.target_environment == "staging" and isolation.get("lane") == "isolated_synthetic":
-            erp_client = client or MockERPNextClient()
-        else:
-            erp_client = client or get_erpnext_client()
-        return _run_phase4_job(session, job, erp_client, worker_id)
+        erp_client = client or get_erpnext_client()
+        return _run_phase4_job(session, job, erp_client, worker_id, lease_token)
     erp_client = client or get_erpnext_client()
     return _run_legacy_job(session, job, erp_client, worker_id, max_attempts)
 
@@ -107,21 +107,26 @@ def _run_legacy_job(session: Session, job: ProvisioningJob, client: ERPNextClien
         return provisioning_service.release_for_retry(session, job, worker_id, 0, "Compatibility provisioning will retry safely.")
 
 
-def _run_phase4_job(session: Session, job: ProvisioningJob, client: ERPNextClient, worker_id: str) -> ProvisioningJob:
+def _run_phase4_job(session: Session, job: ProvisioningJob, client: ERPNextClient, worker_id: str, lease_token: Optional[str]) -> ProvisioningJob:
     request = session.get(OnboardingRequest, job.onboarding_request_id) if job.onboarding_request_id else None
     version = session.execute(select(OnboardingRequestVersion).where(OnboardingRequestVersion.request_id == request.id, OnboardingRequestVersion.version == job.onboarding_version)).scalar_one_or_none() if request else None
     tenant = session.get(Tenant, job.tenant_id)
     if request is None or version is None or tenant is None:
         return _fail_job(session, job, worker_id, "The approved onboarding context is unavailable.", "manual_recovery")
     snapshot = dict(version.snapshot_json or {})
+    if job.cancel_requested_at is not None or request.state == "cancelled":
+        return _cancel_job(session, job, request, tenant, worker_id, lease_token)
     if request.state not in {"provisioning", "validation"} or request.execution_authorized_at is None:
         return _fail_job(session, job, worker_id, "Execution authorization is missing or stale.", "authorization")
-    job.status = "validation"
-    session.add(job)
-    session.commit()
     steps = session.execute(select(ProvisioningStep).where(ProvisioningStep.job_id == job.id).order_by(ProvisioningStep.ordinal)).scalars().all()
+    if steps and steps[0].status == "success" and request.state == "provisioning":
+        request.state, request.applicant_visible_status = "validation", "validation"
+        session.add(request)
+        session.commit()
     for step in steps:
-        if not provisioning_service.renew_lease(session, job.id, worker_id, lease_seconds=120):
+        if job.cancel_requested_at is not None or request.state == "cancelled":
+            return _cancel_job(session, job, request, tenant, worker_id, lease_token)
+        if not provisioning_service.renew_lease(session, job.id, worker_id, lease_seconds=120, lease_token=lease_token):
             return session.get(ProvisioningJob, job.id) or job
         if step.status == "success":
             continue
@@ -130,15 +135,19 @@ def _run_phase4_job(session: Session, job: ProvisioningJob, client: ERPNextClien
         if not _dependencies_satisfied(steps, step):
             return _fail_job(session, job, worker_id, "A provisioning dependency is incomplete.", "dependency")
         try:
-            _run_step(session, job, step, request, version, tenant, snapshot, client, worker_id)
+            _run_step(session, job, step, request, version, tenant, snapshot, client, worker_id, lease_token)
         except StepFailure as exc:
             return _handle_step_failure(session, job, step, worker_id, exc)
-        except Exception:
-            return _handle_step_failure(session, job, step, worker_id, StepFailure("The provisioning step failed safely; inspect the sanitized event history.", "manual_recovery"))
-    return _finish_phase4(session, job, request, tenant, worker_id)
+        except LeaseLost:
+            session.rollback()
+            return session.get(ProvisioningJob, job.id) or job
+        except Exception as exc:
+            detail = sanitize_value(str(exc))
+            return _handle_step_failure(session, job, step, worker_id, StepFailure(f"{type(exc).__name__}: {detail}", "manual_recovery"))
+    return _finish_phase4(session, job, request, tenant, worker_id, lease_token)
 
 
-def _run_step(session: Session, job: ProvisioningJob, step: ProvisioningStep, request: OnboardingRequest, version: OnboardingRequestVersion, tenant: Tenant, snapshot: dict[str, Any], client: ERPNextClient, worker_id: str) -> None:
+def _run_step(session: Session, job: ProvisioningJob, step: ProvisioningStep, request: OnboardingRequest, version: OnboardingRequestVersion, tenant: Tenant, snapshot: dict[str, Any], client: ERPNextClient, worker_id: str, lease_token: Optional[str]) -> None:
     step.status, step.worker_id, step.attempt_count, step.started_at = "running", worker_id, step.attempt_count + 1, utcnow()
     session.add(step)
     session.commit()
@@ -155,36 +164,54 @@ def _run_step(session: Session, job: ProvisioningJob, step: ProvisioningStep, re
             module_entitlement_service.validate_requested_selection(session, version.requested_module_codes_json, version.bundle_key, version.bundle_version)
         except ModuleEntitlementError as exc:
             raise StepFailure("The approved module bundle is invalid.", "validation", manual_confirmation=True) from exc
+        job.status = "validation"
+        session.add(job)
+        request.state, request.applicant_visible_status = "validation", "validation"
+        session.add(request)
         evidence = {"version": version.version, "bundle_key": version.bundle_key, "bundle_version": version.bundle_version}
     elif step.step_key == "reserve_site_name":
         evidence = {"site_namespace": job.target_isolation_json.get("site_namespace"), "environment": job.target_environment, "isolated": True}
     elif step.step_key == "create_isolated_site":
         if site_id:
-            evidence = {"site_id": site_id, "replayed": True}
-        else:
+            provider_status = client.get_site_status(site_id)
+            if provider_status.get("status") == "not_found":
+                site_id = ""
+                refs.pop("site_id", None)
+            elif provider_status.get("status") not in {"healthy", "ready", "success"}:
+                raise StepFailure("The existing isolated ERP site is not healthy for replay.", "retryable")
+            else:
+                evidence = {"site_id": site_id, "replayed": True, "provider_health": sanitize_value(provider_status), "provider_verified": True}
+        if not site_id:
             result = client.create_site(request.organization_id or "", tenant.id, {"domain": f"{job.target_isolation_json.get('site_namespace', tenant.tenant_slug)}.example.test", "idempotency_key": f"phase4:{job.id}"})
             if result.get("status") != "success" or not result.get("site_id"):
-                raise StepFailure("The isolated site could not be created.", "retryable")
+                raise StepFailure(f"The isolated site could not be created: {sanitize_value(result.get('error') or 'provider rejected site creation')}", "retryable")
             site_id = str(result["site_id"])
             refs["site_id"] = site_id
             refs["site_name"] = str(result.get("site_name") or "")
-            evidence = {"site_id": site_id, "site_name": refs["site_name"], "isolated": True}
+            evidence = {"site_id": site_id, "site_name": refs["site_name"], "isolated": True, "provider_verified": True, "provider": str(result.get("provider") or client.__class__.__name__), "provider_readback": sanitize_value(result)}
     elif step.step_key in {"install_pinned_erpnext", "install_lenerp_custom_app"}:
         if not site_id:
             raise StepFailure("The isolated site reference is missing.", "manual_recovery")
         app = "erpnext" if step.step_key == "install_pinned_erpnext" else "lenerp_core"
         installed = set(refs.get("installed_apps") or [])
-        if app in installed:
-            evidence = {"app": app, "replayed": True}
+        inventory = client.get_site_inventory(site_id)
+        actual_apps = set((inventory.get("installed_apps") or {}).keys()) if isinstance(inventory.get("installed_apps"), dict) else set(inventory.get("installed_apps") or [])
+        if app in installed and app in actual_apps:
+            evidence = {"app": app, "replayed": True, "provider_verified": True}
         else:
             result = client.install_app(site_id, app)
             if result.get("status") != "success":
                 raise StepFailure("The pinned application could not be installed.", "retryable")
             installed.add(app)
             refs["installed_apps"] = sorted(installed)
-            evidence = {"app": app, "pinned": True}
+            evidence = {"app": app, "pinned": True, "provider_readback": sanitize_value(result)}
     elif step.step_key == "apply_approved_modules":
         codes = module_entitlement_service.resolve_requested_codes(session, version.requested_module_codes_json, version.bundle_key, version.bundle_version)
+        if not site_id:
+            raise StepFailure("The isolated site reference is missing.", "manual_recovery")
+        provider_result = client.apply_site_configuration(site_id, {"modules": codes})
+        if provider_result.get("status") != "success" or provider_result.get("provider_verified") is not True:
+            raise StepFailure("The approved modules were not confirmed by the ERP runtime.", "retryable")
         for code in codes:
             module = module_entitlement_service.module_by_code(session, code)
             if module is None:
@@ -194,11 +221,24 @@ def _run_step(session: Session, job: ProvisioningJob, step: ProvisioningStep, re
                 row = ModuleApplicationStatus(tenant_id=tenant.id, module_id=module.id)
                 session.add(row)
             row.application_state, row.failure_reason, row.last_checked_at = "applied", None, utcnow()
-        evidence = {"requested": list(version.requested_module_codes_json), "effective": codes, "verification": "pending"}
+        evidence = {"requested": list(version.requested_module_codes_json), "effective": codes, "provider_readback": sanitize_value(provider_result), "verification": "provider_pending"}
     elif step.step_key == "apply_roles_workspaces":
-        evidence = {"roles": "pinned_catalog_defaults", "workspaces": "pinned_catalog_defaults"}
+        if not site_id:
+            raise StepFailure("The isolated site reference is missing.", "manual_recovery")
+        role_codes = sorted({role for code in module_entitlement_service.resolve_requested_codes(session, version.requested_module_codes_json, version.bundle_key, version.bundle_version) for role in (module_entitlement_service.module_by_code(session, code).default_roles_json if module_entitlement_service.module_by_code(session, code) else [])})
+        workspace_codes = sorted({workspace for code in module_entitlement_service.resolve_requested_codes(session, version.requested_module_codes_json, version.bundle_key, version.bundle_version) for workspace in (module_entitlement_service.module_by_code(session, code).default_workspaces_json if module_entitlement_service.module_by_code(session, code) else [])})
+        provider_result = client.apply_site_configuration(site_id, {"roles": role_codes, "workspaces": workspace_codes})
+        if provider_result.get("status") != "success" or provider_result.get("provider_verified") is not True:
+            raise StepFailure("ERP roles and workspaces were not confirmed by the ERP runtime.", "retryable")
+        evidence = {"roles": role_codes, "workspaces": workspace_codes, "provider_readback": sanitize_value(provider_result)}
     elif step.step_key == "apply_branding_configuration":
-        evidence = {"branding": {key: value for key, value in dict(snapshot.get("branding") or {}).items() if key in {"display_name", "primary_color", "logo_ref", "favicon_ref"}}}
+        if not site_id:
+            raise StepFailure("The isolated site reference is missing.", "manual_recovery")
+        branding = {key: value for key, value in dict(snapshot.get("branding") or {}).items() if key in {"display_name", "primary_color", "logo_ref", "favicon_ref"}}
+        provider_result = client.apply_site_configuration(site_id, {"branding": branding})
+        if provider_result.get("status") != "success" or provider_result.get("provider_verified") is not True:
+            raise StepFailure("ERP branding was not confirmed by the ERP runtime.", "retryable")
+        evidence = {"branding": branding, "provider_readback": sanitize_value(provider_result)}
     elif step.step_key == "prepare_domain_binding":
         evidence = {"domain": snapshot.get("desired_domain"), "dns_mutation": "deferred_manual_activation"}
     elif step.step_key == "bind_domain_ssl":
@@ -206,9 +246,9 @@ def _run_step(session: Session, job: ProvisioningJob, step: ProvisioningStep, re
         if domain and domain.endswith(".example.test") and site_id:
             bind = client.bind_domain(site_id, domain)
             ssl = client.issue_ssl(site_id, domain)
-            if bind.get("status") != "success" or ssl.get("status") != "success":
+            if bind.get("status") != "success" or ssl.get("status") not in {"success", "deferred"} or ssl.get("provider_verified") is not True:
                 raise StepFailure("The synthetic domain binding did not complete.", "retryable")
-            evidence = {"domain": domain, "ssl": "synthetic_issued"}
+            evidence = {"domain": domain, "bind": sanitize_value(bind), "ssl": sanitize_value(ssl), "provider_verified": True}
         else:
             evidence = {"domain": domain or None, "status": "manual_activation_required", "dns_mutation": "not_performed"}
     elif step.step_key == "create_admin_handoff":
@@ -227,12 +267,21 @@ def _run_step(session: Session, job: ProvisioningJob, step: ProvisioningStep, re
         status = client.get_site_status(site_id)
         if status.get("status") not in {"healthy", "ready", "success"}:
             raise StepFailure("The isolated site health check did not pass.", "retryable")
-        evidence = {"status": str(status.get("status")), "site_id": site_id}
+        inventory = client.get_site_inventory(site_id)
+        if inventory.get("status") != "success" or inventory.get("provider_verified") is not True:
+            raise StepFailure("The isolated ERP runtime inventory could not be verified.", "retryable")
+        evidence = {"status": str(status.get("status")), "site_id": site_id, "provider_health": sanitize_value(status), "provider_inventory": sanitize_value(inventory)}
     elif step.step_key == "verify_apps_modules":
         statuses = session.execute(select(ModuleApplicationStatus).where(ModuleApplicationStatus.tenant_id == tenant.id)).scalars().all()
+        if not site_id:
+            raise StepFailure("The isolated site reference is missing.", "manual_recovery")
+        codes = module_entitlement_service.resolve_requested_codes(session, version.requested_module_codes_json, version.bundle_key, version.bundle_version)
+        provider_result = client.verify_site_configuration(site_id, codes)
+        if provider_result.get("status") != "success" or provider_result.get("provider_verified") is not True:
+            raise StepFailure("The ERP runtime did not verify the installed apps and approved modules.", "retryable")
         for row in statuses:
             row.verification_state, row.verified_at, row.last_checked_at = "verified", row.verified_at or utcnow(), utcnow()
-        evidence = {"verified_module_count": len(statuses), "trusted_evidence": True}
+        evidence = {"verified_module_count": len(statuses), "provider_readback": sanitize_value(provider_result), "trusted_evidence": True}
     elif step.step_key == "prepare_first_login":
         handoff = session.execute(select(FirstLoginHandoff).where(FirstLoginHandoff.request_id == request.id, FirstLoginHandoff.tenant_id == tenant.id)).scalars().first()
         if handoff is None or handoff.status != "prepared":
@@ -242,6 +291,10 @@ def _run_step(session: Session, job: ProvisioningJob, step: ProvisioningStep, re
         evidence = {"ready_requires_verified": True}
     else:
         raise StepFailure("Unknown provisioning step.", "manual_recovery")
+    try:
+        provisioning_service.assert_lease(session, job.id, worker_id, lease_token)
+    except RuntimeError as exc:
+        raise LeaseLost(str(exc)) from exc
     job.external_refs_json = sanitize_value(refs)
     step.status, step.finished_at, step.worker_id, step.lease_expires_at, step.evidence_json = "success", utcnow(), None, None, sanitize_value(evidence)
     provisioning_service.add_event(session, step, job.id, "step_succeeded", "Provisioning step completed.", {"step_key": step.step_key, "attempt": step.attempt_count})
@@ -267,18 +320,44 @@ def _handle_step_failure(session: Session, job: ProvisioningJob, step: Provision
 
 
 def _fail_job(session: Session, job: ProvisioningJob, worker_id: str, message: str, category: str) -> ProvisioningJob:
-    job.status, job.error_message, job.finished_at, job.worker_id, job.lease_expires_at = "failed", message[:500], utcnow(), None, None
+    job.status, job.error_message, job.finished_at, job.worker_id, job.lease_token, job.lease_expires_at = "failed", message[:500], utcnow(), None, None, None
     provisioning_service.append_job_log(session, job, {"event": "workflow_failed", "message": message, "failure_category": category})
     tenant = session.get(Tenant, job.tenant_id)
     if tenant:
         tenant.provisioning_status, tenant.status = "failed", "failed"
+    request = session.get(OnboardingRequest, job.onboarding_request_id) if job.onboarding_request_id else None
+    if request and request.state not in {"cancelled", "ready"}:
+        request.state, request.applicant_visible_status = "failed", "failed"
+        session.add(request)
     session.add_all([job, tenant] if tenant else [job])
     session.commit()
     return session.get(ProvisioningJob, job.id) or job
 
 
-def _finish_phase4(session: Session, job: ProvisioningJob, request: OnboardingRequest, tenant: Tenant, worker_id: str) -> ProvisioningJob:
-    job.status, job.finished_at, job.worker_id, job.lease_expires_at = "success", utcnow(), None, None
+def _cancel_job(session: Session, job: ProvisioningJob, request: OnboardingRequest, tenant: Tenant, worker_id: str, lease_token: Optional[str]) -> ProvisioningJob:
+    try:
+        provisioning_service.assert_lease(session, job.id, worker_id, lease_token)
+    except RuntimeError:
+        session.rollback()
+        return session.get(ProvisioningJob, job.id) or job
+    job.status, job.finished_at, job.worker_id, job.lease_token, job.lease_expires_at = "cancelled", utcnow(), None, None, None
+    request.state, request.applicant_visible_status = "cancelled", "cancelled"
+    tenant.provisioning_status, tenant.status = "cancelled", "cancelled"
+    for step in session.execute(select(ProvisioningStep).where(ProvisioningStep.job_id == job.id, ProvisioningStep.status.not_in(("success", "failed")))).scalars().all():
+        step.status, step.worker_id, step.lease_expires_at, step.finished_at = "cancelled", None, None, utcnow()
+        session.add(step)
+    session.add_all([job, request, tenant])
+    session.commit()
+    return session.get(ProvisioningJob, job.id) or job
+
+
+def _finish_phase4(session: Session, job: ProvisioningJob, request: OnboardingRequest, tenant: Tenant, worker_id: str, lease_token: Optional[str]) -> ProvisioningJob:
+    try:
+        provisioning_service.assert_lease(session, job.id, worker_id, lease_token)
+    except RuntimeError:
+        session.rollback()
+        return session.get(ProvisioningJob, job.id) or job
+    job.status, job.finished_at, job.worker_id, job.lease_token, job.lease_expires_at = "success", utcnow(), None, None, None
     request.state, request.applicant_visible_status = "ready", "ready"
     tenant.provisioning_status, tenant.status = "ready", "ready"
     session.add_all([job, request, tenant])

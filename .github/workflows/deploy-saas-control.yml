@@ -61,6 +61,13 @@ jobs:
           ref: ${{ inputs.candidate_ref || github.sha }}
           fetch-depth: 0
 
+      - name: Resolve immutable candidate commit
+        id: candidate
+        run: |
+          candidate_sha="$(git rev-parse HEAD)"
+          [[ "$candidate_sha" =~ ^[0-9a-f]{40}$ ]] || { echo "Candidate checkout is not a commit: $candidate_sha" >&2; exit 1; }
+          echo "sha=$candidate_sha" >> "$GITHUB_OUTPUT"
+
       - name: Make release scripts executable
         run: chmod +x scripts/release/*.sh scripts/deploy/*.sh
 
@@ -167,34 +174,160 @@ jobs:
           path.write_text('\n'.join(output) + '\n', encoding='utf-8')
           PY
 
+      - name: Configure the dedicated staging Frappe bench adapter
+        env:
+          STAGING_MARIADB_ROOT_USERNAME: ${{ secrets.STAGING_MARIADB_ROOT_USERNAME }}
+          STAGING_MARIADB_ROOT_PASSWORD: ${{ secrets.STAGING_MARIADB_ROOT_PASSWORD }}
+        run: |
+          db_root_username="saas_phase4_bench"
+          db_root_password="$(openssl rand -hex 32)"
+          mariadb_socket_admin="false"
+          if [[ -n "${STAGING_MARIADB_ROOT_PASSWORD:-}" ]]; then
+            mariadb_root_username="${STAGING_MARIADB_ROOT_USERNAME:-root}"
+            mariadb_root_password="$STAGING_MARIADB_ROOT_PASSWORD"
+          else
+            if mariadb_root_credential="$(sudo python3 - <<'PY'
+          from configparser import ConfigParser, Error as ConfigParserError
+          import json
+          from pathlib import Path
+
+          candidates = [
+              Path('/root/.my.cnf'),
+              Path('/home/frappe/.my.cnf'),
+              Path('/home/ubuntu/.my.cnf'),
+              Path('/etc/mysql/my.cnf'),
+              Path('/etc/mysql/mariadb.cnf'),
+              Path('/etc/mysql/debian.cnf'),
+              Path('/opt/frappe-staging-bench/sites/common_site_config.json'),
+              Path('/opt/frappe-staging-bench/config/common_site_config.json'),
+              Path('/opt/frappe-staging-bench/sites/erp-staging.example.test/site_config.json'),
+          ]
+          candidates.extend(Path('/opt/frappe-staging-bench').glob('**/*.cnf'))
+          candidates.extend(Path('/opt/frappe-staging-bench/sites').glob('**/*.json'))
+          for path in candidates:
+              if not path.is_file():
+                  continue
+              try:
+                  if path.suffix == '.cnf':
+                      parser = ConfigParser()
+                      parser.read(path)
+                      for section in ('client', 'mysql', 'mariadb'):
+                          if parser.has_option(section, 'password'):
+                              username = parser.get(section, 'user', fallback='root')
+                              print(f"{username}\t{parser.get(section, 'password')}")
+                              raise SystemExit(0)
+                  else:
+                      payload = json.loads(path.read_text(encoding='utf-8'))
+                      for key in ('root_password', 'db_root_password', 'mariadb_root_password'):
+                          value = payload.get(key) if isinstance(payload, dict) else None
+                          if value:
+                              username = payload.get('root_username', 'root') if isinstance(payload, dict) else 'root'
+                              print(f"{username}\t{value}")
+                              raise SystemExit(0)
+              except (OSError, ValueError, ConfigParserError, json.JSONDecodeError):
+                  continue
+          raise SystemExit('No protected staging MariaDB root credential was found.')
+          PY
+            )"; then
+              IFS=$'\t' read -r mariadb_root_username mariadb_root_password <<< "$mariadb_root_credential"
+            elif sudo -n -u mysql mariadb --protocol=socket --batch --skip-column-names -e 'SELECT 1' >/dev/null 2>&1; then
+              mariadb_socket_admin="true"
+            else
+              echo "No protected staging MariaDB root credential or Unix-socket admin was available." >&2
+              exit 1
+            fi
+          fi
+          if [[ "$mariadb_socket_admin" == "true" ]]; then
+            run_mariadb_admin() { sudo -n -u mysql mariadb --protocol=socket --batch; }
+          else
+            [[ -n "$mariadb_root_username" && -n "$mariadb_root_password" ]] || { echo "Staging MariaDB root credential is unavailable" >&2; exit 1; }
+            run_mariadb_admin() { sudo -n env MYSQL_PWD="$mariadb_root_password" mariadb --protocol=socket --user="$mariadb_root_username" --batch; }
+          fi
+          run_mariadb_admin <<SQL
+          CREATE USER IF NOT EXISTS '${db_root_username}'@'localhost' IDENTIFIED BY '${db_root_password}';
+          CREATE USER IF NOT EXISTS '${db_root_username}'@'%' IDENTIFIED BY '${db_root_password}';
+          ALTER USER '${db_root_username}'@'localhost' IDENTIFIED BY '${db_root_password}';
+          ALTER USER '${db_root_username}'@'%' IDENTIFIED BY '${db_root_password}';
+          GRANT ALL PRIVILEGES ON *.* TO '${db_root_username}'@'localhost' WITH GRANT OPTION;
+          GRANT ALL PRIVILEGES ON *.* TO '${db_root_username}'@'%' WITH GRANT OPTION;
+          FLUSH PRIVILEGES;
+          SQL
+          sudo python3 - /opt/saas-control-staging/shared/env/staging-backend.env <<'PY'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          required = {
+              'ERPNEXT_MODE': 'bench',
+              'ERPNEXT_BENCH_ROOT': '/opt/frappe-staging-bench',
+              'ERPNEXT_BENCH_SITE_PREFIX': 'phase4-',
+              'ERPNEXT_BENCH_RUN_AS_USER': 'frappe',
+              'ERPNEXT_BENCH_COMMAND': '/usr/local/bin/bench',
+              'ERPNEXT_BENCH_WEB_URL': 'http://127.0.0.1:28000',
+          }
+          lines = path.read_text(encoding='utf-8').splitlines()
+          output = []
+          seen = set()
+          for line in lines:
+              key, separator, _ = line.partition('=')
+              if separator and key in required:
+                  output.append(f'{key}={required[key]}')
+                  seen.add(key)
+              else:
+                  output.append(line)
+          output.extend(f'{key}={value}' for key, value in required.items() if key not in seen)
+          path.write_text('\n'.join(output) + '\n', encoding='utf-8')
+          PY
+          sudo install -d -o root -g saas-staging -m 0750 /run/saas-control-staging
+          sudo tee /run/saas-control-staging/frappe-bench.env >/dev/null <<EOF
+          ERPNEXT_DB_ROOT_USERNAME=$db_root_username
+          ERPNEXT_DB_ROOT_PASSWORD=$db_root_password
+          EOF
+          sudo chown root:saas-staging /run/saas-control-staging/frappe-bench.env
+          sudo chmod 0640 /run/saas-control-staging/frappe-bench.env
+          sudo install -m 0644 ops/staging/saas-control-staging-backend.service /etc/systemd/system/saas-control-staging-backend.service
+          sudo install -m 0440 /dev/stdin /etc/sudoers.d/saas-staging-frappe-bench <<'EOF'
+          saas-staging ALL=(frappe) NOPASSWD: /usr/local/bin/bench
+          EOF
+          sudo visudo -cf /etc/sudoers.d/saas-staging-frappe-bench
+          sudo systemctl daemon-reload
+          sudo systemctl restart saas-control-staging-backend
+          sudo systemctl restart saas-control-staging-worker
+          sudo -n -u frappe /usr/local/bin/bench --version
+
       - name: Build and deploy exact candidate to staging
         env:
           DEPLOY_TARGET: staging
-          TARGET_REF: ${{ inputs.candidate_ref || github.sha }}
-          RELEASE_ID: ${{ inputs.candidate_ref || github.sha }}
+          TARGET_REF: ${{ steps.candidate.outputs.sha }}
+          RELEASE_ID: ${{ steps.candidate.outputs.sha }}
           REQUIRE_AUTH_SMOKE: "true"
         run: ./scripts/deploy/deploy_saas_control.sh
+
+      - name: Verify the dedicated ERP staging bench and queues
+        run: sudo scripts/release/erp_staging_smoke.sh
 
       - name: Run isolated synthetic Phase 4 onboarding smoke
         if: ${{ (inputs.phase4_synthetic_state || 'off') == 'on' }}
         env:
           RUN_ID: phase4-${{ github.run_id }}
         run: |
-          set -a
-          . /opt/saas-control-staging/shared/env/staging-backend.env
-          set +a
           token_file=/run/saas-control-staging/smoke/auth-token
           evidence_file="/tmp/phase4-synthetic-evidence-${RUN_ID}.json"
           trap 'sudo rm -f -- "$evidence_file"' EXIT
           set +e
-          sudo -n -E -u saas-staging env \
+          sudo -n -u saas-staging env RUN_ID="$RUN_ID" TOKEN_FILE="$token_file" EVIDENCE_FILE="$evidence_file" bash -c '
+            set -a
+            . /opt/saas-control-staging/shared/env/staging-backend.env
+            . /run/saas-control-staging/frappe-bench.env
+            set +a
             PYTHONPATH=/opt/saas-control-staging/current/backend \
-            /opt/saas-control-staging/shared/backend-venv/bin/python \
-            /opt/saas-control-staging/current/scripts/release/phase4_synthetic_smoke.py \
-            --base-url http://127.0.0.1:18001 \
-            --admin-token-file "$token_file" \
-            --run-id "$RUN_ID" \
-            --output "$evidence_file"
+              /opt/saas-control-staging/shared/backend-venv/bin/python \
+              /opt/saas-control-staging/current/scripts/release/phase4_synthetic_smoke.py \
+              --base-url http://127.0.0.1:18001 \
+              --admin-token-file "$TOKEN_FILE" \
+              --run-id "$RUN_ID" \
+              --output "$EVIDENCE_FILE"
+          '
           smoke_status=$?
           set -e
           if [[ -f "$evidence_file" ]]; then
@@ -209,22 +342,24 @@ jobs:
         env:
           RUN_ID: phase4-recovery-${{ github.run_id }}
         run: |
-          set -a
-          . /opt/saas-control-staging/shared/env/staging-backend.env
-          set +a
           token_file=/run/saas-control-staging/smoke/auth-token
           evidence_file="/tmp/phase4-synthetic-recovery-evidence-${RUN_ID}.json"
           trap 'sudo rm -f -- "$evidence_file"' EXIT
           set +e
-          sudo -n -E -u saas-staging env \
+          sudo -n -u saas-staging env RUN_ID="$RUN_ID" TOKEN_FILE="$token_file" EVIDENCE_FILE="$evidence_file" bash -c '
+            set -a
+            . /opt/saas-control-staging/shared/env/staging-backend.env
+            . /run/saas-control-staging/frappe-bench.env
+            set +a
             PYTHONPATH=/opt/saas-control-staging/current/backend \
-            /opt/saas-control-staging/shared/backend-venv/bin/python \
-            /opt/saas-control-staging/current/scripts/release/phase4_synthetic_smoke.py \
-            --base-url http://127.0.0.1:18001 \
-            --admin-token-file "$token_file" \
-            --run-id "$RUN_ID" \
-            --failure-step health_checks \
-            --output "$evidence_file"
+              /opt/saas-control-staging/shared/backend-venv/bin/python \
+              /opt/saas-control-staging/current/scripts/release/phase4_synthetic_smoke.py \
+              --base-url http://127.0.0.1:18001 \
+              --admin-token-file "$TOKEN_FILE" \
+              --run-id "$RUN_ID" \
+              --failure-step health_checks \
+              --output "$EVIDENCE_FILE"
+          '
           smoke_status=$?
           set -e
           if [[ -f "$evidence_file" ]]; then
@@ -269,7 +404,7 @@ jobs:
         # Keep this capture step adjacent to the deployed release dependencies.
         env:
           EXPECTED_PHASE_ONE_SHELL: ${{ inputs.phase1_shell_state || 'off' }}
-          EXPECTED_RELEASE: ${{ inputs.candidate_ref || github.sha }}
+          EXPECTED_RELEASE: ${{ steps.candidate.outputs.sha }}
           RUNTIME_RELEASE_URL: http://127.0.0.1:18001/runtime/release
           ROLLOUT_STAGE: ${{ inputs.rollout_stage || 'operator-validation' }}
           HEADLESS: "false"
@@ -347,7 +482,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: staging-browser-evidence-${{ inputs.candidate_ref || github.sha }}
+          name: staging-browser-evidence-${{ steps.candidate.outputs.sha }}
           path: staging-browser-evidence
           if-no-files-found: error
           retention-days: 30
