@@ -175,10 +175,17 @@ jobs:
           PY
 
       - name: Configure the dedicated staging Frappe bench adapter
+        env:
+          STAGING_MARIADB_ROOT_USERNAME: ${{ secrets.STAGING_MARIADB_ROOT_USERNAME }}
+          STAGING_MARIADB_ROOT_PASSWORD: ${{ secrets.STAGING_MARIADB_ROOT_PASSWORD }}
         run: |
           db_root_username="saas_phase4_bench"
           db_root_password="$(openssl rand -hex 32)"
-          mariadb_root_credential="$(sudo python3 - <<'PY'
+          if [[ -n "${STAGING_MARIADB_ROOT_PASSWORD:-}" ]]; then
+            mariadb_root_username="${STAGING_MARIADB_ROOT_USERNAME:-root}"
+            mariadb_root_password="$STAGING_MARIADB_ROOT_PASSWORD"
+          else
+            mariadb_root_credential="$(sudo python3 - <<'PY'
           from configparser import ConfigParser
           import json
           from pathlib import Path
@@ -220,8 +227,9 @@ jobs:
                   continue
           raise SystemExit('No protected staging MariaDB root credential was found.')
           PY
-          )"
-          IFS=$'\t' read -r mariadb_root_username mariadb_root_password <<< "$mariadb_root_credential"
+            )"
+            IFS=$'\t' read -r mariadb_root_username mariadb_root_password <<< "$mariadb_root_credential"
+          fi
           [[ -n "$mariadb_root_username" && -n "$mariadb_root_password" ]] || { echo "Staging MariaDB root credential is unavailable" >&2; exit 1; }
           sudo -n env MYSQL_PWD="$mariadb_root_password" mariadb --protocol=socket --user="$mariadb_root_username" --batch <<SQL
           CREATE USER IF NOT EXISTS '${db_root_username}'@'localhost' IDENTIFIED BY '${db_root_password}';
