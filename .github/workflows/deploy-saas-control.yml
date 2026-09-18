@@ -99,6 +99,17 @@ jobs:
           sudo find /tmp -maxdepth 1 -mindepth 1 \( -name 'npm-*' -o -name 'next-*' \) -exec rm -rf -- {} +
           df -h / /home /opt
 
+      - name: Reclaim only the older staging rollback release
+        run: |
+          release_root=/opt/saas-control-staging/releases
+          current="$(readlink -f /opt/saas-control-staging/current 2>/dev/null || true)"
+          previous="$(readlink -f /opt/saas-control-staging/previous 2>/dev/null || true)"
+          if [[ -n "$previous" && "$previous" != "$current" && "$previous" == "$release_root/"* && -d "$previous" ]]; then
+            sudo rm -rf -- "$previous"
+            sudo rm -f -- /opt/saas-control-staging/previous
+          fi
+          df -h / /home /opt
+
       - name: Scan tracked and untracked candidate inputs for credential patterns
         run: python3 scripts/release/secret_scan.py
 
