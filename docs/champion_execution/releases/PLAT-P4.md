@@ -1,12 +1,14 @@
 # PLAT-P4 — Onboarding and Durable Provisioning Release Record
 
-Status: **REVIEW FAIL — the cited Phase 4 evidence was produced after the protected production promotion, and the old materializer bypassed evidence verification for an already-materialized candidate**
+Status: **PASS — corrected candidate-bound Phase 4 evidence completed before a newly protected production promotion**
 Release identity: `PLAT-P4`
 Record date: 2026-09-18
 Operator: Codex, working with the delivery owner
 Implementation commit: `9432a354f0e0ac960c50751369c4bff6754e37c4`
-Exact tested and promoted release candidate: `2cfc9aa71c13a09e41ef42c7484d5aafbe5e51b9`
-Main merge containing the implementation: `c5f3989b77dfb21c01bbc94c458a2a0c04de20b3`
+Original release candidate (reconciled, not credited): `2cfc9aa71c13a09e41ef42c7484d5aafbe5e51b9`
+Original main merge containing the implementation: `c5f3989b77dfb21c01bbc94c458a2a0c04de20b3`
+Gate enforcement commits: `9f39f9c754b2c954c82315e49e8c6410133b44aa`, `560f4e1c2d4253dfa69472c54d85a4ee936c85ab`
+Corrected exact tested and promoted release candidate: `27ede631c667c67f45d534108abeb975816ee83e`
 
 ## Scope and safety decision
 
@@ -115,61 +117,44 @@ promotion explicitly writes every Phase 4 flag to off.
 | Diff whitespace | PASS | `git diff --check` |
 | Direct provisioning regression | PASS | legacy API test now asserts `403` and the approved onboarding guidance |
 | Secret scan | PASS | `python scripts/release/secret_scan.py` — no high-confidence credential patterns |
+| Phase 4 evidence gate tests | PASS | `scripts/release/test_verify_phase4_evidence.py` — candidate binding, success/recovery cleanup, and pre-promotion chronology |
 
 ## Staging and production evidence
 
-### Reconciliation correction
+### Reconciliation and corrected sequence
 
-The previous record is not an acceptable Phase 4 gate result. Protected
-production promotion run `35370954773` started at `16:51:40Z` and completed at
-`16:54:33Z`, while the cited exact synthetic run `35371519119` started at
-`16:57:38Z`. The earlier candidate staging run `35370737638` had browser
-evidence but no `phase4-synthetic-evidence-*` artifact. In addition, the old
-`materialize_production_candidate.sh` verified Phase 4 evidence only when the
-source candidate had to be built; an existing production candidate was
-accepted from a generic `.staging-smoke-passed` marker. Therefore the prior
-promotion cannot be credited as having passed the exact Phase 4 synthetic
-evidence gate.
+The previous promotion was correctly rejected as a Phase 4 gate result:
+promotion run `35370954773` started at `16:51:40Z` and completed at
+`16:54:33Z`, while its cited synthetic run `35371519119` started at
+`16:57:38Z`; the old materializer also bypassed evidence verification for an
+already-materialized candidate.
 
-The gate remains open until this record is replaced with a newly protected
-promotion whose candidate-bound success-and-recovery artifact completed before
-the promotion request.
+The remediation is now enforced in every path. The materializer verifies a
+candidate-bound artifact before either reusing an existing production
+candidate or building/copying one. The artifact must contain successful
+success and recovery payloads, exact candidate metadata, full cleanup
+readback, and a staging run that both started and completed before the
+promotion request. The final promotion script also requires the materializer's
+candidate-bound evidence marker.
 
-The guarded workflow was run against the exact promoted release candidate with
-`phase4_synthetic_state=on` in staging:
+The corrected sequence is:
 
-- [Exact-candidate staging run 35371519119](https://github.com/Lengrowth/crm/actions/runs/35371519119) completed successfully for release `2cfc9aa71c13a09e41ef42c7484d5aafbe5e51b9`.
-- Synthetic success and injected-recovery evidence were uploaded as artifact
-  `10558804260` (`phase4-synthetic-evidence-35371519119`). Both records report
-  `status=passed`, `state=ready`, `worker_status=success`, and 15 persisted
-  steps. The real Frappe provider readback confirms the isolated bench,
-  database, files, queues, installed `frappe`/`erpnext`/`lenerp_core` apps, and
-  the approved `crm`/`projects`/`field_ops` module set.
-- Recovery intentionally failed at `health_checks`, recovered through the
-  durable retry path, and reached `ready`. Each run deleted one isolated ERP
-  site and removed the exact synthetic records: 1 request, 1 version, 1
-  management credential, 3 decisions, 1 organization, 1 membership, 1 tenant,
-  1 project, 5 tasks, 1 domain, 3 organization modules, 1 entitlement audit,
-  3 module application statuses, 1 job, 15 steps, 15 events, 1 outbox event,
-  1 first-login handoff, and 1 synthetic administrator.
-- Browser/accessibility evidence was uploaded as artifact `10558549671`
-  (`staging-browser-evidence-2cfc9aa71c13a09e41ef42c7484d5aafbe5e51b9`).
-
-The separately approved protected production promotion was then completed:
-
-- [Protected production run 35370954773](https://github.com/Lengrowth/crm/actions/runs/35370954773) promoted the exact tested candidate with verified application/off-host backups, additive Phase 3 migration/catalog sync successful, Phase 4 flags explicitly off, authorized Phase 2 CRUD/tenant-isolation smoke successful, disposable identity removed, and non-secret readback artifact `10558687851` uploaded.
-- Production readback reports `current_release=/opt/saas-control/releases/2cfc9aa71c13a09e41ef42c7484d5aafbe5e51b9`, `previous_release=/opt/saas-control/releases/82e7b4e3600aedf37d24dbb9273a3dba408a0746`, database revision `20260918_0011` before and after, backend/frontend/nginx and the R2 backup timer active, R2 lifecycle rules enabled, and zero Phase 2/smoke resources remaining. Phase 4 production counts are zero for requests, versions, decisions, organizations, tenants, jobs, steps, events, outbox events, handoffs, credentials, memberships, projects, tasks, module state, and leases; the domain count is unavailable in this readback (`null`), not a surviving resource.
-- Read-only observation on 2026-09-18: local health HTTP `200`, `/runtime/release` reports commit `2cfc9aa71c13a09e41ef42c7484d5aafbe5e51b9` with `environment=production` and staging build metadata, and the production ERP Phase 4 site count is `0`. Runtime flags show `platform_phase1_shell=true`, all Phase 3 entitlement-write flags false, and `onboarding_public_intake=false`, `onboarding_operator_view=false`, `onboarding_conversion=false`, `onboarding_execution=false`, `onboarding_synthetic_allowlist=false`, and `onboarding_real_execution=false`.
+- Gate enforcement merged in `9f39f9c…` and redirect-safe artifact download
+  merged in `560f4e1…`; final main candidate is `27ede631…`.
+- [Final exact-candidate staging run 35379590876](https://github.com/Lengrowth/crm/actions/runs/35379590876) ran from `18:20:19Z` through `18:29:05Z` for candidate `27ede631c667c67f45d534108abeb975816ee83e` with `phase4_synthetic_state=on`.
+- Its [candidate-bound Phase 4 artifact `10561738710`](https://github.com/Lengrowth/crm/actions/runs/35379590876/artifacts/10561738710) contains metadata binding the candidate SHA and staging run ID, plus success and injected-recovery evidence. Both report `status=passed`, `state=ready`, `worker_status=success`, 15 steps, isolated Frappe readback, and verified cleanup; recovery intentionally failed at `health_checks` and recovered.
+- The protected promotion request [35380532779](https://github.com/Lengrowth/crm/actions/runs/35380532779) was created at `18:30:03Z`, after the evidence run completed, and finished successfully at `18:31:55Z`. The materialization step passed the live verifier; an independent post-run verifier also resolved `35379590876` for this promotion run.
+- The [production readback artifact `10561369795`](https://github.com/Lengrowth/crm/actions/runs/35380532779/artifacts/10561369795) reports current release `27ede631c667c67f45d534108abeb975816ee83e`, previous release `2cfc9aa71c13a09e41ef42c7484d5aafbe5e51b9`, production environment, database revision `20260918_0011` before and after, local health `200`, active backend/frontend/nginx/R2 timer services, all Phase 4 flags off, and zero production ERP Phase 4 sites. All reported Phase 4 cleanup counts are zero; the domain count is unavailable (`null`) in this readback, not a surviving resource.
 - Production Phase 4 execution was not enabled; all Phase 4 testing remained isolated synthetic staging activity.
 
 ## Closed gate and handover
 
-The immutable-candidate staging run, recovery run, evidence review, protected
-production promotion, read-only observation, and cleanup are complete. The
+The corrected immutable-candidate staging run, recovery run, evidence review,
+protected production promotion, read-only observation, and cleanup are
+complete. The
 working-tree-only `frontend/tsconfig.tsbuildinfo` change was preserved and was
 not staged, reset, or overwritten. Rollback remains available through the
 immutable `current`/`previous` release pointers, with the prior production
-release retained as `82e7b4e3600aedf37d24dbb9273a3dba408a0746`.
+release retained as `2cfc9aa71c13a09e41ef42c7484d5aafbe5e51b9`.
 
-Final verdict: **PLAT-P4 REVIEW: FAIL** — remediation and a newly protected,
-chronologically ordered promotion are required.
+Final verdict: **PLAT-P4 REVIEW: PASS**.
