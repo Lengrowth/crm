@@ -46,6 +46,8 @@ def test_seed_is_explicit_and_reset_is_demo_prefix_scoped():
     assert 'DEMO-CHAMPION-North Ridge Farm' in seed
     assert '"customer_name": ["like", prefix]' in seed
     assert '"asset_name": ["like", prefix]' in seed
+    assert 'Reconcile scalar fields' in seed
+    assert 'frappe.db.set_value(doctype, name, field, value' in seed
     assert '"workflow_state": "Planned"' in seed
     assert 'frappe.db.set_value' in seed
     assert 'synthetic seed complete' in seed

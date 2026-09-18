@@ -10,7 +10,7 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; `PLAT-P3` PASS; 
 | Champion forecast / commercial plan | `https://github.com/guerra2fernando/champion-forecast.git` | local checkout has unrelated dirty changes; preserve them |
 | Frappe upstream | `https://github.com/frappe/frappe.git` | production `edae775dd36b6c4ad7acab10230262bd74040765`; clean detached clone at `C:\Users\smikl\Desktop\Work\phase0-upstreams\frappe` |
 | ERPNext upstream | `https://github.com/frappe/erpnext.git` | production `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`; clean detached clone at `C:\Users\smikl\Desktop\Work\phase0-upstreams\erpnext` |
-| `lenerp_core` | Private `https://github.com/Len-OS/lenerp_core.git`; synthetic demo branch `codex/champ-c01-r1` at `5af32c4` (`0.2.0`) | C01–C08 synthetic DocTypes, roles, workflow, reports, print path, seed/status/reset; isolated ERP staging installation remains candidate-bound |
+| `lenerp_core` | Private `https://github.com/Len-OS/lenerp_core.git`; synthetic demo branch `codex/champ-c01-r1` at `a054b56` (`0.2.0`) | C01–C08 synthetic DocTypes, roles, workflow, reports, print path, seed/status/reset; isolated ERP staging installation remains candidate-bound |
 
 ## Runtime and ownership
 

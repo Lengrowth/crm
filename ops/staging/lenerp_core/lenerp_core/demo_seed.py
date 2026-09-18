@@ -30,6 +30,14 @@ def _exists(doctype: str, name: str) -> bool:
 
 def _insert(doctype: str, name: str, values: dict[str, Any]) -> str:
     if _exists(doctype, name):
+        # Reconcile scalar fields so rerunning the seed upgrades an earlier
+        # synthetic snapshot without touching unrelated records. Child-table
+        # payloads are intentionally left intact because their parent
+        # documents may already be submitted.
+        for field, value in values.items():
+            if isinstance(value, (list, dict)):
+                continue
+            frappe.db.set_value(doctype, name, field, value, update_modified=False)
         return name
     doc = frappe.get_doc({"doctype": doctype, "name": name, **values})
     doc.insert(ignore_permissions=True)
