@@ -27,10 +27,10 @@ def test_staging_workflow_verifies_the_installed_custom_app_candidate():
     baseline = (ROOT / "ops" / "production" / "release-runtime-baseline.json").read_text(encoding="utf-8")
     bundle_commit = (ROOT / "ops" / "staging" / "lenerp_core" / "SOURCE_COMMIT.txt").read_text(encoding="utf-8").strip()
     assert 'CUSTOM_APP_VERSION: "0.2.0"' in workflow
-    assert 'CUSTOM_APP_COMMIT: "8f62b0309c214643b17075e4a99f9ca430921eb1"' in workflow
-    assert bundle_commit == "8f62b0309c214643b17075e4a99f9ca430921eb1"
+    assert 'CUSTOM_APP_COMMIT: "293282a9efd1956ff7efc14dc2630874f75c295a"' in workflow
+    assert bundle_commit == "293282a9efd1956ff7efc14dc2630874f75c295a"
     assert "ops/staging/lenerp_core/" in workflow
     assert '"version": "0.2.0"' in baseline
-    assert '"commit": "8f62b0309c214643b17075e4a99f9ca430921eb1"' in baseline
+    assert '"commit": "293282a9efd1956ff7efc14dc2630874f75c295a"' in baseline
     assert "erp_staging_smoke.sh" in workflow
     assert "erp_demo_smoke.sh" in workflow
