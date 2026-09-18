@@ -352,8 +352,13 @@ def status() -> dict[str, Any]:
     # a business field. Read the persisted business fields and count only
     # values carrying the synthetic identifier.
     def count_field(doctype: str, fieldname: str) -> int:
-        rows = frappe.get_all(doctype, fields=[fieldname], limit_page_length=10000)
-        return sum(str(row.get(fieldname) or "").startswith(DEMO_PREFIX) for row in rows)
+        table = f"tab{doctype}"
+        rows = frappe.db.sql(
+            f"SELECT COUNT(*) AS count FROM `{table}` WHERE `{fieldname}` LIKE %s",
+            (f"{DEMO_PREFIX}%",),
+            as_dict=True,
+        )
+        return int(rows[0].get("count") or 0)
 
     result = {
         "Company": int(_exists("Company", DEMO_COMPANY)),
