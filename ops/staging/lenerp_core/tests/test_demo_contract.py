@@ -43,6 +43,8 @@ def test_seed_is_explicit_and_reset_is_demo_prefix_scoped():
     assert '"Commercial"' in seed
     assert '"Territory"' in seed
     assert '"All Territories"' in seed
+    assert 'DEMO-CHAMPION-North Ridge Farm' in seed
+    assert '"name": ["like", "DEMO-%"]' in seed
     assert '"workflow_state": "Planned"' in seed
     assert 'frappe.db.set_value' in seed
     assert 'synthetic seed complete' in seed

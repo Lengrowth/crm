@@ -100,9 +100,9 @@ def _company() -> str:
 
 def _core_records(company: str) -> dict[str, list[str]]:
     customers = [
-        ("DEMO-CHAMPION-CUSTOMER-01", "North Ridge Farm", "Commercial"),
-        ("DEMO-CHAMPION-CUSTOMER-02", "Pine Creek Estates", "Commercial"),
-        ("DEMO-CHAMPION-CUSTOMER-03", "Red Mesa Utilities", "Commercial"),
+        ("DEMO-CHAMPION-CUSTOMER-01", "DEMO-CHAMPION-North Ridge Farm", "Commercial"),
+        ("DEMO-CHAMPION-CUSTOMER-02", "DEMO-CHAMPION-Pine Creek Estates", "Commercial"),
+        ("DEMO-CHAMPION-CUSTOMER-03", "DEMO-CHAMPION-Red Mesa Utilities", "Commercial"),
     ]
     customer_names: list[str] = []
     for name, customer_name, customer_type in customers:
@@ -121,9 +121,9 @@ def _core_records(company: str) -> dict[str, list[str]]:
 
     contact_names: list[str] = []
     for name, first_name, last_name, customer in (
-        ("DEMO-CHAMPION-CONTACT-01", "Maya", "Ellis", customer_names[0]),
-        ("DEMO-CHAMPION-CONTACT-02", "Jonah", "Reed", customer_names[1]),
-        ("DEMO-CHAMPION-CONTACT-03", "Ari", "Santos", customer_names[2]),
+        ("DEMO-CHAMPION-CONTACT-01", "DEMO-CHAMPION-Maya", "Ellis", customer_names[0]),
+        ("DEMO-CHAMPION-CONTACT-02", "DEMO-CHAMPION-Jonah", "Reed", customer_names[1]),
+        ("DEMO-CHAMPION-CONTACT-03", "DEMO-CHAMPION-Ari", "Santos", customer_names[2]),
     ):
         contact_names.append(
             _insert(
@@ -211,7 +211,7 @@ def _commercial_records(company: str, customer: str) -> dict[str, list[str]]:
     lead = _try_insert(
         "Lead",
         "DEMO-CHAMPION-LEAD-001",
-        {"lead_name": "Avery Cole (Demo)", "company_name": "Summit Springs HOA (Demo)", "status": "Lead", "source": "Website"},
+        {"lead_name": "DEMO-CHAMPION-Avery Cole", "company_name": "DEMO-CHAMPION-Summit Springs HOA", "status": "Lead", "source": "Website"},
     )
     opportunity = _try_insert(
         "Opportunity",
@@ -221,12 +221,12 @@ def _commercial_records(company: str, customer: str) -> dict[str, list[str]]:
     supplier = _try_insert(
         "Supplier",
         "DEMO-CHAMPION-SUPPLIER-01",
-        {"supplier_name": "Blue Basin Supply (Demo)", "supplier_group": "All Supplier Groups", "supplier_type": "Company"},
+        {"supplier_name": "DEMO-CHAMPION-Blue Basin Supply", "supplier_group": "All Supplier Groups", "supplier_type": "Company"},
     )
     item = _try_insert(
         "Item",
         "DEMO-CHAMPION-ITEM-PUMP",
-        {"item_code": "DEMO-CHAMPION-ITEM-PUMP", "item_name": "Submersible Pump 6in (Demo)", "item_group": "Products", "stock_uom": "Nos", "is_stock_item": 1},
+        {"item_code": "DEMO-CHAMPION-ITEM-PUMP", "item_name": "DEMO-CHAMPION-Submersible Pump 6in", "item_group": "Products", "stock_uom": "Nos", "is_stock_item": 1},
     )
     quotation = None
     invoice = None
@@ -272,13 +272,13 @@ def _inventory_records(company: str, item: str | None) -> dict[str, list[str]]:
     warehouse = _try_insert(
         "Warehouse",
         "DEMO-CHAMPION-YARD-WAREHOUSE",
-        {"warehouse_name": "Demo Yard Warehouse", "company": company, "parent_warehouse": None},
+        {"warehouse_name": "DEMO-CHAMPION-Yard Warehouse", "company": company, "parent_warehouse": None},
     )
     assets: list[str] = []
     if item:
         for name, asset_name in (
-            ("DEMO-CHAMPION-ASSET-RIG-01", "Rig Atlas (Demo)"),
-            ("DEMO-CHAMPION-ASSET-TRUCK-01", "Service Truck Beacon (Demo)"),
+                ("DEMO-CHAMPION-ASSET-RIG-01", "DEMO-CHAMPION-Rig Atlas"),
+                ("DEMO-CHAMPION-ASSET-TRUCK-01", "DEMO-CHAMPION-Service Truck Beacon"),
         ):
             asset = _try_insert(
                 "Asset",
@@ -341,6 +341,6 @@ def reset() -> dict[str, int]:
 def status() -> dict[str, Any]:
     """Return persisted demo counts for runbook evidence."""
     doctypes = ("Company", "Customer", "Contact", "LenERP Well Site", "LenERP Drilling Job", "Supplier", "Item", "Quotation", "Sales Invoice", "Payment Entry", "Asset")
-    result = {doctype: frappe.db.count(doctype, {"name": ["like", DEMO_PREFIX + "%"]}) for doctype in doctypes}
+    result = {doctype: frappe.db.count(doctype, {"name": ["like", "DEMO-%"]}) for doctype in doctypes}
     result["Company"] = int(_exists("Company", DEMO_COMPANY))
     return result
