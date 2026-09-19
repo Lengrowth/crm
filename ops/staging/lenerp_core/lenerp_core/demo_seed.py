@@ -458,7 +458,7 @@ def _inventory_records(company: str, item: str, fixed_asset_item: str, warehouse
         asset = _insert(
             "Asset",
             name,
-            {"asset_name": asset_name, "item_code": fixed_asset_item, "asset_category": frappe.db.get_value("Item", fixed_asset_item, "asset_category"), "company": company, "gross_purchase_amount": 1, "purchase_date": today(), "available_for_use_date": today(), "is_existing_asset": 1, "calculate_depreciation": 0, "cost_center": cost_center, "maintenance_required": 1},
+            {"asset_name": asset_name, "item_code": fixed_asset_item, "asset_category": frappe.db.get_value("Item", fixed_asset_item, "asset_category"), "company": company, "gross_purchase_amount": 1, "purchase_date": today(), "available_for_use_date": today(), "location": f"{DEMO_DEFAULT_CITY}, {DEMO_DEFAULT_STATE}, {DEMO_DEFAULT_COUNTRY}", "is_existing_asset": 1, "calculate_depreciation": 0, "cost_center": cost_center, "maintenance_required": 1},
         )
         assets.append(asset)
     team = _insert(

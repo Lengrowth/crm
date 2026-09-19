@@ -71,7 +71,7 @@ jobs:
       - name: Verify the commit-pinned LenERP Core staging bundle
         run: |
           core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
-          test "$core_commit" = "719af31b51515726a728e4870c95f34525c5ba99"
+          test "$core_commit" = "40b1a9347cf44d75bfbbd3460c97251b1fafb79d"
           archive="ops/staging/lenerp_core-${core_commit}.tar"
           test -f "$archive"
           (cd ops/staging && sha256sum --check --status lenerp_core.archive.sha256)
@@ -345,7 +345,7 @@ jobs:
           TARGET_REF: ${{ steps.candidate.outputs.sha }}
           RELEASE_ID: ${{ steps.candidate.outputs.sha }}
           CUSTOM_APP_VERSION: "0.2.0"
-          CUSTOM_APP_COMMIT: "719af31b51515726a728e4870c95f34525c5ba99"
+          CUSTOM_APP_COMMIT: "40b1a9347cf44d75bfbbd3460c97251b1fafb79d"
           REQUIRE_AUTH_SMOKE: "true"
         run: ./scripts/deploy/deploy_saas_control.sh
 
@@ -354,7 +354,7 @@ jobs:
           core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
           exact_dir="$RUNNER_TEMP/lenerp_core-exact"
           test -d "$exact_dir"
-          test "$core_commit" = "719af31b51515726a728e4870c95f34525c5ba99"
+          test "$core_commit" = "40b1a9347cf44d75bfbbd3460c97251b1fafb79d"
           sudo rsync -a --delete --exclude='.git' "$exact_dir/" /opt/frappe-staging-bench/apps/lenerp_core/
           sudo chown -R frappe:frappe /opt/frappe-staging-bench/apps/lenerp_core
           if ! sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test list-apps | grep -Eq '^lenerp_core[[:space:]]'"; then
