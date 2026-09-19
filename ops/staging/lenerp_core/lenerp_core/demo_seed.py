@@ -551,7 +551,20 @@ def reset() -> dict[str, int]:
     )
     deleted: dict[str, int] = {}
     for doctype, pattern in targets:
-        names = [row.name for row in frappe.get_all(doctype, filters={"name": ["like", pattern]}, fields=["name"])]
+        if doctype == "LenERP Well Site":
+            names = [
+                row.name
+                for row in frappe.get_all(
+                    doctype,
+                    filters={"well_id": ["like", "DEMO-%"]},
+                    fields=["name"],
+                )
+            ]
+        else:
+            names = [row.name for row in frappe.get_all(doctype, filters={"name": ["like", pattern]}, fields=["name"])]
+        if doctype == "Warehouse":
+            frappe.db.sql("delete from `tabStock Ledger Entry` where voucher_no like %s", ("DEMO-%",))
+            frappe.db.sql("delete from `tabBin` where warehouse like %s", ("DEMO-%",))
         deleted[doctype] = _delete_names(doctype, names)
     frappe.db.commit()
     return deleted
@@ -565,7 +578,7 @@ def status() -> dict[str, Any]:
         ("Contact", {"name": ["like", "DEMO-%"]}),
         ("Lead", {"name": ["like", "DEMO-%"]}),
         ("Opportunity", {"name": ["like", "DEMO-%"]}),
-        ("LenERP Well Site", {"name": ["like", "DEMO-%"]}),
+        ("LenERP Well Site", {"well_id": ["like", "DEMO-%"]}),
         ("LenERP Drilling Job", {"name": ["like", "DEMO-%"]}),
         ("Supplier", {"name": ["like", "DEMO-%"]}),
         ("Item", {"name": ["like", "DEMO-%"]}),

@@ -29,7 +29,7 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; `PLAT-P3` PASS; 
 - Phase 3 remediation rollout evidence is complete: read-only run [35279338775](https://github.com/Lengrowth/crm/actions/runs/35279338775), operator-only synthetic verification run [35279271616](https://github.com/Lengrowth/crm/actions/runs/35279271616) / artifact [10522300063](https://github.com/Lengrowth/crm/actions/runs/35279271616/artifacts/10522300063), and general rollout run [35279384713](https://github.com/Lengrowth/crm/actions/runs/35279384713). Operator evidence reports zero synthetic cleanup counts for every created record class and token files, successful reversal, and no ERP verification without trusted evidence. Final live observation returned health `200`, Phase 1 shell `true`, and stable `writes=true`, `operator_only=false`, `general=true`.
 - The next protected C01–C08 staging run is candidate-bound to the exact CRM
   commit selected by `candidate_ref` and the content-addressed
-  `lenerp_core` archive pinned at `ea9f313327e402c4712a501dd853ef3c2a766b9b`.
+  `lenerp_core` archive pinned at `2c2cecb1df1881a7aa81606b2ffc47fbc0b2ac00`.
   It must include persisted commercial/inventory/asset-maintenance counts,
   real role-principal denials, ERP browser/print/export/accessibility evidence,
   and read-only zero-count reset evidence. This remains operator-validation
