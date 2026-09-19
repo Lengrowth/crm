@@ -70,12 +70,22 @@ jobs:
 
       - name: Verify the commit-pinned LenERP Core staging bundle
         run: |
-          test "$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)" = "617ea2d67be070b9fe1e389635d3e191edb66d3f"
-          python3 -m compileall -q ops/staging/lenerp_core/lenerp_core
-          python3 - <<'PY'
+          core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
+          test "$core_commit" = "bd785e0cf9b732438e626f77d8bd36ff08d269a6"
+          archive="ops/staging/lenerp_core-${core_commit}.tar"
+          test -f "$archive"
+          sha256sum --check --status ops/staging/lenerp_core.archive.sha256
+          exact_dir="$RUNNER_TEMP/lenerp_core-exact"
+          rm -rf -- "$exact_dir"
+          mkdir -p "$exact_dir"
+          tar -xf "$archive" -C "$exact_dir"
+          test -f "$exact_dir/lenerp_core/demo_seed.py"
+          python3 -m compileall -q "$exact_dir/lenerp_core"
+          EXACT_DIR="$exact_dir" python3 - <<'PY'
           import re
+          import os
           from pathlib import Path
-          text = Path('ops/staging/lenerp_core/pyproject.toml').read_text(encoding='utf-8')
+          text = (Path(os.environ['EXACT_DIR']) / 'pyproject.toml').read_text(encoding='utf-8')
           match = re.search(r'^version\s*=\s*["\']([^"\']+)', text, flags=re.MULTILINE)
           version = match.group(1) if match else None
           if version != '0.2.0':
@@ -335,13 +345,17 @@ jobs:
           TARGET_REF: ${{ steps.candidate.outputs.sha }}
           RELEASE_ID: ${{ steps.candidate.outputs.sha }}
           CUSTOM_APP_VERSION: "0.2.0"
-          CUSTOM_APP_COMMIT: "617ea2d67be070b9fe1e389635d3e191edb66d3f"
+          CUSTOM_APP_COMMIT: "bd785e0cf9b732438e626f77d8bd36ff08d269a6"
           REQUIRE_AUTH_SMOKE: "true"
         run: ./scripts/deploy/deploy_saas_control.sh
 
       - name: Install and migrate the exact custom app from the pinned staging bundle
         run: |
-          sudo rsync -a --delete --exclude='.git' ops/staging/lenerp_core/ /opt/frappe-staging-bench/apps/lenerp_core/
+          core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
+          exact_dir="$RUNNER_TEMP/lenerp_core-exact"
+          test -d "$exact_dir"
+          test "$core_commit" = "bd785e0cf9b732438e626f77d8bd36ff08d269a6"
+          sudo rsync -a --delete --exclude='.git' "$exact_dir/" /opt/frappe-staging-bench/apps/lenerp_core/
           sudo chown -R frappe:frappe /opt/frappe-staging-bench/apps/lenerp_core
           if ! sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test list-apps | grep -Eq '^lenerp_core[[:space:]]'"; then
             sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test install-app lenerp_core"
@@ -357,6 +371,16 @@ jobs:
           KEEP_DEMO: "1"
           EXPECTED_CUSTOM_APP_VERSION: "0.2.0"
         run: sudo scripts/release/erp_demo_smoke.sh
+
+      - name: Create real ERP role principals and verify permissions
+        env:
+          RUN_ID: ${{ github.run_id }}
+          ROLE_PASSWORD_FILE: /run/saas-control-staging/erp-role-password-${{ github.run_id }}
+          ROLE_EMAIL_PREFIX: champion-demo-role-${{ github.run_id }}
+          OUTPUT_FILE: ${{ github.workspace }}/staging-browser-evidence/erp-role-permission-evidence.json
+        run: |
+          sudo env RUN_ID="$RUN_ID" ROLE_PASSWORD_FILE="$ROLE_PASSWORD_FILE" ROLE_EMAIL_PREFIX="$ROLE_EMAIL_PREFIX" OUTPUT_FILE="$OUTPUT_FILE" scripts/release/erp_role_smoke.sh
+          sudo install -m 600 -o "$(id -u)" -g "$(id -g)" "$ROLE_PASSWORD_FILE" "$RUNNER_TEMP/erp-role-password-${{ github.run_id }}"
 
       - name: Run isolated synthetic Phase 4 onboarding smoke
         if: ${{ (inputs.phase4_synthetic_state || 'off') == 'on' }}
@@ -508,6 +532,29 @@ jobs:
           AUTH_TOKEN_FILE="$token_file" NON_ADMIN_AUTH_TOKEN_FILE="$non_admin_token_file" BROWSER_EXECUTABLE_PATH="$browser_path" node "$evidence_script"
           rm -f -- "$token_file" "$non_admin_token_file"
 
+      - name: Capture authenticated ERP browser, print, export, and responsive evidence
+        env:
+          ERP_BASE_URL: http://127.0.0.1:28000
+          ERP_HOST_HEADER: erp-staging.example.test
+          ERP_ROLE_EMAIL_PREFIX: champion-demo-role-${{ github.run_id }}
+          ERP_ROLE_PASSWORD_FILE: ${{ runner.temp }}/erp-role-password-${{ github.run_id }}
+          OUTPUT_DIR: ${{ github.workspace }}/staging-browser-evidence/erp
+          HEADLESS: "true"
+        run: |
+          browser_path="$(find "$HOME/.cache/ms-playwright" -type f -name chrome -path '*/chrome*/chrome' -print -quit 2>/dev/null || true)"
+          [[ -n "$browser_path" ]] || { echo "Installed Chromium executable was not found" >&2; exit 1; }
+          BROWSER_EXECUTABLE_PATH="$browser_path" node frontend/scripts/capture_erp_browser_evidence.mjs
+
+      - name: Remove synthetic ERP role principals
+        if: always()
+        env:
+          ROLE_PASSWORD_FILE: /run/saas-control-staging/erp-role-password-${{ github.run_id }}
+          ROLE_EMAIL_PREFIX: champion-demo-role-${{ github.run_id }}
+        run: |
+          sudo -u frappe env DEMO_ROLE_PASSWORD_FILE="$ROLE_PASSWORD_FILE" DEMO_ROLE_EMAIL_PREFIX="$ROLE_EMAIL_PREFIX" bash -lc 'cd /opt/frappe-staging-bench && bench --site erp-staging.example.test execute lenerp_core.permission_smoke.cleanup'
+          sudo rm -f -- "$ROLE_PASSWORD_FILE"
+          rm -f -- "$RUNNER_TEMP/erp-role-password-${{ github.run_id }}"
+
       - name: Remove disposable non-admin route test identity
         if: always()
         env:
@@ -563,6 +610,12 @@ jobs:
           else
             echo "No Phase 3 synthetic cleanup manifest was produced"
           fi
+
+      - name: Reset synthetic ERP demo records and verify read-only zero counts
+        if: always()
+        env:
+          OUTPUT_FILE: ${{ github.workspace }}/staging-browser-evidence/erp/erp-reset-evidence.json
+        run: sudo scripts/release/erp_demo_cleanup.sh
 
       - name: Upload durable staging browser evidence
         if: success()

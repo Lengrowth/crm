@@ -27,6 +27,21 @@ seed_output="$(execute lenerp_core.demo_seed.seed)"
 status_output="$(execute lenerp_core.demo_seed.status)"
 grep -q 'DEMO-CHAMPION-' <<<"$seed_output" || { echo "demo seed returned no demo marker" >&2; exit 1; }
 grep -q 'LenERP Drilling Job' <<<"$status_output" || { echo "demo status did not include jobs" >&2; exit 1; }
+for expected in \
+  '"Customer"[[:space:]]*:[[:space:]]*3' \
+  '"LenERP Well Site"[[:space:]]*:[[:space:]]*3' \
+  '"LenERP Drilling Job"[[:space:]]*:[[:space:]]*4' \
+  '"Supplier"[[:space:]]*:[[:space:]]*1' \
+  '"Item"[[:space:]]*:[[:space:]]*2' \
+  '"Quotation"[[:space:]]*:[[:space:]]*1' \
+  '"Sales Invoice"[[:space:]]*:[[:space:]]*1' \
+  '"Payment Entry"[[:space:]]*:[[:space:]]*1' \
+  '"Purchase Receipt"[[:space:]]*:[[:space:]]*1' \
+  '"Stock Entry"[[:space:]]*:[[:space:]]*1' \
+  '"Asset"[[:space:]]*:[[:space:]]*2' \
+  '"Asset Maintenance"[[:space:]]*:[[:space:]]*2'; do
+  grep -Eq "$expected" <<<"$status_output" || { echo "demo status missing expected persisted count: $expected" >&2; exit 1; }
+done
 
 echo "ERP synthetic demonstration seed passed for ${SITE}"
 echo "$seed_output"

@@ -121,7 +121,11 @@ def _ensure_standard_permissions() -> None:
         "Champion Inventory Manager": {"read": 1, "write": 1, "create": 1, "submit": 1, "print": 1, "export": 1},
         "Champion Field Technician": {"read": 1, "write": 1, "print": 1},
     }
-    doctypes = ("Customer", "Contact", "Address", "Lead", "Opportunity", "Quotation", "Sales Invoice", "Payment Entry", "Item", "Supplier", "Warehouse", "Asset")
+    doctypes = (
+        "Customer", "Contact", "Address", "Lead", "Opportunity", "Quotation",
+        "Sales Invoice", "Payment Entry", "Item", "Supplier", "Warehouse", "Asset",
+        "Purchase Receipt", "Stock Entry", "Asset Maintenance", "Asset Maintenance Team",
+    )
     for role, permissions in matrix.items():
         for parent in doctypes:
             if not frappe.db.exists("DocType", parent) or frappe.db.exists("Custom DocPerm", {"parent": parent, "role": role, "permlevel": 0}):

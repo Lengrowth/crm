@@ -7,10 +7,9 @@ Record date: 2026-09-19
 
 ## Candidate identity
 
-- CRM candidate: `14de22b278cf44386e4446aecce30d4d105a7575` on
-  `codex/plat-p4-readback-docs`
+- CRM candidate: exact protected candidate selected from `codex/plat-p4-readback-docs`
 - `lenerp_core` branch: `codex/champ-c01-r1`
-- `lenerp_core` commit: `617ea2d67be070b9fe1e389635d3e191edb66d3f` on
+- `lenerp_core` commit: `bd785e0cf9b732438e626f77d8bd36ff08d269a6` on
   `codex/champ-c01-r1`
 - `lenerp_core` version: `0.2.0`
 - Frappe reference: `15.119.1`,
@@ -19,9 +18,10 @@ Record date: 2026-09-19
   `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`
 - Schema revision: additive custom DocTypes/workflow/report/print metadata; isolated staging migration passed
 - Runtime flag: no branding application or domain cutover enabled
-- CRM release path now fetches the exact `lenerp_core` ref in the protected
-  staging workflow, installs/migrates it only on the isolated ERP staging
-  bench, and runs the explicit synthetic seed/status smoke.
+- CRM release path now verifies a SHA256-pinned, content-addressed archive of
+  the exact `lenerp_core` commit, extracts that archive for install/migrate on
+  the isolated ERP staging bench, and runs the complete seed, role, browser,
+  print/export, accessibility, and reset sequence.
 
 ## Scope and exclusions
 
@@ -41,14 +41,14 @@ branding, domain cutover, production configuration, and real Champion data.
 | Gate | Result | Evidence |
 |---|---|---|
 | Upstream source clean | PASS | Approved local Frappe/ERPNext reference trees have no working-tree changes |
-| Static schema contract | PASS | `python -m pytest -q tests` — 4 passed |
+| Static schema contract | PASS | `python -m pytest -q tests` — 6 passed |
 | Python compilation | PASS | `python -m compileall -q lenerp_core` |
 | Wheel build | PASS | `lenerp_core-0.2.0-py3-none-any.whl` |
 | Wheel metadata inclusion | PASS | Wheel contains custom DocTypes, report, workspace, and seed modules |
 | `git diff --check` | PASS | Clean on custom-app and CRM changes |
-| Frappe install/migrate on isolated staging | PASS | Protected run [35405329393](https://github.com/Lengrowth/crm/actions/runs/35405329393) installed/migrated the exact candidate and passed ERP health/auth checks |
-| Synthetic ERP seed/status | PASS — core scope | Persisted status: Company 1, Customer 3, Contact 3, Well Site 3, Drilling Job 4; optional ERPNext commercial/inventory records remained zero because standard prerequisites were unavailable |
-| Browser/responsive/accessibility evidence | PASS — operator-validation staging | Browser artifact [10572755648](https://github.com/Lengrowth/crm/actions/runs/35405329393/artifacts/10572755648); 23 files, SHA256 `c1346746bf27ffc033ff1656118832e843439ee561c5b717e6f1ee2242f791cb` |
+| Frappe install/migrate on isolated staging | PENDING FINAL PROTECTED RUN | The workflow now deploys only the checksum-verified archive for `lenerp_core` `bd785e0c…` |
+| Synthetic ERP seed/status | IMPLEMENTED; PENDING FINAL PROTECTED RUN | Required persisted journey includes Company 1, Customer 3, Contact 3, Well Site 3, Drilling Job 4, Supplier 1, Item 2, Warehouse 1, Purchase Receipt 1, Stock Entry 1, Asset 2, Asset Maintenance 2, Quotation 1, Sales Invoice 1, Payment Entry 1 |
+| Role/browser/print/export/responsive/accessibility evidence | IMPLEMENTED; PENDING FINAL PROTECTED RUN | Real Champion role principals, direct ERP API denials, print/PDF, export, desktop/mobile ERP screens, and reset evidence are captured by the protected workflow |
 | Champion UAT/acceptance | NOT RUN | Acceptance authority and Project Start decisions unavailable |
 | Production promotion | NOT AUTHORIZED | Package is not accepted and no production behavior is enabled |
 
@@ -68,7 +68,11 @@ Current package verdict: **IN DEVELOPMENT — synthetic core demonstration passe
 
 ## Protected staging evidence
 
-- Candidate run: [35405329393](https://github.com/Lengrowth/crm/actions/runs/35405329393), exact CRM commit `14de22b278cf44386e4446aecce30d4d105a7575`.
-- Artifact: [staging-browser-evidence-14de22b278cf44386e4446aecce30d4d105a7575](https://github.com/Lengrowth/crm/actions/runs/35405329393/artifacts/10572755648), artifact ID `10572755648`, 23 files.
-- Configuration: `operator-validation`, Phase 1 shell `off`, Phase 4 synthetic state `off`; no Phase 4 evidence or production activation is claimed.
-- The run is synthetic staging evidence only. Project Start decisions, Champion UAT, acceptance authority, real-data migration, final domain, and production promotion remain pending.
+- The next protected run is candidate-bound to the exact CRM commit selected by
+  `candidate_ref`, and its browser artifact is named with that full commit SHA.
+- Configuration remains `operator-validation`, Phase 1 shell `off`, Phase 4
+  synthetic state `off`; no Phase 4 evidence or production activation is
+  claimed.
+- The run is synthetic staging evidence only. Project Start decisions, Champion
+  UAT, acceptance authority, real-data migration, final domain, and production
+  promotion remain pending.
