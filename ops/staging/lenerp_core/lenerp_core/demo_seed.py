@@ -245,7 +245,11 @@ def _ensure_asset_category(company: str) -> str:
     # ERPNext versions differ on whether Company exposes a default fixed-asset
     # account.  The Asset Category child table is stable, so resolve a valid
     # company leaf account without querying an optional Company column.
-    account = frappe.db.get_value("Account", {"company": company, "is_group": 0}, "name")
+    account = frappe.db.get_value(
+        "Account",
+        {"company": company, "is_group": 0, "account_type": "Fixed Asset"},
+        "name",
+    )
     if not account:
         raise RuntimeError(f"No leaf account is available for synthetic Asset Category in {company}")
     return _insert(
