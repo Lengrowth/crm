@@ -385,6 +385,7 @@ jobs:
             sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test install-app lenerp_core"
           fi
           sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test migrate"
+          sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench build --app lenerp_core"
           sudo systemctl restart frappe-staging-web.service frappe-staging-worker-short.service frappe-staging-schedule.service
 
       - name: Verify the dedicated ERP staging bench and queues

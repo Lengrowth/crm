@@ -39,6 +39,7 @@ def test_staging_workflow_verifies_the_installed_custom_app_candidate():
     assert "erp_role_smoke.sh" in workflow
     assert "capture_erp_browser_evidence.mjs" in workflow
     assert "erp_demo_cleanup.sh" in workflow
+    assert "bench build --app lenerp_core" in workflow
     assert "Verify candidate ancestry from authoritative main" in workflow
     assert 'CUSTOM_APP_COMMIT="$core_commit"' in workflow
     assert "Write candidate-bound protected staging evidence manifest" in workflow
