@@ -147,6 +147,25 @@ The corrected sequence is:
 - The [production readback artifact `10561369795`](https://github.com/Lengrowth/crm/actions/runs/35380532779/artifacts/10561369795) reports current release `27ede631c667c67f45d534108abeb975816ee83e`, previous release `2cfc9aa71c13a09e41ef42c7484d5aafbe5e51b9`, production environment, database revision `20260918_0011` before and after, local health `200`, active backend/frontend/nginx/R2 timer services, all Phase 4 flags off, and zero production ERP Phase 4 sites. All reported Phase 4 cleanup counts are zero; the domain count is unavailable (`null`) in this readback, not a surviving resource.
 - Production Phase 4 execution was not enabled; all Phase 4 testing remained isolated synthetic staging activity.
 
+### Readback hardening follow-up
+
+The earlier production readback's `domains: null` was an observability defect:
+the readback query used `domain_mappings`, while the deployed
+`DomainMapping` model uses the `domains` table. The fix was merged in [PR
+70](https://github.com/Lengrowth/crm/pull/70) as `bc7e2be…` and promoted in
+the new immutable candidate `4a63264e1e8cb7c998c767262a6e1022647ff7b0`.
+
+- [Candidate-bound Phase 4 staging run 35386558041](https://github.com/Lengrowth/crm/actions/runs/35386558041) passed success and recovery evidence for the exact candidate.
+- [Protected follow-up promotion 35387316160](https://github.com/Lengrowth/crm/actions/runs/35387316160) completed successfully after the evidence run.
+- [Production readback artifact 10564711145](https://github.com/Lengrowth/crm/actions/runs/35387316160/artifacts/10564711145) reports `domains: 0`, `all_remaining_counts_zero: true`, release `4a63264e1e8cb7c998c767262a6e1022647ff7b0`, environment `production`, health `200`, and every Phase 4 flag disabled.
+
+The read-only AWS audit found no temporary `TempSSMSendCommandPolicy`,
+`TempSSMSendCommandGroup`, or temporary security-group rule. The intended
+`LenGrowthStagingSSMRole` instance profile remains attached to the staging
+instance. An existing baseline SSH ingress rule for `188.169.243.84/32` also
+remains; it was not changed because its ownership and operational purpose were
+not established, and removing it could break administrator access.
+
 ## Closed gate and handover
 
 The corrected immutable-candidate staging run, recovery run, evidence review,

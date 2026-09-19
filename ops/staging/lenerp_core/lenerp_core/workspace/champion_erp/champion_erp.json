@@ -1,0 +1,38 @@
+{
+ "content": "[{\"id\":\"champion-intro\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Champion operations</b></span>\",\"col\":12}},{\"id\":\"champion-wells\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Well sites\",\"col\":3}},{\"id\":\"champion-jobs\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Drilling jobs\",\"col\":3}},{\"id\":\"champion-summary\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Champion Operations Summary\",\"col\":3}},{\"id\":\"champion-customers\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Customers\",\"col\":3}}]",
+ "creation": "2026-09-19 00:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "briefcase",
+ "is_hidden": 0,
+ "label": "Champion ERP",
+ "links": [
+  {"label":"Well sites","link_to":"LenERP Well Site","link_type":"DocType","type":"Link"},
+  {"label":"Drilling jobs","link_to":"LenERP Drilling Job","link_type":"DocType","type":"Link"},
+  {"label":"Champion Operations Summary","link_to":"Champion Operations Summary","link_type":"Report","is_query_report":1,"type":"Link"},
+  {"label":"Customers","link_to":"Customer","link_type":"DocType","type":"Link"},
+  {"label":"Quotes","link_to":"Quotation","link_type":"DocType","type":"Link"},
+  {"label":"Invoices","link_to":"Sales Invoice","link_type":"DocType","type":"Link"},
+  {"label":"Equipment","link_to":"Asset","link_type":"DocType","type":"Link"}
+ ],
+ "module": "LenERP Core",
+ "name": "Champion ERP",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 0,
+ "quick_lists": [],
+ "roles": [
+  {"role":"Champion Administrator"},
+  {"role":"Champion Dispatcher"},
+  {"role":"Champion Sales User"},
+  {"role":"Champion Accounting User"},
+  {"role":"Champion Inventory Manager"},
+  {"role":"Champion Field Technician"}
+ ],
+ "shortcuts": [],
+ "title": "Champion ERP"
+}

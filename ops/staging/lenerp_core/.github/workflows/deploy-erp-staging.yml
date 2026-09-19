@@ -1,0 +1,88 @@
+name: Install LenERP Core on ERP staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_ref:
+        description: Exact lenerp_core commit or branch to install on isolated ERP staging
+        required: false
+        default: "main"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lenerp-core-erp-staging
+  cancel-in-progress: false
+
+jobs:
+  staging:
+    name: Install and verify exact LenERP Core candidate
+    runs-on:
+      - self-hosted
+      - linux
+      - saas-control
+    environment: staging
+    steps:
+      - name: Check out exact custom-app source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.app_ref || 'main' }}
+          fetch-depth: 0
+
+      - name: Resolve exact custom-app commit
+        id: candidate
+        run: |
+          candidate_sha="$(git rev-parse HEAD)"
+          [[ "$candidate_sha" =~ ^[0-9a-f]{40}$ ]] || { echo "Candidate is not a full commit SHA" >&2; exit 1; }
+          echo "sha=$candidate_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Validate custom-app source
+        run: |
+          python3 -m compileall -q lenerp_core
+          python3 -m pytest -q
+          python3 - <<'PY'
+          import tomllib
+          from pathlib import Path
+          version = tomllib.loads(Path('pyproject.toml').read_text(encoding='utf-8'))['project']['version']
+          if version != '0.2.0':
+              raise SystemExit(f'Unexpected lenerp_core version: {version}')
+          print(f'lenerp_core version {version} validated')
+          PY
+
+      - name: Install exact source into isolated ERP staging bench
+        run: |
+          sudo rsync -a --delete --exclude='.git' "$GITHUB_WORKSPACE/" /opt/frappe-staging-bench/apps/lenerp_core/
+          sudo chown -R frappe:frappe /opt/frappe-staging-bench/apps/lenerp_core
+          if ! sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test list-apps | grep -Eq '^lenerp_core[[:space:]]'"; then
+            sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test install-app lenerp_core"
+          fi
+          sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test migrate"
+          sudo systemctl restart frappe-staging-web.service frappe-staging-worker-short.service frappe-staging-schedule.service
+
+      - name: Seed and verify persisted synthetic demonstration
+        run: |
+          seed_output="$(sudo -u frappe bash -lc 'cd /opt/frappe-staging-bench && bench --site erp-staging.example.test execute lenerp_core.demo_seed.seed')"
+          status_output="$(sudo -u frappe bash -lc 'cd /opt/frappe-staging-bench && bench --site erp-staging.example.test execute lenerp_core.demo_seed.status')"
+          permission_output="$(sudo -u frappe bash -lc 'cd /opt/frappe-staging-bench && bench --site erp-staging.example.test execute lenerp_core.permission_smoke.run')"
+          grep -q 'DEMO-CHAMPION-' <<<"$seed_output" || { echo 'Synthetic seed marker missing' >&2; exit 1; }
+          grep -q 'LenERP Drilling Job' <<<"$status_output" || { echo 'Synthetic status missing jobs' >&2; exit 1; }
+          mkdir -p staging-evidence
+          python3 - "$GITHUB_WORKSPACE/staging-evidence/erp-demo-evidence.json" "${{ steps.candidate.outputs.sha }}" "$seed_output" "$status_output" "$permission_output" <<'PY'
+          import json
+          import sys
+          from datetime import datetime, timezone
+          output, commit, seed, status, permissions = sys.argv[1:]
+          with open(output, 'w', encoding='utf-8') as handle:
+              json.dump({'candidate_commit': commit, 'custom_app_version': '0.2.0', 'seed_output': seed, 'status_output': status, 'permission_output': permissions, 'environment': 'isolated ERP staging', 'real_data_authorized': False, 'captured_at_utc': datetime.now(timezone.utc).isoformat()}, handle, indent=2, sort_keys=True)
+          PY
+
+      - name: Upload non-secret ERP demonstration evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: erp-demo-evidence-${{ steps.candidate.outputs.sha }}
+          path: staging-evidence
+          if-no-files-found: error
+          retention-days: 30

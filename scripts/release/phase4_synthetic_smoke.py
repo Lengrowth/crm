@@ -166,6 +166,8 @@ def main() -> int:
             "legal_name": f"Phase 4 Synthetic {run_id} LLC",
             "industry": "synthetic_validation",
             "country": "US",
+            "currency": "USD",
+            "location": {"city": "Indianapolis", "state": "Indiana", "country": "US"},
             "timezone": "UTC",
             "billing_email": admin_email,
             "administrator_name": "Phase 4 Synthetic Operator",

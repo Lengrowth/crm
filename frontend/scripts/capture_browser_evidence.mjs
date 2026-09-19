@@ -60,12 +60,42 @@ if (tokenFile) {
 }
 
 const results = [];
+const customerFacingRoutes = new Set([
+  "/onboarding",
+  "/app",
+  "/app/organizations",
+  "/app/organizations/new",
+  `/app/organizations/${organizationId}`,
+  `/app/organizations/${organizationId}/modules`,
+  `/app/organizations/${organizationId}/tenants`,
+  "/app/tenants",
+  "/app/tenants/new",
+  `/app/tenants/${tenantId}`,
+  "/app/modules",
+  "/app/settings",
+]);
+const internalLanguagePatterns = [
+  /PLAT-P\d+/i,
+  /CHAMP-C\d+/i,
+  /Phase 1 shell/i,
+  /feature[_ -]?flag/i,
+  /commit hash/i,
+  /readback/i,
+  /isolated synthetic execution/i,
+  /raw JSON/i,
+];
+const languageAudit = [];
 for (const route of routes) {
   const page = await context.newPage();
   const response = await page.goto(`${baseUrl}${route}`, { waitUntil: "networkidle", timeout: 30000 });
   await page.locator("main").waitFor({ state: "attached", timeout: 10000 });
   const bodyText = await page.locator("body").innerText();
   if (!bodyText.trim()) throw new Error(`empty browser document for ${route}`);
+  if (customerFacingRoutes.has(route)) {
+    const findings = internalLanguagePatterns.filter((pattern) => pattern.test(bodyText)).map((pattern) => pattern.source);
+    languageAudit.push({ route, findings });
+    if (findings.length) throw new Error(`customer-facing language audit failed for ${route}: ${findings.join(", ")}`);
+  }
   results.push({ route, status: response?.status() ?? null, title: await page.title(), main: await page.locator("main").count(), navigation: await page.locator("nav").count() });
   await page.screenshot({ path: path.join(outputDir, `${route.replaceAll("/", "_").replace(/^_/, "")}.png`), fullPage: true });
   await page.close();
@@ -145,6 +175,7 @@ const report = {
     principal: "authenticated-platform-operator",
   },
   routes: results,
+  language_audit: { status: "passed", routes: languageAudit },
   accessibility: { desktop: desktopA11y, mobile: mobileA11y },
   state_coverage: { dashboard_success: true, dashboard_empty: true, dashboard_partial_failure: true, route_success: true },
 };
@@ -267,9 +298,9 @@ if (phase3AuditBefore.status !== 200 || phase3AuditBefore.body.length !== 1) thr
 const phase3UiPage = await context.newPage();
 await phase3UiPage.goto(`${baseUrl}/app/modules`, { waitUntil: "networkidle", timeout: 30000 });
 await phase3UiPage.locator("input[aria-label='Search modules']").fill("Accounting");
-if (!(await phase3UiPage.getByText("accounting", { exact: true }).count())) throw new Error("Phase 3 module search/detail evidence failed");
+if (!(await phase3UiPage.getByText("Accounting", { exact: true }).count())) throw new Error("Phase 3 module search/detail evidence failed");
 await phase3UiPage.goto(`${baseUrl}/app/organizations/${phase3Org.body.id}/modules`, { waitUntil: "networkidle", timeout: 30000 });
-if (!(await phase3UiPage.getByText("Effective modules", { exact: true }).count())) throw new Error("Phase 3 company Modules view failed");
+if (!(await phase3UiPage.getByText("Selected modules", { exact: true }).count())) throw new Error("Phase 3 company Modules view failed");
 await phase3UiPage.screenshot({ path: path.join(outputDir, "phase3-company-modules.png"), fullPage: true });
 await phase3UiPage.close();
 if (nonAdminTokenFile) {

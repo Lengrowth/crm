@@ -7,6 +7,7 @@ BASE_URL="${BASE_URL:-http://127.0.0.1:28000}"
 HOST_HEADER="${HOST_HEADER:-$SITE}"
 EXPECTED_FRAPPE_COMMIT="${EXPECTED_FRAPPE_COMMIT:-edae775dd36b6c4ad7acab10230262bd74040765}"
 EXPECTED_ERPNEXT_COMMIT="${EXPECTED_ERPNEXT_COMMIT:-945e825bee3d0d645f6cb59bcaab90fcbfb98ce3}"
+EXPECTED_CUSTOM_APP_VERSION="${EXPECTED_CUSTOM_APP_VERSION:-0.2.0}"
 
 for unit in \
   frappe-staging-redis-cache.service \
@@ -21,11 +22,20 @@ for unit in \
 done
 echo "ERP staging services passed"
 
+wait_for_loopback_port() {
+  local port="$1"
+  for attempt in $(seq 1 30); do
+    if ss -ltn | grep -Eq "127\.0\.0\.1:${port}[[:space:]]"; then
+      return 0
+    fi
+    sleep 2
+  done
+  echo "ERP staging port is not listening on loopback after 60s: $port" >&2
+  return 1
+}
+
 for port in 14100 14101 28000; do
-  ss -ltn | grep -Eq "127\.0\.0\.1:${port}[[:space:]]" || {
-    echo "ERP staging port is not listening on loopback: $port" >&2
-    exit 1
-  }
+  wait_for_loopback_port "$port" || exit 1
 done
 echo "ERP staging ports passed"
 
@@ -52,7 +62,7 @@ grep -Eq '^erpnext[[:space:]]+15\.120\.0([[:space:]]|$)' <<<"$apps" || {
   echo "staging ERPNext version mismatch" >&2
   exit 1
 }
-grep -Eq '^lenerp_core[[:space:]]+0\.1\.0([[:space:]]|$)' <<<"$apps" || {
+grep -Eq "^lenerp_core[[:space:]]+${EXPECTED_CUSTOM_APP_VERSION}([[:space:]]|$)" <<<"$apps" || {
   echo "staging custom app is not installed" >&2
   exit 1
 }

@@ -19,6 +19,23 @@ Champion-specific modules, pages, workflows, configuration, reports, and forms a
 
 The register is the initial decomposition. Add a new package only when a requirement cannot be safely accepted within an existing package. New modules or materially new features must also receive the required commercial classification and written approval.
 
+## Phase 5 package release mapping
+
+| Package | Release identity | Current state | Evidence/next gate |
+|---|---|---|---|
+| C01 | `CHAMP-C01-R1` | `in_development` | Configurable branding boundary implemented; approved Champion values and staging evidence remain pending |
+| C02 | `CHAMP-C02-R1` | `in_development` | Synthetic role profiles and negative-permission boundary implemented; approved user/approval matrix remains pending |
+| C03 | `CHAMP-C03-R1` | `in_development` | Champion ERP workspace and standard module profile implemented for synthetic staging; approved module matrix remains pending |
+| C04 | `CHAMP-C04-R1` | `in_development` | Persisted Well Site schema, links, coordinates, validation, and permissions implemented; approved identifiers/rules remain pending |
+| C05 | `CHAMP-C05-R1` | `in_development` | Persisted job workflow, assignment, lifecycle states, completion validation, and print format implemented; approved process remains pending |
+| C06 | `CHAMP-C06-R1` | `in_development` | Standard ERPNext inventory/buying/assets seed path implemented; approved stock and maintenance rules remain pending |
+| C07 | `CHAMP-C07-R1` | `in_development` | Synthetic lead-to-payment seed path implemented; chart, tax, payment, and approval decisions remain pending |
+| C08 | `CHAMP-C08-R1` | `in_development` | Source-backed operations report/API and print path implemented; approved KPI/audience/alert definitions remain pending |
+
+Each identity is independently reviewable. A later revision such as
+`CHAMP-C04-R2` is required when approved requirements or accepted behavior
+change; no `PLAT-P5` identity exists.
+
 ## Package record template
 
 Copy this section for each implementation/release of a package.

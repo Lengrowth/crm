@@ -1,0 +1,40 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:JOB-{####}",
+ "creation": "2026-09-19 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["job_id", "customer", "well_site", "job_type", "status", "workflow_state", "scheduled_date", "assigned_personnel", "rig_asset", "truck_asset", "priority", "materials", "work_notes", "completion_details", "completed_on"],
+ "fields": [
+  {"fieldname":"job_id","fieldtype":"Data","label":"Job reference","read_only":1},
+  {"fieldname":"customer","fieldtype":"Link","label":"Customer","options":"Customer","reqd":1},
+  {"fieldname":"well_site","fieldtype":"Link","label":"Well / site","options":"LenERP Well Site","reqd":1},
+  {"fieldname":"job_type","fieldtype":"Select","label":"Job type","options":"New well drilling\nPump installation\nService call\nWater testing\nMaintenance","reqd":1},
+  {"fieldname":"status","fieldtype":"Select","label":"Status","options":"Planned\nScheduled\nIn Progress\nCompleted\nReopened","default":"Planned","reqd":1},
+  {"fieldname":"workflow_state","fieldtype":"Data","label":"Workflow state","read_only":1},
+  {"fieldname":"scheduled_date","fieldtype":"Date","label":"Scheduled date","reqd":1},
+  {"fieldname":"assigned_personnel","fieldtype":"Small Text","label":"Assigned crew / personnel"},
+  {"fieldname":"rig_asset","fieldtype":"Link","label":"Rig / equipment","options":"Asset"},
+  {"fieldname":"truck_asset","fieldtype":"Link","label":"Truck / vehicle","options":"Asset"},
+  {"fieldname":"priority","fieldtype":"Select","label":"Priority","options":"Routine\nHigh\nEmergency","default":"Routine"},
+  {"fieldname":"materials","fieldtype":"Table","label":"Materials allocated","options":"LenERP Job Material"},
+  {"fieldname":"work_notes","fieldtype":"Text Editor","label":"Work notes"},
+  {"fieldname":"completion_details","fieldtype":"Text Editor","label":"Completion details"},
+  {"fieldname":"completed_on","fieldtype":"Date","label":"Completed on"}
+ ],
+ "links": [],
+ "module": "LenERP Core",
+ "name": "LenERP Drilling Job",
+ "permissions": [
+  {"role":"Champion Administrator","read":1,"write":1,"create":1,"delete":1,"print":1,"export":1,"share":1},
+  {"role":"Champion Dispatcher","read":1,"write":1,"create":1,"print":1,"export":1,"share":1},
+  {"role":"Champion Sales User","read":1,"write":1,"create":1,"print":1,"export":1},
+  {"role":"Champion Field Technician","read":1,"write":1,"create":1,"print":1},
+  {"role":"Champion Accounting User","read":1,"print":1}
+ ],
+ "sort_field": "scheduled_date",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1
+}
