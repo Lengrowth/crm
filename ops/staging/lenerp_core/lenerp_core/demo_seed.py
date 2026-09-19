@@ -171,7 +171,7 @@ def _company() -> str:
 
 def _ensure_fiscal_year(company: str) -> str:
     current = getdate(today())
-    name = f"DEMO-CHAMPION-FY-{current.year}"
+    name = frappe.db.get_value("Fiscal Year", {"year": str(current.year)}, "name") or f"DEMO-CHAMPION-FY-{current.year}"
     start = f"{current.year}-01-01"
     end = f"{current.year}-12-31"
     if not _exists("Fiscal Year", name):
@@ -563,7 +563,10 @@ def reset() -> dict[str, int]:
         else:
             names = [row.name for row in frappe.get_all(doctype, filters={"name": ["like", pattern]}, fields=["name"])]
         if doctype == "Warehouse":
-            frappe.db.sql("delete from `tabStock Ledger Entry` where voucher_no like %s", ("DEMO-%",))
+            frappe.db.sql(
+                "delete from `tabStock Ledger Entry` where company = %s and warehouse like %s",
+                (DEMO_COMPANY, "DEMO-%"),
+            )
             frappe.db.sql("delete from `tabBin` where warehouse like %s", ("DEMO-%",))
         deleted[doctype] = _delete_names(doctype, names)
     frappe.db.commit()
