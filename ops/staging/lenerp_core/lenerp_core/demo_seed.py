@@ -476,7 +476,7 @@ def _inventory_records(company: str, item: str, fixed_asset_item: str, warehouse
         maintenance_doc = _insert(
             "Asset Maintenance",
             f"DEMO-CHAMPION-MAINTENANCE-{asset.rsplit('-', 1)[-1]}",
-            {"asset_name": asset, "company": company, "maintenance_team": team, "asset_maintenance_tasks": [{"maintenance_task": "Inspect drilling rig and service records", "maintenance_status": "Planned", "start_date": today(), "periodicity": "Monthly", "description": "Synthetic preventive maintenance task."}]},
+            {"asset_name": asset, "company": company, "maintenance_team": team, "asset_maintenance_tasks": [{"maintenance_task": "Inspect drilling rig and service records", "maintenance_status": "Planned", "start_date": today(), "periodicity": "Monthly", "assign_to": "Administrator", "description": "Synthetic preventive maintenance task."}]},
         )
         maintenance.append(maintenance_doc)
     return {"warehouses": [warehouse], "stock_entries": [stock_entry], "assets": assets, "asset_maintenance": maintenance}
