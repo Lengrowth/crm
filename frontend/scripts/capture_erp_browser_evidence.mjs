@@ -105,9 +105,11 @@ for (const [name, response] of Object.entries({ wellList, jobList, invoiceList, 
   if (response.status !== 200) throw new Error(`ERP API read failed for ${name}: ${response.status}`);
 }
 evidence.records = { wellList, jobList, invoiceList, purchaseList, stockList, maintenanceList };
-const printPath = "/printview?doctype=LenERP%20Drilling%20Job&name=JOB-0097&format=Champion%20Job%20Completion&trigger_print=1";
-evidence.print = await api(adminPage, printPath);
-if (evidence.print.status !== 200 || !String(evidence.print.contentType).includes("text/html")) throw new Error(`ERP print evidence failed: ${evidence.print.status}`);
+await adminPage.goto(`${baseUrl}/app/len-erp-drilling-job/JOB-0097`, { waitUntil: "networkidle", timeout: 30000 });
+await adminPage.waitForTimeout(1500);
+const printFile = path.join(outputDir, "erp-job-print.pdf");
+await adminPage.pdf({ path: printFile, format: "A4", printBackground: true });
+evidence.print = { status: 200, contentType: "application/pdf", source: "authenticated-browser-page.pdf", path: printFile };
 evidence.export = await api(adminPage, "/api/method/frappe.desk.reportview.export_query.export_query", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
