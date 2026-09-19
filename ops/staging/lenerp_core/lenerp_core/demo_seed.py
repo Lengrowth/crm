@@ -243,7 +243,7 @@ def _commercial_records(company: str, customer: str, warehouse: str) -> dict[str
     lead = _insert(
         "Lead",
         "DEMO-CHAMPION-LEAD-001",
-        {"lead_name": "DEMO-CHAMPION-Avery Cole", "company_name": "DEMO-CHAMPION-Summit Springs HOA", "status": "Lead", "source": "Website"},
+        {"lead_name": "DEMO-CHAMPION-Avery Cole", "company_name": "DEMO-CHAMPION-Summit Springs HOA", "status": "Lead"},
     )
     opportunity = _insert(
         "Opportunity",
