@@ -264,6 +264,7 @@ def _ensure_asset_category(company: str) -> str:
 
 
 def _commercial_records(company: str, customer: str, warehouse: str) -> dict[str, list[str]]:
+    currency = frappe.db.get_value("Company", company, "default_currency") or "USD"
     lead = _insert(
         "Lead",
         "DEMO-CHAMPION-LEAD-001",
@@ -293,7 +294,16 @@ def _commercial_records(company: str, customer: str, warehouse: str) -> dict[str
     quotation = _insert(
         "Quotation",
         "DEMO-CHAMPION-QUOTE-001",
-        {"quotation_to": "Customer", "party_name": customer, "company": company, "transaction_date": today(), "items": [{"item_code": item, "qty": 1, "rate": 1850, "description": "Synthetic pump replacement quote"}]},
+        {
+            "quotation_to": "Customer",
+            "party_name": customer,
+            "company": company,
+            "transaction_date": today(),
+            "selling_price_list": "Standard Selling",
+            "price_list_currency": currency,
+            "plc_conversion_rate": 1,
+            "items": [{"item_code": item, "qty": 1, "rate": 1850, "description": "Synthetic pump replacement quote"}],
+        },
     )
     invoice = _insert(
         "Sales Invoice",
