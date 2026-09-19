@@ -133,7 +133,7 @@ for (const [label, route] of erpRoutes) {
   await adminPage.screenshot({ path: path.join(outputDir, `${label}.png`), fullPage: true });
   const routeContract = await renderedAccessibilityContract(adminPage);
   if (!routeContract.zoom_allowed || !routeContract.logo_alternatives_present) {
-    throw new Error(`ERP accessibility contract failed for ${route}`);
+    throw new Error(`ERP accessibility contract failed for ${route}: ${JSON.stringify(routeContract)}`);
   }
   evidence.accessibility.routes[label] = {
     role: "Champion Administrator",
@@ -189,7 +189,7 @@ evidence.accessibility.mobile = {
 };
 evidence.browser_zoom.mobile = await renderedAccessibilityContract(adminPage);
 if (!evidence.browser_zoom.mobile.zoom_allowed || !evidence.browser_zoom.mobile.logo_alternatives_present) {
-  throw new Error("authenticated mobile ERP accessibility contract failed");
+  throw new Error(`authenticated mobile ERP accessibility contract failed: ${JSON.stringify(evidence.browser_zoom.mobile)}`);
 }
 evidence.roles["Champion Administrator"] = { email: emailFor("Champion Administrator"), routes: erpRoutes.length, api_read: true, print: true, export: true, address_and_coordinates: true };
 await admin.context.close();
