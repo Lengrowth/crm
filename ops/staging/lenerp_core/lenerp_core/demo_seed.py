@@ -242,9 +242,10 @@ def _ensure_warehouse(company: str) -> str:
 
 
 def _ensure_asset_category(company: str) -> str:
-    account = frappe.db.get_value("Company", company, "default_fixed_asset_account")
-    if not account:
-        account = frappe.db.get_value("Account", {"company": company, "is_group": 0}, "name")
+    # ERPNext versions differ on whether Company exposes a default fixed-asset
+    # account.  The Asset Category child table is stable, so resolve a valid
+    # company leaf account without querying an optional Company column.
+    account = frappe.db.get_value("Account", {"company": company, "is_group": 0}, "name")
     if not account:
         raise RuntimeError(f"No leaf account is available for synthetic Asset Category in {company}")
     return _insert(
