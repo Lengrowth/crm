@@ -563,7 +563,8 @@ jobs:
         run: |
           browser_path="$(find "$HOME/.cache/ms-playwright" -type f -name chrome -path '*/chrome*/chrome' -print -quit 2>/dev/null || true)"
           [[ -n "$browser_path" ]] || { echo "Installed Chromium executable was not found" >&2; exit 1; }
-          BROWSER_EXECUTABLE_PATH="$browser_path" node frontend/scripts/capture_erp_browser_evidence.mjs
+          evidence_script="/opt/saas-control-staging/current/frontend/scripts/capture_erp_browser_evidence.mjs"
+          BROWSER_EXECUTABLE_PATH="$browser_path" node "$evidence_script"
 
       - name: Remove synthetic ERP role principals
         if: always()
