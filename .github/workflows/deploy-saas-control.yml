@@ -71,7 +71,7 @@ jobs:
       - name: Verify the commit-pinned LenERP Core staging bundle
         run: |
           core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
-          test "$core_commit" = "04cc38b0689f17faaaa1158cd24f60ab6e58b46a"
+          test "$core_commit" = "b564f5a6e284fb1b092c31e8d4904b73fdad5db0"
           archive="ops/staging/lenerp_core-${core_commit}.tar"
           test -f "$archive"
           python3 - <<'PY'
@@ -356,7 +356,7 @@ jobs:
           TARGET_REF: ${{ steps.candidate.outputs.sha }}
           RELEASE_ID: ${{ steps.candidate.outputs.sha }}
           CUSTOM_APP_VERSION: "0.2.0"
-          CUSTOM_APP_COMMIT: "04cc38b0689f17faaaa1158cd24f60ab6e58b46a"
+          CUSTOM_APP_COMMIT: "b564f5a6e284fb1b092c31e8d4904b73fdad5db0"
           REQUIRE_AUTH_SMOKE: "true"
         run: ./scripts/deploy/deploy_saas_control.sh
 
@@ -365,7 +365,7 @@ jobs:
           core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
           exact_dir="$RUNNER_TEMP/lenerp_core-exact"
           test -d "$exact_dir"
-          test "$core_commit" = "04cc38b0689f17faaaa1158cd24f60ab6e58b46a"
+          test "$core_commit" = "b564f5a6e284fb1b092c31e8d4904b73fdad5db0"
           sudo rsync -a --delete --exclude='.git' "$exact_dir/" /opt/frappe-staging-bench/apps/lenerp_core/
           sudo chown -R frappe:frappe /opt/frappe-staging-bench/apps/lenerp_core
           if ! sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test list-apps | grep -Eq '^lenerp_core[[:space:]]'"; then
@@ -576,14 +576,15 @@ jobs:
           . /opt/saas-control-staging/shared/env/staging-backend.env
           set +a
           auth_script="/opt/saas-control-staging/current/scripts/release/prepare_staging_smoke_auth.py"
+          cleanup_token_file="/tmp/saas-control-staging-non-admin-${GITHUB_RUN_ID}.token"
           sudo -n -E -u saas-staging env \
             PYTHONPATH=/opt/saas-control-staging/current/backend \
             /opt/saas-control-staging/shared/backend-venv/bin/python \
             "$auth_script" \
             --email "$NON_ADMIN_SMOKE_EMAIL" \
-            --token-file /run/saas-control-staging/smoke/non-admin-auth-token \
+            --token-file "$cleanup_token_file" \
             --cleanup
-          sudo rm -f -- /run/saas-control-staging/smoke/non-admin-auth-token
+          sudo rm -f -- "$cleanup_token_file"
 
       - name: Remove exact Phase 2 synthetic browser records
         if: always()
