@@ -466,6 +466,17 @@ def _inventory_records(company: str, item: str, fixed_asset_item: str, warehouse
             {"asset_name": asset_name, "item_code": fixed_asset_item, "asset_category": frappe.db.get_value("Item", fixed_asset_item, "asset_category"), "company": company, "gross_purchase_amount": 1, "purchase_date": today(), "available_for_use_date": today(), "location": location, "is_existing_asset": 1, "calculate_depreciation": 0, "cost_center": cost_center, "maintenance_required": 1},
         )
         assets.append(asset)
+    maintenance_user = _insert(
+        "User",
+        "DEMO-CHAMPION-MAINTENANCE@example.test",
+        {
+            "email": "DEMO-CHAMPION-MAINTENANCE@example.test",
+            "first_name": "DEMO Champion Maintenance",
+            "user_type": "System User",
+            "enabled": 1,
+            "send_welcome_email": 0,
+        },
+    )
     team = _insert(
         "Asset Maintenance Team",
         "DEMO-CHAMPION-MAINTENANCE-TEAM",
@@ -476,7 +487,7 @@ def _inventory_records(company: str, item: str, fixed_asset_item: str, warehouse
         maintenance_doc = _insert(
             "Asset Maintenance",
             f"DEMO-CHAMPION-MAINTENANCE-{asset.rsplit('-', 1)[-1]}",
-            {"asset_name": asset, "company": company, "maintenance_team": team, "asset_maintenance_tasks": [{"maintenance_task": "Inspect drilling rig and service records", "maintenance_status": "Planned", "start_date": today(), "periodicity": "Monthly", "assign_to": "Administrator", "description": "Synthetic preventive maintenance task."}]},
+            {"asset_name": asset, "company": company, "maintenance_team": team, "asset_maintenance_tasks": [{"maintenance_task": "Inspect drilling rig and service records", "maintenance_status": "Planned", "start_date": today(), "periodicity": "Monthly", "assign_to": maintenance_user, "description": "Synthetic preventive maintenance task."}]},
         )
         maintenance.append(maintenance_doc)
     return {"warehouses": [warehouse], "stock_entries": [stock_entry], "assets": assets, "asset_maintenance": maintenance}
@@ -513,6 +524,7 @@ def reset() -> dict[str, int]:
         ("Purchase Receipt", "DEMO-%"),
         ("Asset Maintenance", "DEMO-%"),
         ("Asset Maintenance Team", "DEMO-%"),
+        ("User", "DEMO-%"),
         ("Sales Invoice", "DEMO-%"),
         ("Quotation", "DEMO-%"),
         ("Opportunity", "DEMO-%"),
