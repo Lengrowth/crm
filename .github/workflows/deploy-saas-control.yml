@@ -55,15 +55,14 @@ jobs:
       - saas-control
     environment: staging
     steps:
+      - name: Repair runner workspace ownership before checkout
+        run: sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE"
+
       - name: Check out exact source commit
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.candidate_ref || github.sha }}
           fetch-depth: 0
-          clean: false
-
-      - name: Repair runner workspace ownership after prior staging cleanup
-        run: sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE"
 
       - name: Resolve immutable candidate commit
         id: candidate
