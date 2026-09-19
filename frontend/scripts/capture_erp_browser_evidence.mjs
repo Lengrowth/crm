@@ -110,10 +110,19 @@ await adminPage.waitForTimeout(1500);
 const printFile = path.join(outputDir, "erp-job-print.pdf");
 await adminPage.pdf({ path: printFile, format: "A4", printBackground: true });
 evidence.print = { status: 200, contentType: "application/pdf", source: "authenticated-browser-page.pdf", path: printFile };
-evidence.export = await api(adminPage, "/api/method/frappe.desk.reportview.export_query.export_query", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ doctype: "LenERP Well Site", fields: JSON.stringify(["name", "city", "latitude", "longitude"]), filters: "[]", file_format_type: "Excel" }),
+evidence.export = await adminPage.evaluate(async () => {
+  const response = await fetch("/api/method/frappe.desk.reportview.export_query.export_query", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      doctype: "LenERP Well Site",
+      fields: JSON.stringify(["name", "city", "latitude", "longitude"]),
+      filters: "[]",
+      file_format_type: "Excel",
+    }).toString(),
+  });
+  return { status: response.status, contentType: response.headers.get("content-type"), body: (await response.text()).slice(0, 300) };
 });
 if (evidence.export.status !== 200) throw new Error(`ERP export evidence failed: ${evidence.export.status}`);
 evidence.accessibility.desktop = await accessibility(adminPage, "erp-admin-desktop");
