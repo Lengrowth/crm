@@ -89,3 +89,9 @@ Copy this section for each implementation/release of a package.
 - Selected modules remain distinct from installed modules. `marketed`, `requested`, `entitled`, `applied`, and `verified` states must be visible where relevant.
 - Unselected included platform modules remain installed/preserved or administrator-accessible according to the approved module matrix; they are not deleted from the delivered platform.
 - Every package is reproducible through the custom app, fixtures, patches, import scripts, or documented configuration automation. Undocumented production-only edits do not satisfy delivery.
+
+## Final Champion pre-kickoff remediation evidence
+
+The final protected staging candidate is CRM `dccff421027527860075c0c2de4ce08deccf5423` with the immutable LenERP Core app `26f41e34deab5fc699224657d206bd6a9d7bf161`. Main run [35457401709](https://github.com/Lengrowth/crm/actions/runs/35457401709) executes the candidate-bound build, ERP accessibility checks, full customer-facing language audit, synthetic role/readback checks, and cleanup. The earlier merge-candidate run [35456796572](https://github.com/Lengrowth/crm/actions/runs/35456796572) is retained as the pre-merge validation record. This closes remediation readiness only; Champion acceptance, real-data migration, and production activation remain pending.
+
+Detailed hashes, artifact digest, and review disposition are recorded in [FINAL_REMEDIATION_EVIDENCE.md](FINAL_REMEDIATION_EVIDENCE.md).

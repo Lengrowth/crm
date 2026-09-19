@@ -101,3 +101,7 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; `PLAT-P3` PASS; 
   `41ac765…` passed protected staging, main, production promotion, observation,
   UI/API CRUD, mutation isolation, Phase 2 cleanup, and readback. The release
   record contains the full evidence and accepted limitations.
+
+## Final Champion pre-kickoff remediation evidence
+
+Protected main run [35457401709](https://github.com/Lengrowth/crm/actions/runs/35457401709) is the authoritative candidate-bound staging record for CRM `dccff421027527860075c0c2de4ce08deccf5423` and LenERP Core `26f41e34deab5fc699224657d206bd6a9d7bf161`. It includes the durable browser evidence bundle, ERP role/print/export evidence, responsive checks, language audit, and post-demo cleanup. Independent review is the next gate; no production cutover or real customer data is authorized.

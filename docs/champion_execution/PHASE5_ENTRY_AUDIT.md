@@ -163,3 +163,7 @@ The correct current workstream verdict is:
 `CHAMPION ACCEPTANCE: PENDING PROJECT START`
 `REAL-DATA MIGRATION: BLOCKED BY CREDENTIAL ROTATION AND DATA AUTHORIZATION`
 `PRODUCTION ACTIVATION: NOT AUTHORIZED`
+
+## Final protected remediation evidence
+
+The final candidate-bound main run is [35457401709](https://github.com/Lengrowth/crm/actions/runs/35457401709), CRM `dccff421027527860075c0c2de4ce08deccf5423`, with LenERP Core `26f41e34deab5fc699224657d206bd6a9d7bf161`. It completes the staging browser evidence, ERP accessibility remediation, customer-facing language audit, role boundaries, and synthetic cleanup required for independent re-review. No production or real-data authorization is implied.

@@ -61,3 +61,7 @@
 | P4-R02 | Risk | Open pending staging | Release owner / infrastructure owner | Staging deployment, synthetic worker completion, exact-record cleanup, and rollback/readback evidence have not yet been recorded for an immutable PLAT-P4 candidate. |
 | P4-B01 | Blocker | Open | Release owner / GitHub administrator | Commit/materialize the candidate, run protected staging with `phase4_synthetic_state=on`, review the artifact, then use the separately approved production workflow with Phase 4 flags off. |
 | P4-R03 | Accepted limitation | Open by design | Delivery owner / Champion acceptance authority | C03 remains `defined`; no Champion data, final domain, or real customer provisioning is permitted under PLAT-P4. |
+
+## Final Champion pre-kickoff remediation disposition
+
+The remaining pre-kickoff remediation gate is ready for independent review. Protected main run [35457401709](https://github.com/Lengrowth/crm/actions/runs/35457401709) is bound to CRM `dccff421027527860075c0c2de4ce08deccf5423` and LenERP Core `26f41e34deab5fc699224657d206bd6a9d7bf161`; its browser evidence reports a clean customer-facing language audit and zero serious ERP axe violations. Champion acceptance, real-data authorization, and production activation remain open by design.

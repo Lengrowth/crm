@@ -103,3 +103,7 @@ state:
 - `CHAMPION-SPECIFIC ACCEPTANCE: PENDING PROJECT START`
 - `REAL-DATA MIGRATION: NOT AUTHORIZED`
 - `PRODUCTION ACTIVATION: NOT AUTHORIZED`
+
+## Final remediation gate
+
+Run [35457401709](https://github.com/Lengrowth/crm/actions/runs/35457401709) is the authoritative protected main candidate: CRM `dccff421027527860075c0c2de4ce08deccf5423`; LenERP Core `26f41e34deab5fc699224657d206bd6a9d7bf161`. The run captured protected staging browser/axe evidence, audited all customer-facing screens for technical/internal language, and completed synthetic cleanup. Final verdict: `CHAMPION PRE-KICKOFF SYNTHETIC DEMO REMEDIATION: READY FOR INDEPENDENT REVIEW`. Do not convert this verdict into Champion acceptance or production authorization.

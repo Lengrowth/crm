@@ -74,7 +74,11 @@ Current package verdict: **IN DEVELOPMENT — synthetic core demonstration passe
   claimed.
 - The app-owned ERP accessibility asset restores browser zoom and labels the
   login, navigation, footer, and loading logos; candidate-bound route evidence
-  is still pending the protected staging run.
+  is captured in the protected staging artifact [10588676130](https://github.com/Lengrowth/crm/actions/runs/35457401709/artifacts/10588676130).
 - The run is synthetic staging evidence only. Project Start decisions, Champion
   UAT, acceptance authority, real-data migration, final domain, and production
   promotion remain pending.
+
+## Final protected remediation evidence
+
+The authoritative main run is [35457401709](https://github.com/Lengrowth/crm/actions/runs/35457401709), bound to CRM `dccff421027527860075c0c2de4ce08deccf5423` and LenERP Core `26f41e34deab5fc699224657d206bd6a9d7bf161`. It completed the ERP accessibility fix, customer-facing language audit, candidate-bound browser evidence, and synthetic cleanup. Verdict: `CHAMPION PRE-KICKOFF SYNTHETIC DEMO REMEDIATION: READY FOR INDEPENDENT REVIEW`; it does not grant Champion acceptance or production authorization.
