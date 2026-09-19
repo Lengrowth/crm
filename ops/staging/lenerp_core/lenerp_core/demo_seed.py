@@ -129,6 +129,16 @@ def _ensure_party_defaults() -> None:
 def _company() -> str:
     _ensure_warehouse_types()
     _ensure_party_defaults()
+    if not frappe.db.exists("Address Template", {"is_default": 1}):
+        _insert(
+            "Address Template",
+            "DEMO-CHAMPION-USA-ADDRESS-TEMPLATE",
+            {
+                "country": DEMO_DEFAULT_COUNTRY,
+                "is_default": 1,
+                "template": "{{ address_line1 }}<br>{{ city }}, {{ state }} {{ pincode }}<br>{{ country }}",
+            },
+        )
     company = _insert(
         "Company",
         DEMO_COMPANY,
@@ -482,6 +492,7 @@ def reset() -> dict[str, int]:
         ("Contact", "DEMO-%"),
         ("Customer", "DEMO-%"),
         ("Address", "DEMO-%"),
+        ("Address Template", "DEMO-%"),
         ("Item", "DEMO-%"),
         ("Supplier", "DEMO-%"),
         ("Warehouse", "DEMO-%"),
