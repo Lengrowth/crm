@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import tarfile
 from pathlib import Path
 
 
@@ -27,14 +28,34 @@ def test_staging_workflow_verifies_the_installed_custom_app_candidate():
     baseline = (ROOT / "ops" / "production" / "release-runtime-baseline.json").read_text(encoding="utf-8")
     bundle_commit = (ROOT / "ops" / "staging" / "lenerp_core" / "SOURCE_COMMIT.txt").read_text(encoding="utf-8").strip()
     assert 'CUSTOM_APP_VERSION: "0.2.0"' in workflow
-    assert 'CUSTOM_APP_COMMIT: "440d279a0f11da5a622a7553a5d65b51ad53b365"' in workflow
-    assert bundle_commit == "440d279a0f11da5a622a7553a5d65b51ad53b365"
+    assert 'CUSTOM_APP_COMMIT="$core_commit"' in workflow
+    assert bundle_commit == "d2ad6f579e469a95f7579f40709adbaa3e9bb37f"
     assert "lenerp_core-${core_commit}.tar" in workflow
     assert 'staging.joinpath("lenerp_core.archive.sha256")' in workflow
     assert '"version": "0.2.0"' in baseline
-    assert '"commit": "440d279a0f11da5a622a7553a5d65b51ad53b365"' in baseline
+    assert '"commit": "d2ad6f579e469a95f7579f40709adbaa3e9bb37f"' in baseline
     assert "erp_staging_smoke.sh" in workflow
     assert "erp_demo_smoke.sh" in workflow
     assert "erp_role_smoke.sh" in workflow
     assert "capture_erp_browser_evidence.mjs" in workflow
     assert "erp_demo_cleanup.sh" in workflow
+    assert "Verify candidate ancestry from authoritative main" in workflow
+    assert 'CUSTOM_APP_COMMIT="$core_commit"' in workflow
+    assert "Write candidate-bound protected staging evidence manifest" in workflow
+    assert '"candidate-bound-evidence-manifest.json"' in workflow
+    assert '"runtime_readback": runtime_readback' in workflow
+    archive = ROOT / "ops" / "staging" / "lenerp_core-d2ad6f579e469a95f7579f40709adbaa3e9bb37f.tar"
+    with tarfile.open(archive) as handle:
+        assert "lenerp_core/public/js/accessibility.js" in handle.getnames()
+
+
+def test_browser_evidence_is_route_bound_and_checks_zoom_logo_and_language_contracts():
+    erp_script = (ROOT / "frontend" / "scripts" / "capture_erp_browser_evidence.mjs").read_text(encoding="utf-8")
+    control_script = (ROOT / "frontend" / "scripts" / "capture_browser_evidence.mjs").read_text(encoding="utf-8")
+    assert "renderedAccessibilityContract" in erp_script
+    assert "viewport_count" in erp_script
+    assert "logo_alternatives_present" in erp_script
+    assert 'role: "unauthenticated"' in erp_script
+    assert "Object.values(evidence.accessibility.routes)" in erp_script
+    assert "language_audit" in control_script
+    assert "internalLanguagePatterns" in control_script

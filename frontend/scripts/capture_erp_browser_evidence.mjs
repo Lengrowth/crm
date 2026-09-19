@@ -57,10 +57,31 @@ async function api(page, pathname, init = {}) {
 }
 
 async function accessibility(page, label) {
-  await page.addScriptTag({ content: axe.source });
+  if (!(await page.evaluate(() => Boolean(window.axe)))) await page.addScriptTag({ content: axe.source });
   const result = await page.evaluate(async () => window.axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa"] } }));
   await page.screenshot({ path: path.join(outputDir, `${label}.png`), fullPage: true });
   return { violations: result.violations, passes: result.passes.length, incomplete: result.incomplete.length };
+}
+
+async function renderedAccessibilityContract(page) {
+  return page.evaluate(() => {
+    const viewportMeta = [...document.querySelectorAll('meta[name="viewport"]')];
+    const viewportContent = viewportMeta.map((meta) => meta.getAttribute("content") || "");
+    const logoImages = [...document.querySelectorAll("img.app-logo, .app-logo img, .navbar-brand img, .splash img, img.footer-logo")];
+    const logoAlternatives = logoImages.map((image) => ({
+      className: image.className,
+      alt: image.getAttribute("alt"),
+      src: image.getAttribute("src"),
+    }));
+    return {
+      viewport_count: viewportMeta.length,
+      viewport_content: viewportContent,
+      zoom_allowed: viewportMeta.length === 1
+        && !/user-scalable\s*=\s*no|max(imum)?-scale\s*=\s*1(?:\.0+)?/i.test(viewportContent[0] || ""),
+      logo_images: logoAlternatives,
+      logo_alternatives_present: logoAlternatives.every((image) => typeof image.alt === "string"),
+    };
+  });
 }
 
 const evidence = {
@@ -71,8 +92,25 @@ const evidence = {
   records: {},
   print: null,
   export: null,
-  accessibility: {},
+  accessibility: { unauthenticated: null, routes: {}, desktop: null, mobile: null },
+  browser_zoom: { unauthenticated: null, desktop: null, mobile: null },
 };
+
+const unauthenticatedContext = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: "reduce" });
+const unauthenticatedPage = await unauthenticatedContext.newPage();
+await unauthenticatedPage.goto(`${baseUrl}/login`, { waitUntil: "networkidle", timeout: 30000 });
+const unauthenticatedContract = await renderedAccessibilityContract(unauthenticatedPage);
+if (!unauthenticatedContract.zoom_allowed || !unauthenticatedContract.logo_alternatives_present) {
+  throw new Error("unauthenticated ERP accessibility contract failed");
+}
+evidence.accessibility.unauthenticated = {
+  role: "unauthenticated",
+  route: "/login",
+  viewport: { width: 1440, height: 1000 },
+  ...await accessibility(unauthenticatedPage, "erp-login-desktop"),
+};
+evidence.browser_zoom.unauthenticated = unauthenticatedContract;
+await unauthenticatedContext.close();
 
 const admin = await login("Champion Administrator");
 const adminPage = admin.page;
@@ -93,6 +131,17 @@ for (const [label, route] of erpRoutes) {
   await adminPage.waitForTimeout(1500);
   if (!(await adminPage.locator("body").innerHTML()).trim()) throw new Error(`ERP route empty ${route}`);
   await adminPage.screenshot({ path: path.join(outputDir, `${label}.png`), fullPage: true });
+  const routeContract = await renderedAccessibilityContract(adminPage);
+  if (!routeContract.zoom_allowed || !routeContract.logo_alternatives_present) {
+    throw new Error(`ERP accessibility contract failed for ${route}`);
+  }
+  evidence.accessibility.routes[label] = {
+    role: "Champion Administrator",
+    route,
+    viewport: { width: 1440, height: 1000 },
+    ...await accessibility(adminPage, `erp-${label}-desktop`),
+  };
+  evidence.browser_zoom.desktop = routeContract;
 }
 
 const wellList = await api(adminPage, "/api/resource/LenERP%20Well%20Site?fields=%5B%22name%22,%22city%22,%22latitude%22,%22longitude%22%5D&limit_page_length=20");
@@ -123,10 +172,25 @@ await writeFile(
   "utf8",
 );
 evidence.export = { status: 200, contentType: "text/csv", source: "authenticated-resource-api-csv", row_count: exportRows.length, path: exportFile };
-evidence.accessibility.desktop = await accessibility(adminPage, "erp-admin-desktop");
+evidence.accessibility.desktop = {
+  role: "Champion Administrator",
+  route: "/app/len-erp-drilling-job/JOB-0097",
+  viewport: { width: 1440, height: 1000 },
+  ...await accessibility(adminPage, "erp-admin-desktop"),
+};
+evidence.browser_zoom.desktop = await renderedAccessibilityContract(adminPage);
 await adminPage.setViewportSize({ width: 390, height: 844 });
 await adminPage.goto(`${baseUrl}/app/len-erp-well-site/WELL-NR-01`, { waitUntil: "networkidle", timeout: 30000 });
-evidence.accessibility.mobile = await accessibility(adminPage, "erp-well-mobile");
+evidence.accessibility.mobile = {
+  role: "Champion Administrator",
+  route: "/app/len-erp-well-site/WELL-NR-01",
+  viewport: { width: 390, height: 844 },
+  ...await accessibility(adminPage, "erp-well-mobile"),
+};
+evidence.browser_zoom.mobile = await renderedAccessibilityContract(adminPage);
+if (!evidence.browser_zoom.mobile.zoom_allowed || !evidence.browser_zoom.mobile.logo_alternatives_present) {
+  throw new Error("authenticated mobile ERP accessibility contract failed");
+}
 evidence.roles["Champion Administrator"] = { email: emailFor("Champion Administrator"), routes: erpRoutes.length, api_read: true, print: true, export: true, address_and_coordinates: true };
 await admin.context.close();
 
@@ -140,6 +204,24 @@ for (const role of roles.slice(1)) {
   evidence.roles[role] = { email: emailFor(role), well_api_status: listResponse.status, job_api_status: jobResponse.status, expected_well_access: expectedAllowed };
   await session.context.close();
 }
+
+const allAccessibilityResults = [
+  evidence.accessibility.unauthenticated,
+  ...Object.values(evidence.accessibility.routes),
+  evidence.accessibility.desktop,
+  evidence.accessibility.mobile,
+].filter(Boolean);
+const seriousViolations = allAccessibilityResults.flatMap((result) => result.violations)
+  .filter((violation) => ["critical", "serious"].includes(violation.impact));
+if (seriousViolations.length) {
+  throw new Error(`serious accessibility violations: ${seriousViolations.map((violation) => violation.id).join(", ")}`);
+}
+const incomplete = allAccessibilityResults.flatMap((result) => result.incomplete);
+const seriousIncomplete = incomplete.filter((item) => ["critical", "serious"].includes(item.impact) && item.id !== "color-contrast");
+if (seriousIncomplete.length) {
+  throw new Error(`serious incomplete accessibility checks: ${seriousIncomplete.map((item) => item.id).join(", ")}`);
+}
+evidence.accessibility.incomplete_reviewed = [...new Set(incomplete.filter((item) => item.id === "color-contrast").map((item) => item.id))];
 
 await writeFile(path.join(outputDir, "erp-browser-evidence.json"), `${JSON.stringify(evidence, null, 2)}\n`, "utf8");
 await browser.close();

@@ -7,10 +7,9 @@ Record date: 2026-09-19
 
 ## Candidate identity
 
-- CRM candidate: exact protected candidate selected from `codex/plat-p4-readback-docs`
-- `lenerp_core` branch: `codex/champ-c01-r1`
-- `lenerp_core` commit: `440d279a0f11da5a622a7553a5d65b51ad53b365` on
-  `codex/champ-c01-r1`
+- CRM candidate: exact protected candidate will be recorded after the remediation PR merge and staging run
+- `lenerp_core` branch: protected `main`
+- `lenerp_core` commit: `d2ad6f579e469a95f7579f40709adbaa3e9bb37f` on `main`
 - `lenerp_core` version: `0.2.0`
 - Frappe reference: `15.119.1`,
   `edae775dd36b6c4ad7acab10230262bd74040765`
@@ -46,7 +45,7 @@ branding, domain cutover, production configuration, and real Champion data.
 | Wheel build | PASS | `lenerp_core-0.2.0-py3-none-any.whl` |
 | Wheel metadata inclusion | PASS | Wheel contains custom DocTypes, report, workspace, and seed modules |
 | `git diff --check` | PASS | Clean on custom-app and CRM changes |
-| Frappe install/migrate on isolated staging | PENDING FINAL PROTECTED RUN | The workflow now deploys only the checksum-verified archive for `lenerp_core` `e87d348…` |
+| Frappe install/migrate on isolated staging | PENDING FINAL PROTECTED RUN | The workflow now deploys only the checksum-verified archive for `lenerp_core` `d2ad6f5…` |
 | Synthetic ERP seed/status | IMPLEMENTED; PENDING FINAL PROTECTED RUN | Required persisted journey includes Company 1, Customer 3, Contact 3, Well Site 3, Drilling Job 4, Supplier 1, Item 2, Warehouse 1, Purchase Receipt 1, Stock Entry 1, Asset 2, Asset Maintenance 2, Quotation 1, Sales Invoice 1, Payment Entry 1 |
 | Role/browser/print/export/responsive/accessibility evidence | IMPLEMENTED; PENDING FINAL PROTECTED RUN | Real Champion role principals, direct ERP API denials, print/PDF, export, desktop/mobile ERP screens, and reset evidence are captured by the protected workflow |
 | Champion UAT/acceptance | NOT RUN | Acceptance authority and Project Start decisions unavailable |
@@ -73,6 +72,9 @@ Current package verdict: **IN DEVELOPMENT — synthetic core demonstration passe
 - Configuration remains `operator-validation`, Phase 1 shell `off`, Phase 4
   synthetic state `off`; no Phase 4 evidence or production activation is
   claimed.
+- The app-owned ERP accessibility asset restores browser zoom and labels the
+  login, navigation, footer, and loading logos; candidate-bound route evidence
+  is still pending the protected staging run.
 - The run is synthetic staging evidence only. Project Start decisions, Champion
   UAT, acceptance authority, real-data migration, final domain, and production
   promotion remain pending.

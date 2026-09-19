@@ -71,10 +71,19 @@ jobs:
           [[ "$candidate_sha" =~ ^[0-9a-f]{40}$ ]] || { echo "Candidate checkout is not a commit: $candidate_sha" >&2; exit 1; }
           echo "sha=$candidate_sha" >> "$GITHUB_OUTPUT"
 
+      - name: Verify candidate ancestry from authoritative main
+        if: ${{ github.event_name != 'pull_request' }}
+        run: |
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          git merge-base --is-ancestor "${{ steps.candidate.outputs.sha }}" refs/remotes/origin/main || {
+            echo "Candidate is not an ancestor of authoritative main" >&2
+            exit 1
+          }
+
       - name: Verify the commit-pinned LenERP Core staging bundle
         run: |
           core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
-          test "$core_commit" = "b564f5a6e284fb1b092c31e8d4904b73fdad5db0"
+          test "$core_commit" = "d2ad6f579e469a95f7579f40709adbaa3e9bb37f"
           archive="ops/staging/lenerp_core-${core_commit}.tar"
           test -f "$archive"
           python3 - <<'PY'
@@ -359,16 +368,17 @@ jobs:
           TARGET_REF: ${{ steps.candidate.outputs.sha }}
           RELEASE_ID: ${{ steps.candidate.outputs.sha }}
           CUSTOM_APP_VERSION: "0.2.0"
-          CUSTOM_APP_COMMIT: "b564f5a6e284fb1b092c31e8d4904b73fdad5db0"
           REQUIRE_AUTH_SMOKE: "true"
-        run: ./scripts/deploy/deploy_saas_control.sh
+        run: |
+          core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
+          CUSTOM_APP_COMMIT="$core_commit" ./scripts/deploy/deploy_saas_control.sh
 
       - name: Install and migrate the exact custom app from the pinned staging bundle
         run: |
           core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
           exact_dir="$RUNNER_TEMP/lenerp_core-exact"
           test -d "$exact_dir"
-          test "$core_commit" = "b564f5a6e284fb1b092c31e8d4904b73fdad5db0"
+          test "$core_commit" = "d2ad6f579e469a95f7579f40709adbaa3e9bb37f"
           sudo rsync -a --delete --exclude='.git' "$exact_dir/" /opt/frappe-staging-bench/apps/lenerp_core/
           sudo chown -R frappe:frappe /opt/frappe-staging-bench/apps/lenerp_core
           if ! sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test list-apps | grep -Eq '^lenerp_core[[:space:]]'"; then
@@ -639,6 +649,60 @@ jobs:
         env:
           OUTPUT_FILE: ${{ github.workspace }}/staging-browser-evidence/erp/erp-reset-evidence.json
         run: sudo scripts/release/erp_demo_cleanup.sh
+
+      - name: Write candidate-bound protected staging evidence manifest
+        if: always()
+        env:
+          CANDIDATE_SHA: ${{ steps.candidate.outputs.sha }}
+          RUNTIME_RELEASE_URL: http://127.0.0.1:18001/runtime/release
+          EVIDENCE_DIR: ${{ github.workspace }}/staging-browser-evidence
+        run: |
+          if [[ ! -d "$EVIDENCE_DIR" ]]; then
+            echo "No staging evidence directory was produced"
+            exit 0
+          fi
+          export CUSTOM_APP_SHA="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
+          python3 - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+
+          evidence_dir = Path(os.environ["EVIDENCE_DIR"])
+          candidate_sha = os.environ["CANDIDATE_SHA"]
+          custom_app_sha = os.environ["CUSTOM_APP_SHA"]
+          runtime_url = os.environ["RUNTIME_RELEASE_URL"]
+          request = Request(runtime_url, headers={"Host": "staging.example.test"})
+          with urlopen(request, timeout=20) as response:
+              runtime_readback = json.load(response)
+          if runtime_readback.get("release_id") != candidate_sha or runtime_readback.get("commit") != candidate_sha:
+              raise SystemExit("runtime readback is not bound to the candidate SHA")
+          manifest = runtime_readback.get("manifest") or {}
+          observed_app_sha = runtime_readback.get("custom_app_commit") or manifest.get("custom_app_commit")
+          if observed_app_sha != custom_app_sha:
+              raise SystemExit("runtime readback is not bound to the pinned custom app SHA")
+          files = sorted(
+              str(path.relative_to(evidence_dir)).replace(os.sep, "/")
+              for path in evidence_dir.rglob("*")
+              if path.is_file()
+          )
+          evidence_manifest = {
+              "candidate_sha": candidate_sha,
+              "custom_app_sha": custom_app_sha,
+              "workflow_run_id": int(os.environ["GITHUB_RUN_ID"]),
+              "workflow_run_attempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
+              "artifact_name": f"staging-browser-evidence-{candidate_sha}",
+              "captured_at_utc": datetime.now(timezone.utc).isoformat(),
+              "runtime_readback": runtime_readback,
+              "release_manifest": manifest,
+              "files": files,
+          }
+          (evidence_dir / "candidate-bound-evidence-manifest.json").write_text(
+              json.dumps(evidence_manifest, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
 
       - name: Upload durable staging browser evidence
         if: success()
