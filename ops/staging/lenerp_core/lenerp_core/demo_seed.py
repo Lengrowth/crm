@@ -22,6 +22,7 @@ from frappe.utils import add_days, today
 
 DEMO_COMPANY = "DEMO Champion Well Drilling"
 DEMO_PREFIX = "DEMO-CHAMPION-"
+DEMO_SELLING_PRICE_LIST = "DEMO-CHAMPION-SELLING"
 
 
 def _exists(doctype: str, name: str) -> bool:
@@ -106,6 +107,12 @@ def _ensure_party_defaults() -> None:
         )
     if not _exists("Sales Stage", "Prospecting"):
         _insert("Sales Stage", "Prospecting", {"stage_name": "Prospecting"})
+    if not _exists("Price List", DEMO_SELLING_PRICE_LIST):
+        _insert(
+            "Price List",
+            DEMO_SELLING_PRICE_LIST,
+            {"price_list_name": DEMO_SELLING_PRICE_LIST, "enabled": 1, "selling": 1},
+        )
 
 
 def _company() -> str:
@@ -299,7 +306,7 @@ def _commercial_records(company: str, customer: str, warehouse: str) -> dict[str
             "party_name": customer,
             "company": company,
             "transaction_date": today(),
-            "selling_price_list": "Standard Selling",
+            "selling_price_list": DEMO_SELLING_PRICE_LIST,
             "price_list_currency": currency,
             "plc_conversion_rate": 1,
             "items": [{"item_code": item, "qty": 1, "rate": 1850, "description": "Synthetic pump replacement quote"}],
@@ -430,6 +437,7 @@ def reset() -> dict[str, int]:
         ("Asset Category", "DEMO-%"),
         ("Cost Center", "DEMO-%"),
         ("Item Group", "DEMO-%"),
+        ("Price List", "DEMO-%"),
         ("Supplier Group", "DEMO-%"),
         ("UOM", "DEMO-%"),
         ("Company", DEMO_COMPANY),
