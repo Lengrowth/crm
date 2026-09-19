@@ -648,7 +648,7 @@ jobs:
         if: always()
         env:
           OUTPUT_FILE: ${{ github.workspace }}/staging-browser-evidence/erp/erp-reset-evidence.json
-        run: sudo scripts/release/erp_demo_cleanup.sh
+        run: sudo bash "$GITHUB_WORKSPACE/scripts/release/erp_demo_cleanup.sh"
 
       - name: Write candidate-bound protected staging evidence manifest
         if: always()
