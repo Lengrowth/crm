@@ -30,13 +30,12 @@ const browser = await chromium.launch({ headless: process.env.HEADLESS !== "fals
 async function login(role) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: "reduce" });
   const page = await context.newPage();
-  await page.goto(`${baseUrl}/login`, { waitUntil: "networkidle", timeout: 30000 });
-  await page.locator("#login_email").fill(emailFor(role));
-  await page.locator("#login_password").fill(password);
-  await Promise.all([
-    page.waitForURL(/\/app(?:\/.*)?$/, { timeout: 30000 }),
-    page.locator("#login_btn").click(),
-  ]);
+  const loginResponse = await context.request.post(`${baseUrl}/api/method/login`, {
+    form: { usr: emailFor(role), pwd: password },
+  });
+  if (!loginResponse.ok()) throw new Error(`${role} ERP login failed: ${loginResponse.status()}`);
+  await page.goto(`${baseUrl}/app`, { waitUntil: "networkidle", timeout: 30000 });
+  if (!page.url().match(/\/app(?:\/.*)?$/)) throw new Error(`${role} ERP login redirected to ${page.url()}`);
   return { context, page };
 }
 
