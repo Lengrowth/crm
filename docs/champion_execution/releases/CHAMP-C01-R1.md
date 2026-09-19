@@ -9,7 +9,7 @@ Record date: 2026-09-19
 
 - CRM candidate: exact protected candidate selected from `codex/plat-p4-readback-docs`
 - `lenerp_core` branch: `codex/champ-c01-r1`
-- `lenerp_core` commit: `bd785e0cf9b732438e626f77d8bd36ff08d269a6` on
+- `lenerp_core` commit: `7995bed04a7079953e447e6bf430e90bf0558f80` on
   `codex/champ-c01-r1`
 - `lenerp_core` version: `0.2.0`
 - Frappe reference: `15.119.1`,
@@ -46,7 +46,7 @@ branding, domain cutover, production configuration, and real Champion data.
 | Wheel build | PASS | `lenerp_core-0.2.0-py3-none-any.whl` |
 | Wheel metadata inclusion | PASS | Wheel contains custom DocTypes, report, workspace, and seed modules |
 | `git diff --check` | PASS | Clean on custom-app and CRM changes |
-| Frappe install/migrate on isolated staging | PENDING FINAL PROTECTED RUN | The workflow now deploys only the checksum-verified archive for `lenerp_core` `bd785e0c…` |
+| Frappe install/migrate on isolated staging | PENDING FINAL PROTECTED RUN | The workflow now deploys only the checksum-verified archive for `lenerp_core` `7995bed0…` |
 | Synthetic ERP seed/status | IMPLEMENTED; PENDING FINAL PROTECTED RUN | Required persisted journey includes Company 1, Customer 3, Contact 3, Well Site 3, Drilling Job 4, Supplier 1, Item 2, Warehouse 1, Purchase Receipt 1, Stock Entry 1, Asset 2, Asset Maintenance 2, Quotation 1, Sales Invoice 1, Payment Entry 1 |
 | Role/browser/print/export/responsive/accessibility evidence | IMPLEMENTED; PENDING FINAL PROTECTED RUN | Real Champion role principals, direct ERP API denials, print/PDF, export, desktop/mobile ERP screens, and reset evidence are captured by the protected workflow |
 | Champion UAT/acceptance | NOT RUN | Acceptance authority and Project Start decisions unavailable |

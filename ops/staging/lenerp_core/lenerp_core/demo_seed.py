@@ -86,6 +86,12 @@ def _ensure_party_defaults() -> None:
         )
     if not _exists("UOM", "Nos"):
         _insert("UOM", "Nos", {"uom_name": "Nos", "must_be_whole_number": 0})
+    if not _exists("Item Group", "All Item Groups"):
+        _insert(
+            "Item Group",
+            "All Item Groups",
+            {"item_group_name": "All Item Groups", "is_group": 1},
+        )
     if not _exists("Item Group", "Products"):
         _insert(
             "Item Group",
