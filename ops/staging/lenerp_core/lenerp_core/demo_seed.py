@@ -22,6 +22,10 @@ from frappe.utils import add_days, today
 
 DEMO_COMPANY = "DEMO Champion Well Drilling"
 DEMO_PREFIX = "DEMO-CHAMPION-"
+DEMO_DEFAULT_CURRENCY = "USD"
+DEMO_DEFAULT_COUNTRY = "United States"
+DEMO_DEFAULT_STATE = "Indiana"
+DEMO_DEFAULT_CITY = "Indianapolis"
 DEMO_SELLING_PRICE_LIST = "DEMO-CHAMPION-SELLING"
 DEMO_BUYING_PRICE_LIST = "DEMO-CHAMPION-BUYING"
 
@@ -125,17 +129,33 @@ def _ensure_party_defaults() -> None:
 def _company() -> str:
     _ensure_warehouse_types()
     _ensure_party_defaults()
-    return _insert(
+    company = _insert(
         "Company",
         DEMO_COMPANY,
         {
             "company_name": DEMO_COMPANY,
             "abbr": "DCH",
-            "default_currency": "USD",
-            "country": "United States",
+            "default_currency": DEMO_DEFAULT_CURRENCY,
+            "country": DEMO_DEFAULT_COUNTRY,
             "is_group": 0,
         },
     )
+    _insert(
+        "Address",
+        "DEMO-CHAMPION-COMPANY-ADDRESS",
+        {
+            "address_title": DEMO_COMPANY,
+            "address_type": "Office",
+            "address_line1": "100 Synthetic Champion Way",
+            "city": DEMO_DEFAULT_CITY,
+            "state": DEMO_DEFAULT_STATE,
+            "pincode": "46204",
+            "country": DEMO_DEFAULT_COUNTRY,
+            "is_primary_address": 1,
+            "links": [{"link_doctype": "Company", "link_name": company}],
+        },
+    )
+    return company
 
 
 def _core_records(company: str) -> dict[str, list[str]]:
@@ -278,7 +298,7 @@ def _ensure_asset_category(company: str) -> str:
 
 
 def _commercial_records(company: str, customer: str, warehouse: str) -> dict[str, list[str]]:
-    currency = frappe.db.get_value("Company", company, "default_currency") or "USD"
+    currency = frappe.db.get_value("Company", company, "default_currency") or DEMO_DEFAULT_CURRENCY
     lead = _insert(
         "Lead",
         "DEMO-CHAMPION-LEAD-001",
@@ -461,6 +481,7 @@ def reset() -> dict[str, int]:
         ("LenERP Well Site", "DEMO-%"),
         ("Contact", "DEMO-%"),
         ("Customer", "DEMO-%"),
+        ("Address", "DEMO-%"),
         ("Item", "DEMO-%"),
         ("Supplier", "DEMO-%"),
         ("Warehouse", "DEMO-%"),

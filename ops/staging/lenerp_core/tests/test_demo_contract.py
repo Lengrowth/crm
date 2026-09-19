@@ -44,6 +44,10 @@ def test_seed_is_explicit_and_reset_is_demo_prefix_scoped():
     assert '"Territory"' in seed
     assert '"All Territories"' in seed
     assert 'DEMO-CHAMPION-North Ridge Farm' in seed
+    assert 'DEMO_DEFAULT_CURRENCY = "USD"' in seed
+    assert 'DEMO_DEFAULT_STATE = "Indiana"' in seed
+    assert 'DEMO_DEFAULT_CITY = "Indianapolis"' in seed
+    assert 'DEMO-CHAMPION-COMPANY-ADDRESS' in seed
     assert "frappe.as_json(result['counts'])" in seed
     assert "without creating or mutating records" in seed
     assert "Purchase Receipt" in seed
