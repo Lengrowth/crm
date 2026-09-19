@@ -37,7 +37,7 @@ registry is `champion-forecast/src/lib/project-start/questions.ts`.
 | Authoritative CRM `Lengrowth/crm` `main` | `08224008142bd8a387f908b656b3565dd1754ae5` | `git ls-remote https://github.com/Lengrowth/crm.git refs/heads/main` |
 | Local CRM checkout | `bc7e2bec9912a5713fb0c2605bbc21852e9acdb2`, branch `codex/plat-p4`, ahead 16; intentional dirty changes preserved | `git status --short --branch` |
 | CRM remote note | `origin` points to `BuildGrowthNow/crm`; `lengrowth` is the authoritative remote used for verification | `git remote -v` |
-| `lenerp_core` baseline | protected `main` candidate `da42740a4a3ed1253bafaf9617007cbc7dc143b9`, app `0.2.0` | protected PR merge and local package audit |
+| `lenerp_core` baseline | protected `main` candidate `27ffb073ca928745ab4e712b32a2703a78cadfb4`, app `0.2.0` | protected PR merge and local package audit |
 | `lenerp_core` work | protected `main`; C01–C08 synthetic boundary plus app-owned ERP accessibility remediation | local repository audit |
 | Frappe | `15.119.1`, `edae775dd36b6c4ad7acab10230262bd74040765` | clean approved reference checkout |
 | ERPNext | `15.120.0`, `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3` | clean approved reference checkout |
