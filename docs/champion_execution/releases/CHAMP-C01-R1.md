@@ -9,7 +9,7 @@ Record date: 2026-09-19
 
 - CRM candidate: exact protected candidate selected from `codex/plat-p4-readback-docs`
 - `lenerp_core` branch: `codex/champ-c01-r1`
-- `lenerp_core` commit: `7075ded1bb687e0beebe615a30d277a13716bd9d` on
+- `lenerp_core` commit: `7d805ce58f5dd19af2945d42b054fcd50bf28b7b` on
   `codex/champ-c01-r1`
 - `lenerp_core` version: `0.2.0`
 - Frappe reference: `15.119.1`,
