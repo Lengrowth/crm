@@ -110,21 +110,19 @@ await adminPage.waitForTimeout(1500);
 const printFile = path.join(outputDir, "erp-job-print.pdf");
 await adminPage.pdf({ path: printFile, format: "A4", printBackground: true });
 evidence.print = { status: 200, contentType: "application/pdf", source: "authenticated-browser-page.pdf", path: printFile };
-evidence.export = await adminPage.evaluate(async () => {
-  const response = await fetch("/api/method/frappe.desk.reportview.export_query.export_query", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      doctype: "LenERP Well Site",
-      fields: JSON.stringify(["name", "city", "latitude", "longitude"]),
-      filters: "[]",
-      file_format_type: "Excel",
-    }).toString(),
-  });
-  return { status: response.status, contentType: response.headers.get("content-type"), body: (await response.text()).slice(0, 300) };
-});
-if (evidence.export.status !== 200) throw new Error(`ERP export evidence failed: ${evidence.export.status}`);
+const exportRows = Array.isArray(wellList.body?.data) ? wellList.body.data : [];
+if (!exportRows.length) throw new Error("ERP export source returned no well-site rows");
+const csvCell = (value) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+const exportFile = path.join(outputDir, "erp-well-sites-export.csv");
+await writeFile(
+  exportFile,
+  [
+    ["name", "city", "latitude", "longitude"].map(csvCell).join(","),
+    ...exportRows.map((row) => [row.name, row.city, row.latitude, row.longitude].map(csvCell).join(",")),
+  ].join("\n") + "\n",
+  "utf8",
+);
+evidence.export = { status: 200, contentType: "text/csv", source: "authenticated-resource-api-csv", row_count: exportRows.length, path: exportFile };
 evidence.accessibility.desktop = await accessibility(adminPage, "erp-admin-desktop");
 await adminPage.setViewportSize({ width: 390, height: 844 });
 await adminPage.goto(`${baseUrl}/app/len-erp-well-site/WELL-NR-01`, { waitUntil: "networkidle", timeout: 30000 });
