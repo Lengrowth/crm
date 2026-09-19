@@ -10,7 +10,7 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; `PLAT-P3` PASS; 
 | Champion forecast / commercial plan | `https://github.com/guerra2fernando/champion-forecast.git` | local checkout has unrelated dirty changes; preserve them |
 | Frappe upstream | `https://github.com/frappe/frappe.git` | production `edae775dd36b6c4ad7acab10230262bd74040765`; clean detached clone at `C:\Users\smikl\Desktop\Work\phase0-upstreams\frappe` |
 | ERPNext upstream | `https://github.com/frappe/erpnext.git` | production `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`; clean detached clone at `C:\Users\smikl\Desktop\Work\phase0-upstreams\erpnext` |
-| `lenerp_core` | Private `https://github.com/Len-OS/lenerp_core.git`; protected `main` candidate `8af199895b56f004109958bcd272400f62077346` (`0.2.0`) | C01–C08 synthetic DocTypes, complete commercial/inventory/asset-maintenance seed, real role principals, workflow, reports, print path, read-only status/reset, and app-owned ERP accessibility remediation; isolated ERP staging installation remains candidate-bound |
+| `lenerp_core` | Private `https://github.com/Len-OS/lenerp_core.git`; protected `main` candidate `f96a96857c57d884e0421f06282f0d5d93bccaa9` (`0.2.0`) | C01–C08 synthetic DocTypes, complete commercial/inventory/asset-maintenance seed, real role principals, workflow, reports, print path, read-only status/reset, and app-owned ERP accessibility remediation; isolated ERP staging installation remains candidate-bound |
 
 ## Runtime and ownership
 
@@ -29,7 +29,7 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; `PLAT-P3` PASS; 
 - Phase 3 remediation rollout evidence is complete: read-only run [35279338775](https://github.com/Lengrowth/crm/actions/runs/35279338775), operator-only synthetic verification run [35279271616](https://github.com/Lengrowth/crm/actions/runs/35279271616) / artifact [10522300063](https://github.com/Lengrowth/crm/actions/runs/35279271616/artifacts/10522300063), and general rollout run [35279384713](https://github.com/Lengrowth/crm/actions/runs/35279384713). Operator evidence reports zero synthetic cleanup counts for every created record class and token files, successful reversal, and no ERP verification without trusted evidence. Final live observation returned health `200`, Phase 1 shell `true`, and stable `writes=true`, `operator_only=false`, `general=true`.
 - The next protected C01–C08 staging run is candidate-bound to the exact CRM
   commit selected by `candidate_ref` and the content-addressed
-  `lenerp_core` archive pinned at `8af199895b56f004109958bcd272400f62077346`.
+  `lenerp_core` archive pinned at `f96a96857c57d884e0421f06282f0d5d93bccaa9`.
   It must include persisted commercial/inventory/asset-maintenance counts,
   real role-principal denials, ERP browser/print/export/accessibility evidence,
   and read-only zero-count reset evidence. This remains operator-validation
