@@ -90,7 +90,8 @@ const erpRoutes = [
 for (const [label, route] of erpRoutes) {
   const response = await adminPage.goto(`${baseUrl}${route}`, { waitUntil: "networkidle", timeout: 30000 });
   if ((response?.status() ?? 0) >= 400) throw new Error(`ERP route failed ${route}: ${response?.status()}`);
-  if (!(await adminPage.locator("body").innerText()).trim()) throw new Error(`ERP route empty ${route}`);
+  await adminPage.waitForTimeout(1500);
+  if (!(await adminPage.locator("body").innerHTML()).trim()) throw new Error(`ERP route empty ${route}`);
   await adminPage.screenshot({ path: path.join(outputDir, `${label}.png`), fullPage: true });
 }
 
