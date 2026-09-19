@@ -5,7 +5,7 @@
 This file is shipped inside the CRM candidate source and is copied into the
 protected evidence artifact by the workflow. The artifact manifest is the
 authority for the exact CRM candidate SHA, workflow run, artifact name, and
-documentation hash. The pinned LenERP Core app for the next protected run is
+documentation hash. The pinned LenERP Core app for the protected candidate is
 `a7e47208baf6583295f5f2632f4787262cd3f475`.
 
 ## Protected checks
@@ -21,6 +21,6 @@ documentation hash. The pinned LenERP Core app for the next protected run is
 
 ## Disposition
 
-`CHAMPION PRE-KICKOFF SYNTHETIC DEMO REVIEW: PENDING PROTECTED RERUN`
+`CHAMPION PRE-KICKOFF SYNTHETIC DEMO REMEDIATION: READY FOR INDEPENDENT REVIEW`
 
 This is a remediation-readiness verdict only. It does not award independent PASS, Champion acceptance, real-data authorization, production activation, or Phase 6 approval.
