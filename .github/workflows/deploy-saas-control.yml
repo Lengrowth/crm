@@ -513,6 +513,8 @@ jobs:
           NON_ADMIN_SMOKE_EMAIL: phase1-non-admin-${{ github.run_id }}@example.test
         run: |
           sudo install -d -o saas-staging -g saas-staging -m 700 /run/saas-control-staging/smoke
+          sudo chown saas-staging:saas-staging /run/saas-control-staging/smoke
+          sudo chmod 700 /run/saas-control-staging/smoke
           set -a
           . /opt/saas-control-staging/shared/env/staging-backend.env
           set +a
@@ -576,8 +578,6 @@ jobs:
           NON_ADMIN_SMOKE_EMAIL: phase1-non-admin-${{ github.run_id }}@example.test
         run: |
           sudo install -d -o saas-staging -g saas-staging -m 700 /run/saas-control-staging/smoke
-          sudo chown saas-staging:saas-staging /run/saas-control-staging/smoke
-          sudo chmod 700 /run/saas-control-staging/smoke
           set -a
           . /opt/saas-control-staging/shared/env/staging-backend.env
           set +a
