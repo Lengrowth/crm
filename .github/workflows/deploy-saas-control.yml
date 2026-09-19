@@ -60,6 +60,10 @@ jobs:
         with:
           ref: ${{ inputs.candidate_ref || github.sha }}
           fetch-depth: 0
+          clean: false
+
+      - name: Repair runner workspace ownership after prior staging cleanup
+        run: sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE"
 
       - name: Resolve immutable candidate commit
         id: candidate
@@ -391,6 +395,7 @@ jobs:
           OUTPUT_FILE: ${{ github.workspace }}/staging-browser-evidence/erp-role-permission-evidence.json
         run: |
           sudo env RUN_ID="$RUN_ID" ROLE_PASSWORD_FILE="$ROLE_PASSWORD_FILE" ROLE_EMAIL_PREFIX="$ROLE_EMAIL_PREFIX" OUTPUT_FILE="$OUTPUT_FILE" scripts/release/erp_role_smoke.sh
+          sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE/staging-browser-evidence"
           sudo install -m 600 -o "$(id -u)" -g "$(id -g)" "$ROLE_PASSWORD_FILE" "$RUNNER_TEMP/erp-role-password-${{ github.run_id }}"
 
       - name: Run isolated synthetic Phase 4 onboarding smoke
