@@ -104,6 +104,8 @@ def _ensure_party_defaults() -> None:
             "Fixed Assets",
             {"item_group_name": "Fixed Assets", "is_group": 0, "parent_item_group": "All Item Groups"},
         )
+    if not _exists("Sales Stage", "Prospecting"):
+        _insert("Sales Stage", "Prospecting", {"stage_name": "Prospecting"})
 
 
 def _company() -> str:
