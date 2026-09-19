@@ -74,7 +74,7 @@ jobs:
           test "$core_commit" = "bd785e0cf9b732438e626f77d8bd36ff08d269a6"
           archive="ops/staging/lenerp_core-${core_commit}.tar"
           test -f "$archive"
-          sha256sum --check --status ops/staging/lenerp_core.archive.sha256
+          (cd ops/staging && sha256sum --check --status lenerp_core.archive.sha256)
           exact_dir="$RUNNER_TEMP/lenerp_core-exact"
           rm -rf -- "$exact_dir"
           mkdir -p "$exact_dir"
