@@ -26,6 +26,7 @@ DEMO_DEFAULT_CURRENCY = "USD"
 DEMO_DEFAULT_COUNTRY = "United States"
 DEMO_DEFAULT_STATE = "Indiana"
 DEMO_DEFAULT_CITY = "Indianapolis"
+DEMO_WELL_IDS = ("WELL-NR-01", "WELL-PC-02", "WELL-RM-03")
 DEMO_SELLING_PRICE_LIST = "DEMO-CHAMPION-SELLING"
 DEMO_BUYING_PRICE_LIST = "DEMO-CHAMPION-BUYING"
 
@@ -35,6 +36,8 @@ def _exists(doctype: str, name: str) -> bool:
 
 
 def _insert(doctype: str, name: str, values: dict[str, Any]) -> str:
+    if doctype == "LenERP Well Site" and values.get("well_id"):
+        name = frappe.db.get_value(doctype, {"well_id": values["well_id"]}, "name") or name
     if _exists(doctype, name):
         # Reconcile scalar fields so rerunning the seed upgrades an earlier
         # synthetic snapshot without touching unrelated records. Child-table
@@ -556,7 +559,7 @@ def reset() -> dict[str, int]:
                 row.name
                 for row in frappe.get_all(
                     doctype,
-                    filters={"well_id": ["like", "DEMO-%"]},
+                    filters={"well_id": ["in", DEMO_WELL_IDS]},
                     fields=["name"],
                 )
             ]
@@ -581,7 +584,7 @@ def status() -> dict[str, Any]:
         ("Contact", {"name": ["like", "DEMO-%"]}),
         ("Lead", {"name": ["like", "DEMO-%"]}),
         ("Opportunity", {"name": ["like", "DEMO-%"]}),
-        ("LenERP Well Site", {"well_id": ["like", "DEMO-%"]}),
+        ("LenERP Well Site", {"well_id": ["in", DEMO_WELL_IDS]}),
         ("LenERP Drilling Job", {"name": ["like", "DEMO-%"]}),
         ("Supplier", {"name": ["like", "DEMO-%"]}),
         ("Item", {"name": ["like", "DEMO-%"]}),
