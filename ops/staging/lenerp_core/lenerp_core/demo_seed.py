@@ -450,6 +450,11 @@ def _inventory_records(company: str, item: str, fixed_asset_item: str, warehouse
     if not cost_center:
         parent = frappe.db.get_value("Cost Center", {"company": company, "is_group": 1}, "name")
         cost_center = _insert("Cost Center", "DEMO-CHAMPION-COST-CENTER", {"cost_center_name": "DEMO-CHAMPION Field Operations", "company": company, "parent_cost_center": parent, "is_group": 0})
+    location = _insert(
+        "Location",
+        "DEMO-CHAMPION-INDIANAPOLIS",
+        {"location_name": "DEMO-CHAMPION Indianapolis Yard", "is_group": 0},
+    )
     assets: list[str] = []
     for name, asset_name in (
         ("DEMO-CHAMPION-ASSET-RIG-01", "DEMO-CHAMPION-Rig Atlas"),
@@ -458,7 +463,7 @@ def _inventory_records(company: str, item: str, fixed_asset_item: str, warehouse
         asset = _insert(
             "Asset",
             name,
-            {"asset_name": asset_name, "item_code": fixed_asset_item, "asset_category": frappe.db.get_value("Item", fixed_asset_item, "asset_category"), "company": company, "gross_purchase_amount": 1, "purchase_date": today(), "available_for_use_date": today(), "location": f"{DEMO_DEFAULT_CITY}, {DEMO_DEFAULT_STATE}, {DEMO_DEFAULT_COUNTRY}", "is_existing_asset": 1, "calculate_depreciation": 0, "cost_center": cost_center, "maintenance_required": 1},
+            {"asset_name": asset_name, "item_code": fixed_asset_item, "asset_category": frappe.db.get_value("Item", fixed_asset_item, "asset_category"), "company": company, "gross_purchase_amount": 1, "purchase_date": today(), "available_for_use_date": today(), "location": location, "is_existing_asset": 1, "calculate_depreciation": 0, "cost_center": cost_center, "maintenance_required": 1},
         )
         assets.append(asset)
     team = _insert(
@@ -519,6 +524,7 @@ def reset() -> dict[str, int]:
         ("Address", "DEMO-%"),
         ("Address Template", "DEMO-%"),
         ("Fiscal Year", "DEMO-%"),
+        ("Location", "DEMO-%"),
         ("Item", "DEMO-%"),
         ("Supplier", "DEMO-%"),
         ("Warehouse", "DEMO-%"),
