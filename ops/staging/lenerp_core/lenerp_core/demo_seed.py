@@ -241,6 +241,23 @@ def _ensure_warehouse(company: str) -> str:
     )
 
 
+def _ensure_asset_category(company: str) -> str:
+    account = frappe.db.get_value("Company", company, "default_fixed_asset_account")
+    if not account:
+        account = frappe.db.get_value("Account", {"company": company, "is_group": 0}, "name")
+    if not account:
+        raise RuntimeError(f"No leaf account is available for synthetic Asset Category in {company}")
+    return _insert(
+        "Asset Category",
+        "DEMO-CHAMPION-FIELD-EQUIPMENT",
+        {
+            "asset_category_name": "DEMO-CHAMPION Field Equipment",
+            "non_depreciable_category": 1,
+            "accounts": [{"company_name": company, "fixed_asset_account": account}],
+        },
+    )
+
+
 def _commercial_records(company: str, customer: str, warehouse: str) -> dict[str, list[str]]:
     lead = _insert(
         "Lead",
@@ -257,6 +274,7 @@ def _commercial_records(company: str, customer: str, warehouse: str) -> dict[str
         "DEMO-CHAMPION-SUPPLIER-01",
         {"supplier_name": "DEMO-CHAMPION-Blue Basin Supply", "supplier_group": "All Supplier Groups", "supplier_type": "Company"},
     )
+    asset_category = _ensure_asset_category(company)
     item = _insert(
         "Item",
         "DEMO-CHAMPION-ITEM-PUMP",
@@ -265,7 +283,7 @@ def _commercial_records(company: str, customer: str, warehouse: str) -> dict[str
     fixed_asset_item = _insert(
         "Item",
         "DEMO-CHAMPION-ITEM-RIG",
-        {"item_code": "DEMO-CHAMPION-ITEM-RIG", "item_name": "DEMO-CHAMPION-Drilling Rig", "description": "Synthetic fixed asset for the Champion demo workflow.", "item_group": "Fixed Assets", "stock_uom": "Nos", "is_stock_item": 0, "is_fixed_asset": 1, "is_sales_item": 0, "is_purchase_item": 1},
+        {"item_code": "DEMO-CHAMPION-ITEM-RIG", "item_name": "DEMO-CHAMPION-Drilling Rig", "description": "Synthetic fixed asset for the Champion demo workflow.", "item_group": "Fixed Assets", "stock_uom": "Nos", "is_stock_item": 0, "is_fixed_asset": 1, "asset_category": asset_category, "is_sales_item": 0, "is_purchase_item": 1},
     )
     quotation = _insert(
         "Quotation",
@@ -303,6 +321,7 @@ def _commercial_records(company: str, customer: str, warehouse: str) -> dict[str
         "suppliers": [supplier] if supplier else [],
         "items": [item] if item else [],
         "fixed_asset_items": [fixed_asset_item],
+        "asset_categories": [asset_category],
         "quotations": [quotation] if quotation else [],
         "invoices": [invoice] if invoice else [],
         "payments": [payment] if payment else [],
@@ -331,7 +350,7 @@ def _inventory_records(company: str, item: str, fixed_asset_item: str, warehouse
         asset = _insert(
             "Asset",
             name,
-            {"asset_name": asset_name, "item_code": fixed_asset_item, "company": company, "gross_purchase_amount": 1, "purchase_date": today(), "available_for_use_date": today(), "is_existing_asset": 1, "calculate_depreciation": 0, "cost_center": cost_center, "maintenance_required": 1},
+            {"asset_name": asset_name, "item_code": fixed_asset_item, "asset_category": frappe.db.get_value("Item", fixed_asset_item, "asset_category"), "company": company, "gross_purchase_amount": 1, "purchase_date": today(), "available_for_use_date": today(), "is_existing_asset": 1, "calculate_depreciation": 0, "cost_center": cost_center, "maintenance_required": 1},
         )
         assets.append(asset)
     team = _insert(
@@ -393,6 +412,7 @@ def reset() -> dict[str, int]:
         ("Supplier", "DEMO-%"),
         ("Warehouse", "DEMO-%"),
         ("Asset", "DEMO-%"),
+        ("Asset Category", "DEMO-%"),
         ("Cost Center", "DEMO-%"),
         ("Item Group", "DEMO-%"),
         ("Supplier Group", "DEMO-%"),
