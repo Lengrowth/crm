@@ -23,6 +23,7 @@ from frappe.utils import add_days, today
 DEMO_COMPANY = "DEMO Champion Well Drilling"
 DEMO_PREFIX = "DEMO-CHAMPION-"
 DEMO_SELLING_PRICE_LIST = "DEMO-CHAMPION-SELLING"
+DEMO_BUYING_PRICE_LIST = "DEMO-CHAMPION-BUYING"
 
 
 def _exists(doctype: str, name: str) -> bool:
@@ -112,6 +113,12 @@ def _ensure_party_defaults() -> None:
             "Price List",
             DEMO_SELLING_PRICE_LIST,
             {"price_list_name": DEMO_SELLING_PRICE_LIST, "enabled": 1, "selling": 1},
+        )
+    if not _exists("Price List", DEMO_BUYING_PRICE_LIST):
+        _insert(
+            "Price List",
+            DEMO_BUYING_PRICE_LIST,
+            {"price_list_name": DEMO_BUYING_PRICE_LIST, "enabled": 1, "buying": 1},
         )
 
 
@@ -306,6 +313,8 @@ def _commercial_records(company: str, customer: str, warehouse: str) -> dict[str
             "party_name": customer,
             "company": company,
             "transaction_date": today(),
+            "currency": currency,
+            "conversion_rate": 1,
             "selling_price_list": DEMO_SELLING_PRICE_LIST,
             "price_list_currency": currency,
             "plc_conversion_rate": 1,
@@ -315,7 +324,19 @@ def _commercial_records(company: str, customer: str, warehouse: str) -> dict[str
     invoice = _insert(
         "Sales Invoice",
         "DEMO-CHAMPION-INVOICE-001",
-        {"customer": customer, "company": company, "posting_date": today(), "due_date": add_days(today(), 30), "items": [{"item_code": item, "qty": 1, "rate": 1850, "description": "Synthetic pump replacement"}], "remarks": "Synthetic demonstration invoice; accounting settings remain provisional."},
+        {
+            "customer": customer,
+            "company": company,
+            "posting_date": today(),
+            "due_date": add_days(today(), 30),
+            "currency": currency,
+            "conversion_rate": 1,
+            "selling_price_list": DEMO_SELLING_PRICE_LIST,
+            "price_list_currency": currency,
+            "plc_conversion_rate": 1,
+            "items": [{"item_code": item, "qty": 1, "rate": 1850, "description": "Synthetic pump replacement"}],
+            "remarks": "Synthetic demonstration invoice; accounting settings remain provisional.",
+        },
     )
     invoice_doc = frappe.get_doc("Sales Invoice", invoice)
     if invoice_doc.docstatus == 0:
@@ -332,7 +353,17 @@ def _commercial_records(company: str, customer: str, warehouse: str) -> dict[str
     receipt = _insert(
         "Purchase Receipt",
         "DEMO-CHAMPION-PURCHASE-RECEIPT-001",
-        {"supplier": supplier, "company": company, "posting_date": today(), "items": [{"item_code": item, "qty": 5, "rate": 250, "warehouse": warehouse, "description": "Synthetic pump receipt"}]},
+        {
+            "supplier": supplier,
+            "company": company,
+            "posting_date": today(),
+            "currency": currency,
+            "conversion_rate": 1,
+            "buying_price_list": DEMO_BUYING_PRICE_LIST,
+            "price_list_currency": currency,
+            "plc_conversion_rate": 1,
+            "items": [{"item_code": item, "qty": 5, "rate": 250, "warehouse": warehouse, "description": "Synthetic pump receipt"}],
+        },
     )
     receipt_doc = frappe.get_doc("Purchase Receipt", receipt)
     if receipt_doc.docstatus == 0:
