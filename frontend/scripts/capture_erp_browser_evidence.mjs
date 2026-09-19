@@ -30,10 +30,17 @@ const browser = await chromium.launch({ headless: process.env.HEADLESS !== "fals
 async function login(role) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: "reduce" });
   const page = await context.newPage();
-  const loginResponse = await context.request.post(`${baseUrl}/api/method/login`, {
-    form: { usr: emailFor(role), pwd: password },
-  });
-  if (!loginResponse.ok()) throw new Error(`${role} ERP login failed: ${loginResponse.status()}`);
+  await page.goto(`${baseUrl}/login`, { waitUntil: "domcontentloaded", timeout: 30000 });
+  const loginResult = await page.evaluate(async ({ email, pwd }) => {
+    const response = await fetch("/api/method/login", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ usr: email, pwd }).toString(),
+    });
+    return { status: response.status, body: await response.text() };
+  }, { email: emailFor(role), pwd: password });
+  if (loginResult.status !== 200) throw new Error(`${role} ERP login failed: ${loginResult.status}`);
   await page.goto(`${baseUrl}/app`, { waitUntil: "networkidle", timeout: 30000 });
   if (!page.url().match(/\/app(?:\/.*)?$/)) throw new Error(`${role} ERP login redirected to ${page.url()}`);
   return { context, page };
