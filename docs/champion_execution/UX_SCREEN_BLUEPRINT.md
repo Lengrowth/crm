@@ -850,3 +850,7 @@ The authenticated reseller/control-plane administrator may retain operational
 diagnostics in restricted views. Champion ERP roles see only the workspace and
 standard/custom DocTypes granted by their role. Direct routes and API calls
 remain authorization checks; hiding a shortcut is not a permission boundary.
+
+## Final language and accessibility remediation evidence
+
+Protected main run [35457401709](https://github.com/Lengrowth/crm/actions/runs/35457401709) audited the customer-facing CRM routes and reported no technical/internal language findings. Its ERP evidence covers unauthenticated login, nine authenticated routes, desktop, and mobile; each recorded zero serious axe violations and a valid viewport contract. The evidence is bound to CRM `dccff421027527860075c0c2de4ce08deccf5423` and LenERP Core `26f41e34deab5fc699224657d206bd6a9d7bf161`.

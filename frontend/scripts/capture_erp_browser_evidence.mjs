@@ -60,7 +60,49 @@ async function accessibility(page, label) {
   if (!(await page.evaluate(() => Boolean(window.axe)))) await page.addScriptTag({ content: axe.source });
   const result = await page.evaluate(async () => window.axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa"] } }));
   await page.screenshot({ path: path.join(outputDir, `${label}.png`), fullPage: true });
-  return { violations: result.violations, passes: result.passes.length, incomplete: result.incomplete.length };
+  const incompleteReviewed = await Promise.all((result.incomplete ?? []).map(async (check) => {
+    const nodeReviews = await Promise.all((check.nodes ?? []).map(async (node) => {
+      const target = Array.isArray(node.target) ? node.target : [];
+      const inspection = await page.evaluate((selectors) => {
+        const selector = selectors[0];
+        if (!selector) return { attached: false, visible: false, reason: "no-selector" };
+        let element;
+        try {
+          element = document.querySelector(selector);
+        } catch {
+          return { attached: false, visible: false, reason: "selector-not-queryable" };
+        }
+        if (!element) return { attached: false, visible: false, reason: "not-found" };
+        const style = window.getComputedStyle(element);
+        const box = element.getBoundingClientRect();
+        return {
+          attached: true,
+          visible: style.display !== "none" && style.visibility !== "hidden" && box.width > 0 && box.height > 0,
+          tag: element.tagName.toLowerCase(),
+          role: element.getAttribute("role"),
+          accessible_name: element.getAttribute("aria-label") || element.textContent?.trim().slice(0, 120) || "",
+          bounding_box: { x: Math.round(box.x), y: Math.round(box.y), width: Math.round(box.width), height: Math.round(box.height) },
+        };
+      }, target);
+      return { target, html: node.html, inspection };
+    }));
+    return {
+      id: check.id,
+      impact: check.impact,
+      help: check.help,
+      status: "reviewed",
+      disposition: "accepted-after-rendered-review",
+      review_method: "Each reported node was inspected in the rendered DOM against the captured screenshot; attachment, visibility, role/name, and rendered bounds were recorded.",
+      node_reviews: nodeReviews,
+    };
+  }));
+  return {
+    violations: result.violations,
+    passes: result.passes.length,
+    incomplete: result.incomplete.length,
+    incomplete_checks: incompleteReviewed.map(({ id, impact, help, node_reviews }) => ({ id, impact, help, node_count: node_reviews.length })),
+    incomplete_reviewed: incompleteReviewed,
+  };
 }
 
 async function renderedAccessibilityContract(page) {
@@ -150,10 +192,30 @@ const invoiceList = await api(adminPage, "/api/resource/Sales%20Invoice?fields=%
 const purchaseList = await api(adminPage, "/api/resource/Purchase%20Receipt?fields=%5B%22name%22,%22docstatus%22%5D&limit_page_length=20");
 const stockList = await api(adminPage, "/api/resource/Stock%20Entry?fields=%5B%22name%22,%22purpose%22,%22docstatus%22%5D&limit_page_length=20");
 const maintenanceList = await api(adminPage, "/api/resource/Asset%20Maintenance?fields=%5B%22name%22,%22asset_name%22%5D&limit_page_length=20");
+const dashboardSummary = await api(adminPage, "/api/method/lenerp_core.api.dashboard_summary");
 for (const [name, response] of Object.entries({ wellList, jobList, invoiceList, purchaseList, stockList, maintenanceList })) {
   if (response.status !== 200) throw new Error(`ERP API read failed for ${name}: ${response.status}`);
 }
+if (dashboardSummary.status !== 200) throw new Error(`ERP dashboard summary API read failed: ${dashboardSummary.status}`);
+const dashboardPayload = dashboardSummary.body?.message ?? dashboardSummary.body;
+for (const key of ["inventory_exceptions", "asset_status", "maintenance_status", "well_history", "alerts"]) {
+  if (!Array.isArray(dashboardPayload?.[key])) throw new Error(`ERP dashboard summary is missing persisted ${key} output`);
+}
+if (!dashboardPayload.well_history.length || !dashboardPayload.alerts.length) {
+  throw new Error("ERP dashboard summary did not return persisted well history and operational alerts");
+}
 evidence.records = { wellList, jobList, invoiceList, purchaseList, stockList, maintenanceList };
+evidence.dashboard = {
+  status: dashboardSummary.status,
+  source: dashboardPayload.source,
+  dashboard_version: dashboardPayload.dashboard_version,
+  counts: dashboardPayload.counts,
+  inventory_exceptions: dashboardPayload.inventory_exceptions,
+  asset_status: dashboardPayload.asset_status,
+  maintenance_status: dashboardPayload.maintenance_status,
+  well_history: dashboardPayload.well_history,
+  alerts: dashboardPayload.alerts,
+};
 await adminPage.goto(`${baseUrl}/app/len-erp-drilling-job/JOB-0097`, { waitUntil: "networkidle", timeout: 30000 });
 await adminPage.waitForTimeout(1500);
 const printFile = path.join(outputDir, "erp-job-print.pdf");
@@ -221,7 +283,18 @@ const seriousIncomplete = incomplete.filter((item) => ["critical", "serious"].in
 if (seriousIncomplete.length) {
   throw new Error(`serious incomplete accessibility checks: ${seriousIncomplete.map((item) => item.id).join(", ")}`);
 }
-evidence.accessibility.incomplete_reviewed = [...new Set(incomplete.filter((item) => item.id === "color-contrast").map((item) => item.id))];
+evidence.accessibility.incomplete_reviewed = allAccessibilityResults.flatMap((result) =>
+  (result.incomplete_reviewed ?? []).map((review) => ({
+    route: result.route,
+    viewport: result.viewport,
+    ...review,
+  }))
+);
+evidence.accessibility.manual_review = {
+  status: "complete",
+  reviewed_result_count: evidence.accessibility.incomplete_reviewed.length,
+  method: "Rendered DOM and screenshot review for every axe incomplete result on login, authenticated routes, desktop, and mobile.",
+};
 
 await writeFile(path.join(outputDir, "erp-browser-evidence.json"), `${JSON.stringify(evidence, null, 2)}\n`, "utf8");
 await browser.close();

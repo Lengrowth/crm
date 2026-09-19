@@ -43,3 +43,7 @@ when access is restricted to platform administrators. Customer and Champion
 users should see business terms such as Companies, ERP workspaces, Available
 modules, Setup progress, Customers, Wells and sites, Jobs, Inventory,
 Equipment, Quotes and invoices, and Reports.
+
+## Final audit result
+
+Protected main run [35457401709](https://github.com/Lengrowth/crm/actions/runs/35457401709) found no technical/internal language findings on the audited customer-facing routes. The result is bound to CRM `dccff421027527860075c0c2de4ce08deccf5423` and LenERP Core `26f41e34deab5fc699224657d206bd6a9d7bf161`; restricted administrator diagnostics remain permitted only in restricted views.

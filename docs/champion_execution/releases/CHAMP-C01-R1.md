@@ -9,7 +9,7 @@ Record date: 2026-09-19
 
 - CRM candidate: exact protected candidate will be recorded after the remediation PR merge and staging run
 - `lenerp_core` branch: protected `main`
-- `lenerp_core` commit: `26f41e34deab5fc699224657d206bd6a9d7bf161` on `main`
+- `lenerp_core` commit: `a7e47208baf6583295f5f2632f4787262cd3f475` on `main`
 - `lenerp_core` version: `0.2.0`
 - Frappe reference: `15.119.1`,
   `edae775dd36b6c4ad7acab10230262bd74040765`
@@ -73,8 +73,15 @@ Current package verdict: **IN DEVELOPMENT — synthetic core demonstration passe
   synthetic state `off`; no Phase 4 evidence or production activation is
   claimed.
 - The app-owned ERP accessibility asset restores browser zoom and labels the
-  login, navigation, footer, and loading logos; candidate-bound route evidence
-  is still pending the protected staging run.
+  login, navigation, footer, and loading logos; the next candidate-bound run
+  must retain per-result incomplete review records rather than only a count.
 - The run is synthetic staging evidence only. Project Start decisions, Champion
   UAT, acceptance authority, real-data migration, final domain, and production
   promotion remain pending.
+
+## Final protected remediation evidence
+
+The next authoritative main run must bind the exact CRM candidate, LenERP Core
+`a7e47208baf6583295f5f2632f4787262cd3f475`, the documentation snapshot, the
+expanded C08 dashboard outputs, and the reviewed accessibility results. It
+does not grant Champion acceptance or production authorization.

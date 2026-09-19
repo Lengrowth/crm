@@ -29,11 +29,11 @@ def test_staging_workflow_verifies_the_installed_custom_app_candidate():
     bundle_commit = (ROOT / "ops" / "staging" / "lenerp_core" / "SOURCE_COMMIT.txt").read_text(encoding="utf-8").strip()
     assert 'CUSTOM_APP_VERSION: "0.2.0"' in workflow
     assert 'CUSTOM_APP_COMMIT="$core_commit"' in workflow
-    assert bundle_commit == "26f41e34deab5fc699224657d206bd6a9d7bf161"
+    assert bundle_commit == "a7e47208baf6583295f5f2632f4787262cd3f475"
     assert "lenerp_core-${core_commit}.tar" in workflow
     assert 'staging.joinpath("lenerp_core.archive.sha256")' in workflow
     assert '"version": "0.2.0"' in baseline
-    assert '"commit": "26f41e34deab5fc699224657d206bd6a9d7bf161"' in baseline
+    assert '"commit": "a7e47208baf6583295f5f2632f4787262cd3f475"' in baseline
     assert "erp_staging_smoke.sh" in workflow
     assert "erp_demo_smoke.sh" in workflow
     assert "erp_role_smoke.sh" in workflow
@@ -45,7 +45,9 @@ def test_staging_workflow_verifies_the_installed_custom_app_candidate():
     assert "Write candidate-bound protected staging evidence manifest" in workflow
     assert '"candidate-bound-evidence-manifest.json"' in workflow
     assert '"runtime_readback": runtime_readback' in workflow
-    archive = ROOT / "ops" / "staging" / "lenerp_core-26f41e34deab5fc699224657d206bd6a9d7bf161.tar"
+    assert '"documentation": {' in workflow
+    assert 'documentation_target = evidence_dir / "documentation"' in workflow
+    archive = ROOT / "ops" / "staging" / "lenerp_core-a7e47208baf6583295f5f2632f4787262cd3f475.tar"
     with tarfile.open(archive) as handle:
         assert "lenerp_core/public/js/accessibility.js" in handle.getnames()
 
@@ -58,5 +60,11 @@ def test_browser_evidence_is_route_bound_and_checks_zoom_logo_and_language_contr
     assert "logo_alternatives_present" in erp_script
     assert 'role: "unauthenticated"' in erp_script
     assert "Object.values(evidence.accessibility.routes)" in erp_script
+    assert "incompleteReviewed" in erp_script
+    assert "manual_review" in erp_script
+    assert "dashboard_summary" in erp_script
+    assert "inventory_exceptions" in erp_script
+    assert "well_history" in erp_script
+    assert "operational alerts" in erp_script
     assert "language_audit" in control_script
     assert "internalLanguagePatterns" in control_script

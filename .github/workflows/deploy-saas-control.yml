@@ -83,7 +83,7 @@ jobs:
       - name: Verify the commit-pinned LenERP Core staging bundle
         run: |
           core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
-          test "$core_commit" = "26f41e34deab5fc699224657d206bd6a9d7bf161"
+          test "$core_commit" = "a7e47208baf6583295f5f2632f4787262cd3f475"
           archive="ops/staging/lenerp_core-${core_commit}.tar"
           test -f "$archive"
           python3 - <<'PY'
@@ -378,7 +378,7 @@ jobs:
           core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
           exact_dir="$RUNNER_TEMP/lenerp_core-exact"
           test -d "$exact_dir"
-          test "$core_commit" = "26f41e34deab5fc699224657d206bd6a9d7bf161"
+          test "$core_commit" = "a7e47208baf6583295f5f2632f4787262cd3f475"
           sudo rsync -a --delete --exclude='.git' "$exact_dir/" /opt/frappe-staging-bench/apps/lenerp_core/
           sudo chown -R frappe:frappe /opt/frappe-staging-bench/apps/lenerp_core
           if ! sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test list-apps | grep -Eq '^lenerp_core[[:space:]]'"; then
@@ -665,7 +665,9 @@ jobs:
           export CUSTOM_APP_SHA="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
           python3 - <<'PY'
           import json
+          import hashlib
           import os
+          import shutil
           from datetime import datetime, timezone
           from pathlib import Path
           from urllib.request import Request, urlopen
@@ -683,6 +685,13 @@ jobs:
           observed_app_sha = runtime_readback.get("custom_app_commit") or manifest.get("custom_app_commit")
           if observed_app_sha != custom_app_sha:
               raise SystemExit("runtime readback is not bound to the pinned custom app SHA")
+          documentation_source = Path(os.environ["GITHUB_WORKSPACE"]) / "docs" / "champion_execution" / "FINAL_REMEDIATION_EVIDENCE.md"
+          if not documentation_source.is_file():
+              raise SystemExit("candidate-bound remediation documentation is missing")
+          documentation_target = evidence_dir / "documentation" / documentation_source.name
+          documentation_target.parent.mkdir(parents=True, exist_ok=True)
+          shutil.copy2(documentation_source, documentation_target)
+          documentation_sha256 = hashlib.sha256(documentation_source.read_bytes()).hexdigest()
           files = sorted(
               str(path.relative_to(evidence_dir)).replace(os.sep, "/")
               for path in evidence_dir.rglob("*")
@@ -697,6 +706,12 @@ jobs:
               "captured_at_utc": datetime.now(timezone.utc).isoformat(),
               "runtime_readback": runtime_readback,
               "release_manifest": manifest,
+              "documentation": {
+                  "source_path": str(documentation_source.relative_to(Path(os.environ["GITHUB_WORKSPACE"]))).replace(os.sep, "/"),
+                  "artifact_path": str(documentation_target.relative_to(evidence_dir)).replace(os.sep, "/"),
+                  "sha256": documentation_sha256,
+                  "candidate_sha": candidate_sha,
+              },
               "files": files,
           }
           (evidence_dir / "candidate-bound-evidence-manifest.json").write_text(
