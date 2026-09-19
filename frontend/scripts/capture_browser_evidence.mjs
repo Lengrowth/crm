@@ -298,9 +298,9 @@ if (phase3AuditBefore.status !== 200 || phase3AuditBefore.body.length !== 1) thr
 const phase3UiPage = await context.newPage();
 await phase3UiPage.goto(`${baseUrl}/app/modules`, { waitUntil: "networkidle", timeout: 30000 });
 await phase3UiPage.locator("input[aria-label='Search modules']").fill("Accounting");
-if (!(await phase3UiPage.getByText("accounting", { exact: true }).count())) throw new Error("Phase 3 module search/detail evidence failed");
+if (!(await phase3UiPage.getByText("Accounting", { exact: true }).count())) throw new Error("Phase 3 module search/detail evidence failed");
 await phase3UiPage.goto(`${baseUrl}/app/organizations/${phase3Org.body.id}/modules`, { waitUntil: "networkidle", timeout: 30000 });
-if (!(await phase3UiPage.getByText("Effective modules", { exact: true }).count())) throw new Error("Phase 3 company Modules view failed");
+if (!(await phase3UiPage.getByText("Selected modules", { exact: true }).count())) throw new Error("Phase 3 company Modules view failed");
 await phase3UiPage.screenshot({ path: path.join(outputDir, "phase3-company-modules.png"), fullPage: true });
 await phase3UiPage.close();
 if (nonAdminTokenFile) {
