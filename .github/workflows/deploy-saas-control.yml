@@ -71,7 +71,7 @@ jobs:
       - name: Verify the commit-pinned LenERP Core staging bundle
         run: |
           core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
-          test "$core_commit" = "65a6be93d3fd8ee583ed84c810850c04c27db398"
+          test "$core_commit" = "04cc38b0689f17faaaa1158cd24f60ab6e58b46a"
           archive="ops/staging/lenerp_core-${core_commit}.tar"
           test -f "$archive"
           python3 - <<'PY'
@@ -356,7 +356,7 @@ jobs:
           TARGET_REF: ${{ steps.candidate.outputs.sha }}
           RELEASE_ID: ${{ steps.candidate.outputs.sha }}
           CUSTOM_APP_VERSION: "0.2.0"
-          CUSTOM_APP_COMMIT: "65a6be93d3fd8ee583ed84c810850c04c27db398"
+          CUSTOM_APP_COMMIT: "04cc38b0689f17faaaa1158cd24f60ab6e58b46a"
           REQUIRE_AUTH_SMOKE: "true"
         run: ./scripts/deploy/deploy_saas_control.sh
 
@@ -365,7 +365,7 @@ jobs:
           core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
           exact_dir="$RUNNER_TEMP/lenerp_core-exact"
           test -d "$exact_dir"
-          test "$core_commit" = "65a6be93d3fd8ee583ed84c810850c04c27db398"
+          test "$core_commit" = "04cc38b0689f17faaaa1158cd24f60ab6e58b46a"
           sudo rsync -a --delete --exclude='.git' "$exact_dir/" /opt/frappe-staging-bench/apps/lenerp_core/
           sudo chown -R frappe:frappe /opt/frappe-staging-bench/apps/lenerp_core
           if ! sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test list-apps | grep -Eq '^lenerp_core[[:space:]]'"; then
@@ -571,6 +571,7 @@ jobs:
         env:
           NON_ADMIN_SMOKE_EMAIL: phase1-non-admin-${{ github.run_id }}@example.test
         run: |
+          sudo install -d -o saas-staging -g saas-staging -m 700 /run/saas-control-staging/smoke
           set -a
           . /opt/saas-control-staging/shared/env/staging-backend.env
           set +a
