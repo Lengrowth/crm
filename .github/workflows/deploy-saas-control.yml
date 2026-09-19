@@ -74,7 +74,18 @@ jobs:
           test "$core_commit" = "9baf75b6457a49e63ad825a5af96166d9d40c1e7"
           archive="ops/staging/lenerp_core-${core_commit}.tar"
           test -f "$archive"
-          (cd ops/staging && sha256sum --check --status lenerp_core.archive.sha256)
+          python3 - <<'PY'
+          from hashlib import sha256
+          from pathlib import Path
+
+          staging = Path("ops/staging")
+          expected, filename = staging.joinpath("lenerp_core.archive.sha256").read_text(encoding="utf-8").split()
+          archive = staging / filename
+          actual = sha256(archive.read_bytes()).hexdigest().upper()
+          if actual != expected.upper():
+              raise SystemExit(f"Archive checksum mismatch: expected {expected}, got {actual}")
+          print(f"Verified {filename}: {actual}")
+          PY
           exact_dir="$RUNNER_TEMP/lenerp_core-exact"
           rm -rf -- "$exact_dir"
           mkdir -p "$exact_dir"

@@ -30,7 +30,7 @@ def test_staging_workflow_verifies_the_installed_custom_app_candidate():
     assert 'CUSTOM_APP_COMMIT: "9baf75b6457a49e63ad825a5af96166d9d40c1e7"' in workflow
     assert bundle_commit == "9baf75b6457a49e63ad825a5af96166d9d40c1e7"
     assert "lenerp_core-${core_commit}.tar" in workflow
-    assert "cd ops/staging && sha256sum --check --status lenerp_core.archive.sha256" in workflow
+    assert 'staging.joinpath("lenerp_core.archive.sha256")' in workflow
     assert '"version": "0.2.0"' in baseline
     assert '"commit": "9baf75b6457a49e63ad825a5af96166d9d40c1e7"' in baseline
     assert "erp_staging_smoke.sh" in workflow
