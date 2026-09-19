@@ -9,7 +9,7 @@ Record date: 2026-09-19
 
 - CRM candidate: exact protected candidate will be recorded after the remediation PR merge and staging run
 - `lenerp_core` branch: protected `main`
-- `lenerp_core` commit: `26f41e34deab5fc699224657d206bd6a9d7bf161` on `main`
+- `lenerp_core` commit: `f664e7475e8a4000ca5b75cea7d9feb367258585` on `main`
 - `lenerp_core` version: `0.2.0`
 - Frappe reference: `15.119.1`,
   `edae775dd36b6c4ad7acab10230262bd74040765`
@@ -73,12 +73,15 @@ Current package verdict: **IN DEVELOPMENT — synthetic core demonstration passe
   synthetic state `off`; no Phase 4 evidence or production activation is
   claimed.
 - The app-owned ERP accessibility asset restores browser zoom and labels the
-  login, navigation, footer, and loading logos; candidate-bound route evidence
-  is captured in the protected staging artifact [10588676130](https://github.com/Lengrowth/crm/actions/runs/35457401709/artifacts/10588676130).
+  login, navigation, footer, and loading logos; the next candidate-bound run
+  must retain per-result incomplete review records rather than only a count.
 - The run is synthetic staging evidence only. Project Start decisions, Champion
   UAT, acceptance authority, real-data migration, final domain, and production
   promotion remain pending.
 
 ## Final protected remediation evidence
 
-The authoritative main run is [35457401709](https://github.com/Lengrowth/crm/actions/runs/35457401709), bound to CRM `dccff421027527860075c0c2de4ce08deccf5423` and LenERP Core `26f41e34deab5fc699224657d206bd6a9d7bf161`. It completed the ERP accessibility fix, customer-facing language audit, candidate-bound browser evidence, and synthetic cleanup. Verdict: `CHAMPION PRE-KICKOFF SYNTHETIC DEMO REMEDIATION: READY FOR INDEPENDENT REVIEW`; it does not grant Champion acceptance or production authorization.
+The next authoritative main run must bind the exact CRM candidate, LenERP Core
+`f664e7475e8a4000ca5b75cea7d9feb367258585`, the documentation snapshot, the
+expanded C08 dashboard outputs, and the reviewed accessibility results. It
+does not grant Champion acceptance or production authorization.

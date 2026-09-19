@@ -37,7 +37,7 @@ registry is `champion-forecast/src/lib/project-start/questions.ts`.
 | Authoritative CRM `Lengrowth/crm` `main` | `08224008142bd8a387f908b656b3565dd1754ae5` | `git ls-remote https://github.com/Lengrowth/crm.git refs/heads/main` |
 | Local CRM checkout | `bc7e2bec9912a5713fb0c2605bbc21852e9acdb2`, branch `codex/plat-p4`, ahead 16; intentional dirty changes preserved | `git status --short --branch` |
 | CRM remote note | `origin` points to `BuildGrowthNow/crm`; `lengrowth` is the authoritative remote used for verification | `git remote -v` |
-| `lenerp_core` baseline | protected `main` candidate `26f41e34deab5fc699224657d206bd6a9d7bf161`, app `0.2.0` | protected PR merge and local package audit |
+| `lenerp_core` baseline | protected `main` candidate `f664e7475e8a4000ca5b75cea7d9feb367258585`, app `0.2.0` | protected PR merge and local package audit |
 | `lenerp_core` work | protected `main`; C01–C08 synthetic boundary plus app-owned ERP accessibility remediation | local repository audit |
 | Frappe | `15.119.1`, `edae775dd36b6c4ad7acab10230262bd74040765` | clean approved reference checkout |
 | ERPNext | `15.120.0`, `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3` | clean approved reference checkout |
@@ -127,7 +127,7 @@ Project Start data was changed during the recheck.
 | `CHAMP-C05-R1` | Included | `in_development` | Job workflow, assignment, completion validation, and print path implemented; approval pending |
 | `CHAMP-C06-R1` | Included | `in_development` | Standard ERPNext inventory/buying/assets seed path implemented; approval pending |
 | `CHAMP-C07-R1` | Included | `in_development` | Synthetic lead-to-payment path implemented; accounting decisions pending |
-| `CHAMP-C08-R1` | Included | `in_development` | Source-backed report/API and print path implemented; KPI/alert definitions pending |
+| `CHAMP-C08-R1` | Included | `in_development` | Persisted dashboard/API, print path, asset/maintenance status, well history, and alerts implemented; KPI/audience/alert definitions pending |
 
 Detailed package records are in `docs/champion_execution/packages/`. The
 proposal-to-package matrix is in `TRACEABILITY_MATRIX.md`.
@@ -166,4 +166,4 @@ The correct current workstream verdict is:
 
 ## Final protected remediation evidence
 
-The final candidate-bound main run is [35457401709](https://github.com/Lengrowth/crm/actions/runs/35457401709), CRM `dccff421027527860075c0c2de4ce08deccf5423`, with LenERP Core `26f41e34deab5fc699224657d206bd6a9d7bf161`. It completes the staging browser evidence, ERP accessibility remediation, customer-facing language audit, role boundaries, and synthetic cleanup required for independent re-review. No production or real-data authorization is implied.
+The next candidate-bound main run uses LenERP Core `f664e7475e8a4000ca5b75cea7d9feb367258585`, ships the remediation documentation snapshot, and must complete expanded C08 dashboard evidence plus the reviewed accessibility contract. No production or real-data authorization is implied.

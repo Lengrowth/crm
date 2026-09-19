@@ -30,7 +30,7 @@ The register is the initial decomposition. Add a new package only when a require
 | C05 | `CHAMP-C05-R1` | `in_development` | Persisted job workflow, assignment, lifecycle states, completion validation, and print format implemented; approved process remains pending |
 | C06 | `CHAMP-C06-R1` | `in_development` | Standard ERPNext inventory/buying/assets seed path implemented; approved stock and maintenance rules remain pending |
 | C07 | `CHAMP-C07-R1` | `in_development` | Synthetic lead-to-payment seed path implemented; chart, tax, payment, and approval decisions remain pending |
-| C08 | `CHAMP-C08-R1` | `in_development` | Source-backed operations report/API and print path implemented; approved KPI/audience/alert definitions remain pending |
+| C08 | `CHAMP-C08-R1` | `in_development` | Persisted operations dashboard/API now includes inventory exceptions, asset/maintenance status, well history, and alerts; approved KPI/audience/alert definitions remain pending |
 
 Each identity is independently reviewable. A later revision such as
 `CHAMP-C04-R2` is required when approved requirements or accepted behavior
@@ -92,6 +92,6 @@ Copy this section for each implementation/release of a package.
 
 ## Final Champion pre-kickoff remediation evidence
 
-The final protected staging candidate is CRM `dccff421027527860075c0c2de4ce08deccf5423` with the immutable LenERP Core app `26f41e34deab5fc699224657d206bd6a9d7bf161`. Main run [35457401709](https://github.com/Lengrowth/crm/actions/runs/35457401709) executes the candidate-bound build, ERP accessibility checks, full customer-facing language audit, synthetic role/readback checks, and cleanup. The earlier merge-candidate run [35456796572](https://github.com/Lengrowth/crm/actions/runs/35456796572) is retained as the pre-merge validation record. This closes remediation readiness only; Champion acceptance, real-data migration, and production activation remain pending.
+The next protected staging candidate binds the CRM source, the immutable LenERP Core app `f664e7475e8a4000ca5b75cea7d9feb367258585`, and the remediation documentation snapshot. The protected artifact must execute the candidate-bound build, expanded C08 dashboard evidence, ERP accessibility review, full customer-facing language audit, synthetic role/readback checks, and cleanup. Champion acceptance, real-data migration, and production activation remain pending.
 
 Detailed hashes, artifact digest, and review disposition are recorded in [FINAL_REMEDIATION_EVIDENCE.md](FINAL_REMEDIATION_EVIDENCE.md).
