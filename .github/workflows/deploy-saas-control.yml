@@ -519,13 +519,16 @@ jobs:
           . /opt/saas-control-staging/shared/env/staging-backend.env
           set +a
           auth_script="/opt/saas-control-staging/current/scripts/release/prepare_staging_smoke_auth.py"
+          token_tmp="/tmp/saas-control-staging-non-admin-${GITHUB_RUN_ID}.token"
           sudo -n -E -u saas-staging env \
             PYTHONPATH=/opt/saas-control-staging/current/backend \
             STAGING_SMOKE_EMAIL="$NON_ADMIN_SMOKE_EMAIL" \
             /opt/saas-control-staging/shared/backend-venv/bin/python \
             "$auth_script" \
-            --token-file /run/saas-control-staging/smoke/non-admin-auth-token \
+            --token-file "$token_tmp" \
             --non-admin
+          sudo install -m 600 -o saas-staging -g saas-staging "$token_tmp" /run/saas-control-staging/smoke/non-admin-auth-token
+          sudo rm -f -- "$token_tmp"
 
       - name: Capture candidate-bound browser and accessibility evidence
         # Keep this capture step adjacent to the deployed release dependencies.
