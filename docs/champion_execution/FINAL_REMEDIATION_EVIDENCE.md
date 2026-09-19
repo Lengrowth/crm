@@ -6,7 +6,7 @@ This file is shipped inside the CRM candidate source and is copied into the
 protected evidence artifact by the workflow. The artifact manifest is the
 authority for the exact CRM candidate SHA, workflow run, artifact name, and
 documentation hash. The pinned LenERP Core app for the next protected run is
-`f664e7475e8a4000ca5b75cea7d9feb367258585`.
+`a7e47208baf6583295f5f2632f4787262cd3f475`.
 
 ## Protected checks
 

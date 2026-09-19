@@ -9,7 +9,7 @@ Record date: 2026-09-19
 
 - CRM candidate: exact protected candidate will be recorded after the remediation PR merge and staging run
 - `lenerp_core` branch: protected `main`
-- `lenerp_core` commit: `f664e7475e8a4000ca5b75cea7d9feb367258585` on `main`
+- `lenerp_core` commit: `a7e47208baf6583295f5f2632f4787262cd3f475` on `main`
 - `lenerp_core` version: `0.2.0`
 - Frappe reference: `15.119.1`,
   `edae775dd36b6c4ad7acab10230262bd74040765`
@@ -82,6 +82,6 @@ Current package verdict: **IN DEVELOPMENT — synthetic core demonstration passe
 ## Final protected remediation evidence
 
 The next authoritative main run must bind the exact CRM candidate, LenERP Core
-`f664e7475e8a4000ca5b75cea7d9feb367258585`, the documentation snapshot, the
+`a7e47208baf6583295f5f2632f4787262cd3f475`, the documentation snapshot, the
 expanded C08 dashboard outputs, and the reviewed accessibility results. It
 does not grant Champion acceptance or production authorization.

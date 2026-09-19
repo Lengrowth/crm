@@ -92,6 +92,6 @@ Copy this section for each implementation/release of a package.
 
 ## Final Champion pre-kickoff remediation evidence
 
-The next protected staging candidate binds the CRM source, the immutable LenERP Core app `f664e7475e8a4000ca5b75cea7d9feb367258585`, and the remediation documentation snapshot. The protected artifact must execute the candidate-bound build, expanded C08 dashboard evidence, ERP accessibility review, full customer-facing language audit, synthetic role/readback checks, and cleanup. Champion acceptance, real-data migration, and production activation remain pending.
+The next protected staging candidate binds the CRM source, the immutable LenERP Core app `a7e47208baf6583295f5f2632f4787262cd3f475`, and the remediation documentation snapshot. The protected artifact must execute the candidate-bound build, expanded C08 dashboard evidence, ERP accessibility review, full customer-facing language audit, synthetic role/readback checks, and cleanup. Champion acceptance, real-data migration, and production activation remain pending.
 
 Detailed hashes, artifact digest, and review disposition are recorded in [FINAL_REMEDIATION_EVIDENCE.md](FINAL_REMEDIATION_EVIDENCE.md).
