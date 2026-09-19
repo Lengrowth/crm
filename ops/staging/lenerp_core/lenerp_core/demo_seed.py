@@ -313,6 +313,22 @@ def _ensure_warehouse(company: str) -> str:
     )
 
 
+def _ensure_cost_center(company: str) -> str:
+    existing = frappe.db.get_value(
+        "Cost Center",
+        {"cost_center_name": "DEMO-CHAMPION Field Operations", "company": company},
+        "name",
+    )
+    if existing:
+        return existing
+    parent = frappe.db.get_value("Cost Center", {"company": company, "is_group": 1}, "name")
+    return _insert(
+        "Cost Center",
+        "DEMO-CHAMPION-COST-CENTER",
+        {"cost_center_name": "DEMO-CHAMPION Field Operations", "company": company, "parent_cost_center": parent, "is_group": 0},
+    )
+
+
 def _ensure_asset_category(company: str) -> str:
     # ERPNext versions differ on whether Company exposes a default fixed-asset
     # account.  The Asset Category child table is stable, so resolve a valid
@@ -337,6 +353,7 @@ def _ensure_asset_category(company: str) -> str:
 
 def _commercial_records(company: str, customer: str, warehouse: str) -> dict[str, list[str]]:
     currency = frappe.db.get_value("Company", company, "default_currency") or DEMO_DEFAULT_CURRENCY
+    cost_center = _ensure_cost_center(company)
     lead = _insert(
         "Lead",
         "DEMO-CHAMPION-LEAD-001",
@@ -392,7 +409,7 @@ def _commercial_records(company: str, customer: str, warehouse: str) -> dict[str
             "selling_price_list": DEMO_SELLING_PRICE_LIST,
             "price_list_currency": currency,
             "plc_conversion_rate": 1,
-            "items": [{"item_code": item, "qty": 1, "rate": 1850, "description": "Synthetic pump replacement"}],
+            "items": [{"item_code": item, "qty": 1, "rate": 1850, "cost_center": cost_center, "description": "Synthetic pump replacement"}],
             "remarks": "Synthetic demonstration invoice; accounting settings remain provisional.",
         },
     )
@@ -449,10 +466,7 @@ def _inventory_records(company: str, item: str, fixed_asset_item: str, warehouse
     stock_entry_doc = frappe.get_doc("Stock Entry", stock_entry)
     if stock_entry_doc.docstatus == 0:
         stock_entry_doc.submit()
-    cost_center = frappe.db.get_value("Cost Center", {"company": company, "is_group": 0}, "name")
-    if not cost_center:
-        parent = frappe.db.get_value("Cost Center", {"company": company, "is_group": 1}, "name")
-        cost_center = _insert("Cost Center", "DEMO-CHAMPION-COST-CENTER", {"cost_center_name": "DEMO-CHAMPION Field Operations", "company": company, "parent_cost_center": parent, "is_group": 0})
+    cost_center = _ensure_cost_center(company)
     location = _insert(
         "Location",
         "DEMO-CHAMPION-INDIANAPOLIS",
@@ -560,6 +574,15 @@ def reset() -> dict[str, int]:
                 for row in frappe.get_all(
                     doctype,
                     filters={"well_id": ["in", DEMO_WELL_IDS]},
+                    fields=["name"],
+                )
+            ]
+        elif doctype == "Cost Center":
+            names = [
+                row.name
+                for row in frappe.get_all(
+                    doctype,
+                    filters={"cost_center_name": "DEMO-CHAMPION Field Operations"},
                     fields=["name"],
                 )
             ]
