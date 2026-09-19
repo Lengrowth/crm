@@ -101,7 +101,7 @@ const unauthenticatedPage = await unauthenticatedContext.newPage();
 await unauthenticatedPage.goto(`${baseUrl}/login`, { waitUntil: "networkidle", timeout: 30000 });
 const unauthenticatedContract = await renderedAccessibilityContract(unauthenticatedPage);
 if (!unauthenticatedContract.zoom_allowed || !unauthenticatedContract.logo_alternatives_present) {
-  throw new Error("unauthenticated ERP accessibility contract failed");
+  throw new Error(`unauthenticated ERP accessibility contract failed: ${JSON.stringify(unauthenticatedContract)}`);
 }
 evidence.accessibility.unauthenticated = {
   role: "unauthenticated",
