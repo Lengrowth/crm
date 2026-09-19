@@ -17,7 +17,7 @@ from collections.abc import Iterable
 from typing import Any
 
 import frappe
-from frappe.utils import add_days, today
+from frappe.utils import add_days, getdate, today
 
 
 DEMO_COMPANY = "DEMO Champion Well Drilling"
@@ -165,7 +165,32 @@ def _company() -> str:
             "links": [{"link_doctype": "Company", "link_name": company}],
         },
     )
+    _ensure_fiscal_year(company)
     return company
+
+
+def _ensure_fiscal_year(company: str) -> str:
+    current = getdate(today())
+    name = f"DEMO-CHAMPION-FY-{current.year}"
+    start = f"{current.year}-01-01"
+    end = f"{current.year}-12-31"
+    if not _exists("Fiscal Year", name):
+        return _insert(
+            "Fiscal Year",
+            name,
+            {
+                "year": str(current.year),
+                "year_start_date": start,
+                "year_end_date": end,
+                "disabled": 0,
+                "companies": [{"company": company}],
+            },
+        )
+    fiscal_year = frappe.get_doc("Fiscal Year", name)
+    if not any(row.company == company for row in fiscal_year.companies):
+        fiscal_year.append("companies", {"company": company})
+        fiscal_year.save(ignore_permissions=True)
+    return name
 
 
 def _core_records(company: str) -> dict[str, list[str]]:
@@ -493,6 +518,7 @@ def reset() -> dict[str, int]:
         ("Customer", "DEMO-%"),
         ("Address", "DEMO-%"),
         ("Address Template", "DEMO-%"),
+        ("Fiscal Year", "DEMO-%"),
         ("Item", "DEMO-%"),
         ("Supplier", "DEMO-%"),
         ("Warehouse", "DEMO-%"),
