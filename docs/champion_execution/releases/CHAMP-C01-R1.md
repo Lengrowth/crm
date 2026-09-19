@@ -9,7 +9,7 @@ Record date: 2026-09-19
 
 - CRM candidate: exact protected candidate will be recorded after the remediation PR merge and staging run
 - `lenerp_core` branch: protected `main`
-- `lenerp_core` commit: `f96a96857c57d884e0421f06282f0d5d93bccaa9` on `main`
+- `lenerp_core` commit: `6263833ef9c6f804f2f9d917667c91697ac0fd9b` on `main`
 - `lenerp_core` version: `0.2.0`
 - Frappe reference: `15.119.1`,
   `edae775dd36b6c4ad7acab10230262bd74040765`
