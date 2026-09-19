@@ -78,7 +78,7 @@ const admin = await login("Champion Administrator");
 const adminPage = admin.page;
 const erpRoutes = [
   ["well-list", "/app/len-erp-well-site"],
-  ["well-detail", "/app/len-erp-well-site/DEMO-WELL-NR-01"],
+  ["well-detail", "/app/len-erp-well-site/WELL-NR-01"],
   ["job-list", "/app/len-erp-drilling-job"],
   ["quotation-list", "/app/quotation"],
   ["invoice-list", "/app/sales-invoice"],
@@ -105,7 +105,7 @@ for (const [name, response] of Object.entries({ wellList, jobList, invoiceList, 
   if (response.status !== 200) throw new Error(`ERP API read failed for ${name}: ${response.status}`);
 }
 evidence.records = { wellList, jobList, invoiceList, purchaseList, stockList, maintenanceList };
-const printPath = "/api/method/frappe.utils.print_format.download_pdf?doctype=LenERP%20Drilling%20Job&name=DEMO-JOB-001&format=Champion%20Job%20Completion&no_letterhead=1";
+const printPath = "/api/method/frappe.utils.print_format.download_pdf?doctype=LenERP%20Drilling%20Job&name=JOB-0097&format=Champion%20Job%20Completion&no_letterhead=1";
 evidence.print = await api(adminPage, printPath);
 if (evidence.print.status !== 200 || !String(evidence.print.contentType).includes("pdf")) throw new Error(`ERP print evidence failed: ${evidence.print.status}`);
 evidence.export = await api(adminPage, "/api/method/frappe.desk.reportview.export_query.export_query", {
@@ -116,7 +116,7 @@ evidence.export = await api(adminPage, "/api/method/frappe.desk.reportview.expor
 if (evidence.export.status !== 200) throw new Error(`ERP export evidence failed: ${evidence.export.status}`);
 evidence.accessibility.desktop = await accessibility(adminPage, "erp-admin-desktop");
 await adminPage.setViewportSize({ width: 390, height: 844 });
-await adminPage.goto(`${baseUrl}/app/len-erp-well-site/DEMO-WELL-NR-01`, { waitUntil: "networkidle", timeout: 30000 });
+await adminPage.goto(`${baseUrl}/app/len-erp-well-site/WELL-NR-01`, { waitUntil: "networkidle", timeout: 30000 });
 evidence.accessibility.mobile = await accessibility(adminPage, "erp-well-mobile");
 evidence.roles["Champion Administrator"] = { email: emailFor("Champion Administrator"), routes: erpRoutes.length, api_read: true, print: true, export: true, address_and_coordinates: true };
 await admin.context.close();
