@@ -7,6 +7,8 @@ BASE_URL="${BASE_URL:-http://127.0.0.1:28000}"
 HOST_HEADER="${HOST_HEADER:-$SITE}"
 EXPECTED_FRAPPE_COMMIT="${EXPECTED_FRAPPE_COMMIT:-edae775dd36b6c4ad7acab10230262bd74040765}"
 EXPECTED_ERPNEXT_COMMIT="${EXPECTED_ERPNEXT_COMMIT:-945e825bee3d0d645f6cb59bcaab90fcbfb98ce3}"
+EXPECTED_HRMS_VERSION="${EXPECTED_HRMS_VERSION:-15.64.1}"
+EXPECTED_HRMS_COMMIT="${EXPECTED_HRMS_COMMIT:-e68a3deaa95ae5b2c3d743297d0a4ab505733fc1}"
 EXPECTED_CUSTOM_APP_VERSION="${EXPECTED_CUSTOM_APP_VERSION:-0.2.0}"
 
 for unit in \
@@ -62,6 +64,10 @@ grep -Eq '^erpnext[[:space:]]+15\.120\.0([[:space:]]|$)' <<<"$apps" || {
   echo "staging ERPNext version mismatch" >&2
   exit 1
 }
+grep -Eq "^hrms[[:space:]]+${EXPECTED_HRMS_VERSION}([[:space:]]|$)" <<<"$apps" || {
+  echo "staging HRMS version mismatch" >&2
+  exit 1
+}
 grep -Eq "^lenerp_core[[:space:]]+${EXPECTED_CUSTOM_APP_VERSION}([[:space:]]|$)" <<<"$apps" || {
   echo "staging custom app is not installed" >&2
   exit 1
@@ -72,6 +78,10 @@ grep -Eq "^lenerp_core[[:space:]]+${EXPECTED_CUSTOM_APP_VERSION}([[:space:]]|$)"
 }
 [[ "$(sudo -u frappe git -C "$BENCH_ROOT/apps/erpnext" rev-parse HEAD)" == "$EXPECTED_ERPNEXT_COMMIT" ]] || {
   echo "staging ERPNext commit mismatch" >&2
+  exit 1
+}
+[[ "$(sudo -u frappe git -C "$BENCH_ROOT/apps/hrms" rev-parse HEAD)" == "$EXPECTED_HRMS_COMMIT" ]] || {
+  echo "staging HRMS commit mismatch" >&2
   exit 1
 }
 echo "ERP staging app inventory and pinned commits passed"

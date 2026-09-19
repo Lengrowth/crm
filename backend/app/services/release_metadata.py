@@ -21,6 +21,7 @@ _SAFE_MANIFEST_KEYS = {
     "upstream_erpnext_commit",
     "dependency_lock_hashes",
     "feature_flags",
+    "application_dependencies",
     "runtime_baseline",
 }
 

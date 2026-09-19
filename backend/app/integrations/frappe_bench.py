@@ -126,7 +126,17 @@ class FrappeBenchERPNextClient(ERPNextClient):
             if isinstance(payload, dict):
                 installed = payload.get(site_id)
                 if isinstance(installed, list):
-                    return {str(name): "" for name in installed if str(name).strip()}
+                    apps = {str(name): "" for name in installed if str(name).strip()}
+                    # Some Bench versions return names-only JSON.  Supplement
+                    # that readback with the stable text form so exact app
+                    # pins are still verified rather than treated as success.
+                    ok_text, text_output = self._run(["--site", site_id, "list-apps"])
+                    if ok_text:
+                        for line in text_output.splitlines():
+                            match = re.match(r"^\s*([a-zA-Z0-9_]+)\s+([^\s]+)", line)
+                            if match and match.group(1) in apps:
+                                apps[match.group(1)] = match.group(2)
+                    return apps
                 if isinstance(installed, dict):
                     return {str(name): str(version) for name, version in installed.items()}
 
@@ -218,6 +228,12 @@ class FrappeBenchERPNextClient(ERPNextClient):
         ok, _ = self._run(["--site", site_id, "install-app", app_name])
         return OperationResult({"status": "success" if ok else "failed", "site_id": site_id, "app": app_name, "provider": "frappe_staging_bench", "provider_verified": ok})
 
+    def migrate_site(self, site_id: str) -> OperationResult:
+        if not self._site_exists(site_id):
+            return OperationResult({"status": "not_found", "site_id": site_id, "provider": "frappe_staging_bench"})
+        ok, _ = self._run(["--site", site_id, "migrate"])
+        return OperationResult({"status": "success" if ok else "failed", "site_id": site_id, "provider": "frappe_staging_bench", "provider_verified": ok, "replayed": ok})
+
     def apply_site_configuration(self, site_id: str, configuration: dict[str, object]) -> OperationResult:
         if not self._site_exists(site_id):
             return OperationResult({"status": "not_found", "site_id": site_id})
@@ -256,15 +272,24 @@ class FrappeBenchERPNextClient(ERPNextClient):
             },
         }
 
-    def verify_site_configuration(self, site_id: str, requested_modules: list[str]) -> OperationResult:
+    def verify_site_configuration(self, site_id: str, requested_modules: list[str], required_apps: Optional[dict[str, str]] = None, required_roles: Optional[list[str]] = None, required_workspaces: Optional[list[str]] = None, required_app_versions: Optional[dict[str, str]] = None) -> OperationResult:
         inventory = self.get_site_inventory(site_id)
         if inventory.get("status") != "success":
             return OperationResult(inventory)
-        apps = set((inventory.get("installed_apps") or {}).keys())
+        installed_payload = inventory.get("installed_apps") or {}
+        apps = set(installed_payload.keys()) if isinstance(installed_payload, dict) else set(installed_payload)
         configuration = inventory.get("configuration") or {}
         modules = set(configuration.get("modules") or []) if isinstance(configuration, dict) else set()
-        verified = {"frappe", "erpnext", "lenerp_core"}.issubset(apps) and set(requested_modules).issubset(modules)
-        return OperationResult({"status": "success" if verified else "failed", "site_id": site_id, "provider": "frappe_staging_bench", "provider_verified": verified, "installed_apps": sorted(apps), "modules": sorted(modules), "inventory": inventory})
+        requirements = required_apps or {}
+        missing_required_apps = sorted({app for app in requirements.values() if app and app not in apps})
+        current_roles = set(configuration.get("roles") or []) if isinstance(configuration, dict) else set()
+        current_workspaces = set(configuration.get("workspaces") or []) if isinstance(configuration, dict) else set()
+        missing_required_roles = sorted(set(required_roles or []) - current_roles)
+        missing_required_workspaces = sorted(set(required_workspaces or []) - current_workspaces)
+        app_versions = installed_payload if isinstance(installed_payload, dict) else {}
+        incompatible_apps = sorted(f"{app} (expected {version}, read {app_versions.get(app) or 'unknown'})" for app, version in (required_app_versions or {}).items() if app in apps and app_versions.get(app) != version)
+        verified = {"frappe", "erpnext", "lenerp_core"}.issubset(apps) and set(requested_modules).issubset(modules) and not missing_required_apps and not incompatible_apps and not missing_required_roles and not missing_required_workspaces
+        return OperationResult({"status": "success" if verified else "failed", "site_id": site_id, "provider": "frappe_staging_bench", "provider_verified": verified, "installed_apps": sorted(apps), "app_versions": app_versions, "modules": sorted(modules), "required_apps": requirements, "missing_required_apps": missing_required_apps, "incompatible_apps": incompatible_apps, "missing_required_roles": missing_required_roles, "missing_required_workspaces": missing_required_workspaces, "inventory": inventory})
 
     def bind_domain(self, site_id: str, domain: str) -> OperationResult:
         if not self._site_exists(site_id):

@@ -29,6 +29,7 @@ This document governs the workstream. [`CHAMPION_SOLUTION_REGISTER.md`](CHAMPION
 | C06 | Inventory, purchasing, trucks, rigs, and assets |
 | C07 | CRM, quoting, invoicing, payments, and accounting |
 | C08 | Dashboards, reports, alerts, forms, and print formats |
+| C09 | Office work, people, payroll, quality, and support |
 
 ## Common build rules
 

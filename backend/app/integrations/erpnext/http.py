@@ -138,14 +138,17 @@ class ERPNextHTTPClient(ERPNextClient):
     def delete_site(self, site_id: str) -> OperationResult:
         return OperationResult(self._request("DELETE", f"/api/v1/sites/{site_id}"))
 
+    def migrate_site(self, site_id: str) -> OperationResult:
+        return OperationResult(self._request("POST", f"/api/v1/sites/{site_id}/migrate"))
+
     def apply_site_configuration(self, site_id: str, configuration: dict[str, object]) -> OperationResult:
         return OperationResult(self._request("POST", f"/api/v1/sites/{site_id}/configuration", configuration))
 
     def get_site_inventory(self, site_id: str) -> dict[str, object]:
         return self._request("GET", f"/api/v1/sites/{site_id}/inventory")
 
-    def verify_site_configuration(self, site_id: str, requested_modules: list[str]) -> OperationResult:
-        return OperationResult(self._request("POST", f"/api/v1/sites/{site_id}/verify", {"modules": requested_modules}))
+    def verify_site_configuration(self, site_id: str, requested_modules: list[str], required_apps: Optional[dict[str, str]] = None, required_roles: Optional[list[str]] = None, required_workspaces: Optional[list[str]] = None, required_app_versions: Optional[dict[str, str]] = None) -> OperationResult:
+        return OperationResult(self._request("POST", f"/api/v1/sites/{site_id}/verify", {"modules": requested_modules, "required_apps": required_apps or {}, "required_roles": required_roles or [], "required_workspaces": required_workspaces or [], "required_app_versions": required_app_versions or {}}))
 
 
 HttpERPNextClient = ERPNextHTTPClient

@@ -26,6 +26,7 @@ This repository is being built as a SaaS-first control platform that will later 
 20. `27_AWS_Cloudflare_Deployment_Plan.md`
 21. `28_Champion_LenERP_Phased_Execution_Plan.md`
 22. `champion_execution/README.md`
+23. `champion_showcase/README.md`
 
 ## Current Architecture
 
@@ -60,4 +61,4 @@ This repository is being built as a SaaS-first control platform that will later 
 
 ## Phase Sequence
 
-Phase 00 confirms the architecture and documentation. Phase 01 creates the monorepo scaffold. Phase 02 adds the local SaaS persistence layer. Phase 03 adds local SaaS authentication and authorization. Phase 04 adds the main website and protected app shell. Phase 05 adds organization and tenant management. Phase 06 adds implementation workflows. Phase 07 adds the ERPNext abstraction layer. Phases 08 through 14 extend provisioning, billing, white-label, integration maturity, and pilot onboarding. Phase 15 makes the repository launch/demo-ready. Phases 16 through 23 record the original GCP-oriented deployment and launch path. Phases 24 through 26 define remaining production-hardening and launch-certification gates. Phase 27 records the AWS + Cloudflare deployment that superseded the GCP runtime plan. Phase 28 links this control plane to the active, completeness-driven Champion delivery plan and its promise traceability matrix.
+Phase 00 confirms the architecture and documentation. Phase 01 creates the monorepo scaffold. Phase 02 adds the local SaaS persistence layer. Phase 03 adds local SaaS authentication and authorization. Phase 04 adds the main website and protected app shell. Phase 05 adds organization and tenant management. Phase 06 adds implementation workflows. Phase 07 adds the ERPNext abstraction layer. Phases 08 through 14 extend provisioning, billing, white-label, integration maturity, and pilot onboarding. Phase 15 makes the repository launch/demo-ready. Phases 16 through 23 record the original GCP-oriented deployment and launch path. Phases 24 through 26 define remaining production-hardening and launch-certification gates. Phase 27 records the AWS + Cloudflare deployment that superseded the GCP runtime plan. Phase 28 links this control plane to the active, completeness-driven Champion delivery plan and its promise traceability matrix. `champion_showcase/` contains the staging-first, AI-executable pre-kickoff program for module completeness, HRMS, unified identity, role workspaces and Matt demo certification.

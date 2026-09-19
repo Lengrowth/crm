@@ -373,6 +373,22 @@ jobs:
           core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
           CUSTOM_APP_COMMIT="$core_commit" ./scripts/deploy/deploy_saas_control.sh
 
+      - name: Install and migrate the pinned HRMS dependency
+        run: |
+          hrms_commit="e68a3deaa95ae5b2c3d743297d0a4ab505733fc1"
+          hrms_dir=/opt/frappe-staging-bench/apps/hrms
+          if [[ ! -d "$hrms_dir/.git" ]]; then
+            sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench get-app --branch v15.64.1 https://github.com/frappe/hrms"
+          fi
+          test -d "$hrms_dir/.git"
+          test "$(sudo -u frappe git -C "$hrms_dir" rev-parse HEAD)" = "$hrms_commit"
+          sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench setup requirements hrms"
+          if ! sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test list-apps | grep -Eq '^hrms[[:space:]]'"; then
+            sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test install-app hrms"
+          fi
+          sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test migrate"
+          sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench build --app hrms"
+
       - name: Install and migrate the exact custom app from the pinned staging bundle
         run: |
           core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"

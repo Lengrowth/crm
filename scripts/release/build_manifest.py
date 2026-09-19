@@ -38,6 +38,7 @@ def main() -> int:
     parser.add_argument("--runtime-erpnext-commit", default="unknown")
     parser.add_argument("--runtime-baseline", type=Path)
     parser.add_argument("--feature-flags", default="")
+    parser.add_argument("--application-dependencies", type=Path)
     args = parser.parse_args()
 
     baseline = {}
@@ -130,6 +131,16 @@ def main() -> int:
             "commit": custom_app_commit,
         }
 
+    application_dependencies = {}
+    if args.application_dependencies and args.application_dependencies.is_file():
+        try:
+            dependency_payload = json.loads(args.application_dependencies.read_text(encoding="utf-8"))
+        except (OSError, TypeError, ValueError) as exc:
+            raise SystemExit(f"invalid application dependency manifest: {args.application_dependencies}: {exc}") from exc
+        if not isinstance(dependency_payload, dict) or dependency_payload.get("schema_version") != 1:
+            raise SystemExit("application dependency manifest must be a JSON object with schema_version 1")
+        application_dependencies = dependency_payload
+
     manifest = {
         "release_id": args.release_id,
         "control_plane_commit": args.control_plane_commit,
@@ -151,6 +162,7 @@ def main() -> int:
         ),
         "dependency_lock_hashes": locks,
         "feature_flags": feature_flags,
+        "application_dependencies": application_dependencies,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")

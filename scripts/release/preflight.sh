@@ -28,6 +28,7 @@ required = {
     "installed_apps",
     "dependency_lock_hashes",
     "feature_flags",
+    "application_dependencies",
     "database_revision_before",
     "database_revision_after",
 }
@@ -46,6 +47,12 @@ for app_name in ("frappe", "erpnext"):
     app = payload["installed_apps"][app_name]
     if app.get("commit") in {None, "", "unknown"}:
         raise SystemExit(f"manifest installed_apps has unknown {app_name} commit")
+dependencies = payload.get("application_dependencies")
+if not isinstance(dependencies, dict) or dependencies.get("schema_version") != 1:
+    raise SystemExit("manifest application dependency pin is missing")
+hrms = dependencies.get("module_dependencies", {}).get("hrms", {})
+if hrms.get("commit") != "e68a3deaa95ae5b2c3d743297d0a4ab505733fc1" or hrms.get("version") != "15.64.1":
+    raise SystemExit("manifest HRMS pin is not the reviewed immutable revision")
 for field in (
     "custom_app_commit",
     "custom_app_version",

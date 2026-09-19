@@ -6,7 +6,7 @@ from typing import Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 
-ModuleState = Literal["marketed", "requested", "entitled", "applied", "verified"]
+ModuleState = Literal["requested", "entitled", "applied", "verified", "hidden", "needs_attention"]
 ApplicationState = Literal["not_applicable", "pending", "applied", "failed"]
 VerificationState = Literal["pending", "verified", "failed"]
 
@@ -50,6 +50,10 @@ class ModuleBundleItemRead(BaseModel):
     code: str
     name: str
     sort_order: int
+    dependency_codes: list[str] = Field(default_factory=list)
+    required_app: Optional[str] = None
+    minimum_app_version: Optional[str] = None
+    compatible_app_version: Optional[str] = None
 
 
 class ModuleBundleRead(BaseModel):
@@ -60,6 +64,9 @@ class ModuleBundleRead(BaseModel):
     description: Optional[str] = None
     source: str
     modules: list[ModuleBundleItemRead] = Field(default_factory=list)
+    supersedes_version: Optional[int] = None
+    added_module_codes: list[str] = Field(default_factory=list)
+    removed_module_codes: list[str] = Field(default_factory=list)
 
 
 class ModuleChangeRequest(BaseModel):
@@ -95,6 +102,14 @@ class ModuleEffectiveItem(BaseModel):
     application_state: ApplicationState
     verification_state: VerificationState
     tenant_states: list[dict[str, object]] = Field(default_factory=list)
+    dependency_codes: list[str] = Field(default_factory=list)
+    required_app: Optional[str] = None
+    minimum_app_version: Optional[str] = None
+    compatible_app_version: Optional[str] = None
+    states: list[ModuleState] = Field(default_factory=list)
+    state_reasons: list[str] = Field(default_factory=list)
+    hidden: bool = False
+    needs_attention: bool = False
 
 
 class ModuleEffectiveRead(BaseModel):
@@ -118,6 +133,11 @@ class ModulePreviewRead(BaseModel):
     warnings: list[str]
     preview_hash: str
     is_current: bool
+    bundle_key: Optional[str] = None
+    bundle_version: Optional[int] = None
+    required_applications: list[str] = Field(default_factory=list)
+    platform_required_applications: list[str] = Field(default_factory=list)
+    affected_tenants: list[dict[str, object]] = Field(default_factory=list)
 
 
 class ModuleChangeResult(BaseModel):
@@ -132,6 +152,8 @@ class ModuleAuditRead(BaseModel):
     created_at: datetime
     actor_user_id: Optional[str] = None
     organization_id: str
+    tenant_id: Optional[str] = None
+    tenant_ids: list[str] = Field(default_factory=list)
     operation: str
     previous_requested: dict[str, object]
     new_requested: dict[str, object]
@@ -139,6 +161,10 @@ class ModuleAuditRead(BaseModel):
     new_effective: dict[str, object]
     source_type: str
     source_ref: Optional[str] = None
+    previous_bundle_key: Optional[str] = None
+    previous_bundle_version: Optional[int] = None
+    new_bundle_key: Optional[str] = None
+    new_bundle_version: Optional[int] = None
     reason: Optional[str] = None
     idempotency_key: str
     result: str

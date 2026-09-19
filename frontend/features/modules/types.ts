@@ -29,6 +29,14 @@ export interface ModuleEffectiveItem {
   application_state: "not_applicable" | "pending" | "applied" | "failed";
   verification_state: "pending" | "verified" | "failed";
   tenant_states: Array<Record<string, unknown>>;
+  dependency_codes: string[];
+  required_app?: string | null;
+  minimum_app_version?: string | null;
+  compatible_app_version?: string | null;
+  states: Array<"requested" | "entitled" | "applied" | "verified" | "hidden" | "needs_attention">;
+  state_reasons: string[];
+  hidden: boolean;
+  needs_attention: boolean;
 }
 
 export interface ModuleEffective {
@@ -52,6 +60,11 @@ export interface ModulePreview {
   warnings: string[];
   preview_hash: string;
   is_current: boolean;
+  bundle_key?: string | null;
+  bundle_version?: number | null;
+  required_applications: string[];
+  platform_required_applications?: string[];
+  affected_tenants: Array<{ tenant_id: string; tenant_slug: string; environment: string; status: string; provisioning_status: string }>;
 }
 
 export interface ModuleBundle {
@@ -61,7 +74,10 @@ export interface ModuleBundle {
   name: string;
   description: string | null;
   source: string;
-  modules: Array<{ code: string; name: string; sort_order: number }>;
+  modules: Array<{ code: string; name: string; sort_order: number; dependency_codes: string[]; required_app?: string | null; minimum_app_version?: string | null; compatible_app_version?: string | null }>;
+  supersedes_version?: number | null;
+  added_module_codes: string[];
+  removed_module_codes: string[];
 }
 
 export interface ModuleAudit {
@@ -69,6 +85,8 @@ export interface ModuleAudit {
   created_at: string;
   actor_user_id: string | null;
   organization_id: string;
+  tenant_id?: string | null;
+  tenant_ids: string[];
   operation: string;
   previous_requested: Record<string, unknown>;
   new_requested: Record<string, unknown>;
@@ -76,6 +94,10 @@ export interface ModuleAudit {
   new_effective: Record<string, unknown>;
   source_type: string;
   source_ref: string | null;
+  previous_bundle_key?: string | null;
+  previous_bundle_version?: number | null;
+  new_bundle_key?: string | null;
+  new_bundle_version?: number | null;
   reason: string | null;
   idempotency_key: string;
   result: string;

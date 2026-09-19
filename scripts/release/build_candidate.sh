@@ -59,7 +59,8 @@ python3 "$SOURCE_REPO/scripts/release/build_manifest.py" \
   --custom-app-version "$CUSTOM_APP_VERSION_VALUE" \
   --custom-app-commit "$CUSTOM_APP_COMMIT_VALUE" \
   --runtime-baseline "$RUNTIME_BASELINE_FILE" \
-  --feature-flags "${FEATURE_FLAGS:-}"
+  --feature-flags "${FEATURE_FLAGS:-}" \
+  --application-dependencies "$CANDIDATE_DIR/ops/staging/application-dependencies.json"
 
 if [[ -f "$CANDIDATE_DIR/frontend/package-lock.json" ]]; then
   npm --prefix "$CANDIDATE_DIR/frontend" ci --include=dev

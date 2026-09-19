@@ -16,6 +16,7 @@ Champion-specific modules, pages, workflows, configuration, reports, and forms a
 | C06 | Inventory, purchasing, trucks, rigs, and assets | Warehouses/vehicles, items/UOM, stock-use rules, purchasing, maintenance requirements | C02, C05 and ERP Stock/Buying/Assets | Synthetic locations/items/assets | Approved stock, purchasing, assignment, and maintenance scenarios pass |
 | C07 | CRM, quoting, invoicing, payments, and accounting | Lead/customer flow, quote approval, chart of accounts, taxes, payment terms, opening balances | C02, C05 and Selling/Accounting | Document links and synthetic commercial flow | Approved quote-to-job-to-invoice/payment controls and totals pass |
 | C08 | Dashboards, reports, alerts, forms, and print formats | KPIs, report samples, alerts, signatures/photos/forms, audience and delivery format | Relevant C04–C07 packages | Reusable layouts and synthetic examples | Approved outputs match source rules and role visibility |
+| C09 | Office work, people, payroll, quality, and support | Office task states, user/manager matrix, HR/payroll confidentiality and rules, callback/quality classifications, support routing | C02, C03, C05, C07, C08; pinned HRMS v15.64.1 | Synthetic Office Board, employees/time-off/timesheets/payroll preview, callbacks and support/product-change requests | One-login role journeys pass; confidential data is denied; installed apps and module states reconcile |
 
 The register is the initial decomposition. Add a new package only when a requirement cannot be safely accepted within an existing package. New modules or materially new features must also receive the required commercial classification and written approval.
 
@@ -31,6 +32,7 @@ The register is the initial decomposition. Add a new package only when a require
 | C06 | `CHAMP-C06-R1` | `in_development` | Standard ERPNext inventory/buying/assets seed path implemented; approved stock and maintenance rules remain pending |
 | C07 | `CHAMP-C07-R1` | `in_development` | Synthetic lead-to-payment seed path implemented; chart, tax, payment, and approval decisions remain pending |
 | C08 | `CHAMP-C08-R1` | `in_development` | Persisted operations dashboard/API now includes inventory exceptions, asset/maintenance status, well history, and alerts; approved KPI/audience/alert definitions remain pending |
+| C09 | `CHAMP-C09-R1` | `in_development` | Phase 02 HRMS pin, resolver, durable install/migrate/readback, truthful states, and tests implemented locally; exact staging evidence remains pending |
 
 Each identity is independently reviewable. A later revision such as
 `CHAMP-C04-R2` is required when approved requirements or accepted behavior
