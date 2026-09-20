@@ -36,7 +36,7 @@ def get_json(url):
 run = get_json(f"{base}/actions/runs/{run_id}")
 if run.get("status") != "completed" or run.get("conclusion") != "success":
     raise SystemExit(f"staging run {run_id} is not a successful completed run")
-if run.get("workflowName") != "Build and deploy SaaS control plane to staging":
+if (run.get("name") or run.get("workflowName")) != "Build and deploy SaaS control plane to staging":
     raise SystemExit("staging run is not the protected staging workflow")
 
 artifacts = get_json(f"{base}/actions/runs/{run_id}/artifacts").get("artifacts", [])
