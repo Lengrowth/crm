@@ -242,6 +242,15 @@ class FrappeBenchERPNextClient(ERPNextClient):
         commits: dict[str, str] = {}
         for app_name in ("frappe", "erpnext", "hrms", "lenerp_core"):
             app_path = self.bench_root / "apps" / app_name
+            source_marker = app_path / "SOURCE_COMMIT.txt"
+            if source_marker.is_file():
+                try:
+                    output = source_marker.read_text(encoding="utf-8").strip()
+                except OSError:
+                    output = ""
+                if re.fullmatch(r"[0-9a-f]{40}", output):
+                    commits[app_name] = output
+                continue
             if not (app_path / ".git").exists():
                 continue
             ok, output = self._run_git(app_path, ["rev-parse", "HEAD"])

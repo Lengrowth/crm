@@ -19,7 +19,7 @@
     "hrms": {
       "version": "15.64.1",
       "commit": "e68a3deaa95ae5b2c3d743297d0a4ab505733fc1",
-      "verification_status": "blocked_pending_clean_install"
+      "verification_status": "candidate_expected"
     },
     "lenerp_core": {
       "version": "0.2.0",

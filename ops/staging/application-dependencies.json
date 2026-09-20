@@ -37,22 +37,47 @@
           "erpnext_commit": "945e825bee3d0d645f6cb59bcaab90fcbfb98ce3",
           "erpnext": "15.120.0"
         },
-        "status": "blocked",
+        "status": "verified",
         "clean_install_rehearsal": {
-          "status": "failed",
-          "failure_stage": "hrms.after_install fixture creation",
-          "error_class": "ImportError",
-          "missing_module": "frappe.core.doctype.expense_claim_type",
-          "tested_frappe_commit": "edae775dd36b6c4ad7acab10230262bd74040765",
-          "tested_erpnext_commit": "945e825bee3d0d645f6cb59bcaab90fcbfb98ce3",
-          "tested_hrms_commit": "e68a3deaa95ae5b2c3d743297d0a4ab505733fc1",
-          "replay_result": "not a compatibility fix; no retry is authorized"
+          "status": "passed",
+          "evidence_file": "ops/staging/evidence/phase2-clean-disposable-install.json",
+          "site": "phase2-clean-20260920t095000z.example.test",
+          "install_order": ["frappe", "erpnext", "hrms", "lenerp_core"],
+          "before_hrms": {
+            "expense_claim_type_doctype": null,
+            "hr_module_def": null
+          },
+          "after_hrms": {
+            "expense_claim_type_doctype": {
+              "name": "Expense Claim Type",
+              "module": "HR",
+              "custom": 0
+            },
+            "hr_module_def": {
+              "name": "HR",
+              "module_name": "HR",
+              "app_name": "hrms"
+            }
+          },
+          "installed_apps": {
+            "frappe": "15.119.1",
+            "erpnext": "15.120.0",
+            "hrms": "15.64.1",
+            "lenerp_core": "0.2.0"
+          },
+          "source_commits": {
+            "frappe": "edae775dd36b6c4ad7acab10230262bd74040765",
+            "erpnext": "945e825bee3d0d645f6cb59bcaab90fcbfb98ce3",
+            "hrms": "e68a3deaa95ae5b2c3d743297d0a4ab505733fc1",
+            "lenerp_core": "a7e47208baf6583295f5f2632f4787262cd3f475"
+          },
+          "migration": "bench --site migrate returned success"
         },
         "metadata_sufficiency": "broad major-version constraints are not sufficient to prove install compatibility",
         "upstream_issue": "https://github.com/frappe/hrms/issues/1639",
-        "upstream_source_observation": "v15.64.1 and the official version-15-hotfix branch retain the Expense Claim Type fixture; the pinned Frappe v15 baseline has no matching controller",
+        "upstream_source_observation": "Issue #1639 records a failed site resolving the fixture as frappe.core.doctype.expense_claim_type; the clean disposable install proves the pinned HRMS DocType resolves to HR/hrms when the site metadata is initialized in the declared order",
         "rejected_alternatives": [
-          "HRMS v15.64.1 with uninstall/clear-cache/reinstall replay — rejected because it does not change the incompatible source or baseline",
+          "uninstall/clear-cache/reinstall replay — not used as compatibility evidence; the clean site installed the exact pins once",
           "local HRMS fixture patch or skipped fixture — prohibited",
           "floating HRMS v15 branch — rejected because it is not an exact release identity"
         ]

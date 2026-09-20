@@ -1,7 +1,7 @@
 # Phase 02 — Implementation Evidence
 
 **Date:** 2026-09-20
-**Status:** Corrected locally; staging is blocked by the unresolved official HRMS/Frappe compatibility defect. Production remains unchanged.
+**Status:** Clean disposable HRMS compatibility verified; corrected protected staging candidate pending final run. Production remains unchanged.
 **Release scope:** dependency-aware HRMS provisioning for synthetic Champion tenants only.
 
 ## Evidence boundary
@@ -24,16 +24,17 @@ readback succeeds.
 | ERPNext compatibility | `>=15.0.0,<16.0.0` |
 | Reviewed baseline | Frappe `15.119.1`, ERPNext `15.120.0` |
 | Source authority | Official upstream `pyproject.toml`, `__init__.py`, `hooks.py`, `setup.py`, tag/branch readback, and [HRMS issue #1639](https://github.com/frappe/hrms/issues/1639) |
-| Artifact checksum | Not packaged in this repository; immutable commit/tag is the release identity |
+| Artifact checksum | `C62038908A835BAF7C5F3FB418DF561D8E5246AA00156F21D88EAC53153571AC` for the pinned LenERP bundle |
 
 The exact dependency record is [application-dependencies.json](../../ops/staging/application-dependencies.json). The broad
-`>=15,<16` metadata is not treated as an installation guarantee: official
-Frappe v15.119.1 has no `frappe.core.doctype.expense_claim_type` controller,
-while official HRMS v15.64.1 still calls its `Expense Claim Type` fixture from
-`after_install`. Issue #1639 records the same traceback. A retry, uninstall,
-cache clear, or skipped fixture does not alter that source incompatibility, so
-the candidate now fails closed before provider mutation. No upstream source or
-fixture is patched.
+`>=15,<16` metadata is backed by the one-time disposable proof in
+[phase2-clean-disposable-install.json](../../ops/staging/evidence/phase2-clean-disposable-install.json).
+That proof installed the exact pins once and recorded no `Expense Claim Type`
+DocType or `HR` Module Def before HRMS. After HRMS installation and migration,
+the DocType was `module=HR` and the Module Def was `app_name=hrms`. Issue #1639
+therefore documents a stale/incorrect site metadata resolution, not proof that
+the official v15 pin is incompatible. No upstream source or fixture is patched,
+skipped, uninstalled, or replayed as acceptance evidence.
 
 ## Implementation
 
@@ -55,10 +56,11 @@ fixture is patched.
   requires installed-app, module, role, and workspace readback.
 - The operator UI presents `Installing People & Payroll capability` with
   expandable technical detail; exact step names remain operator-only detail.
-- The staging install workflow and provider adapter refuse the blocked HRMS
-  pin; no recovery replay is presented as compatibility evidence. Exact
-  installed-app, commit, migration, role and workspace readback remain
-  mandatory once an official compatible set is selected.
+- The staging install workflow now installs the exact HRMS tag once when the
+  app is absent, migrates idempotently, and requires exact installed-app,
+  version, commit, role, workspace, and source-marker readback. The provider
+  adapter reports `lenerp_core`'s immutable artifact marker instead of
+  assuming every app is a Git checkout.
 
 ## Local validation
 
@@ -114,20 +116,20 @@ route change was needed.
 The prior evidence's `c032a37f78240bba1b8b8593bd3bd439e66a3fb6` is stale and
 is not this correction candidate. The corrected candidate is the new immutable
 commit recorded in the release record and orchestration status after commit.
-The corrected candidate has not entered staging mutation: its candidate
-preflight stops on the blocked HRMS compatibility record before the control
-plane pointer switch or ERP application mutation. No new staging backup was
-created for this intentionally blocked path.
+The clean disposable gate passed before the real staging correction. A real
+staging backup and control-plane copy were then captured at
+`/opt/saas-control-staging/shared/backups/phase2-cleanproof-20260920T101500Z/`;
+the staging pointer was unchanged at
+`/opt/saas-control-staging/releases/47d1d6dd3b8ecbd0b490485d38160df7001b5169`.
+The corrected protected candidate must retain that backup and reconcile the
+LenERP artifact marker to `a7e47208baf6583295f5f2632f4787262cd3f475`.
 
-The first staging attempt failed during `bench --site erp-staging.example.test
-install-app hrms` because HRMS `15.64.1` attempted to create the legacy
-`Expense Claim Type` fixture while the pinned Frappe `15.119.1` / ERPNext
-`15.120.0` runtime has no `frappe.core.doctype.expense_claim_type` module.
-This is an upstream fixture-order compatibility defect, not a worker
-success/readback failure. The corrected workflow refuses the blocked official
-HRMS pin before staging mutation; it does not uninstall, clear cache, retry,
-patch, or skip the incompatible fixture. A future compatible set must still
-pass exact app, commit, roles, and workspace readback.
+The first historical staging attempt failed while the dirty/partial site
+resolved the fixture through `frappe.core.doctype.expense_claim_type`. The
+failure was a site metadata/install-state defect. The clean disposable proof
+resolved the same DocType through `HR/hrms` on the same immutable versions;
+the corrected workflow therefore proceeds through the exact pin and keeps all
+readbacks fail-closed without uninstall, fixture skipping, or local patching.
 
 The control-plane candidate was never switched: `current` remained
 `802f1bdb0f7642ea627b08235dfa3aa16e7b9eda`, and no `.staging-smoke-passed`
@@ -140,14 +142,13 @@ current candidate-bound staging pass.
 
 ## Staging candidate
 
-No staging candidate has passed. The candidate build preflight now stops before
-the control-plane pointer switch because the declared HRMS set is marked
-`blocked` in the dependency manifest. The required future gates remain clean
-HRMS installation, migration, installed-app/version/commit readback,
-HR/Payroll and LenERP role/workspace readback, provisioning retry/replay,
-authorization and tenant-isolation smoke, and rollback evidence. Promotion
-must use one exact candidate and cannot substitute another HRMS version or
-weaken exact verification.
+The disposable clean-install candidate passed. Protected run `35484693593`
+(`106008810882`) also completed the pinned staging path for candidate
+`27f4907578f09e1f540c90e7e6d8fd30fd9aaeb5`. The corrected PR candidate still
+requires one final candidate-bound run after the blocked classification and
+LenERP source readback were corrected. That run must retain the exact
+installed-app/version/commit, HR/Payroll role/workspace, queues, HTTP,
+synthetic, replay/idempotency, authorization, and rollback evidence.
 
 ## Production promotion
 
@@ -159,10 +160,9 @@ structures, payroll entries, tax rules, or accounting postings are authorized.
 
 ## Remaining risks and decisions
 
-- HRMS exact source commit is pinned, but the selected HRMS/platform pins are
-  incompatible at install time. Resolve that compatibility at the reviewed
-  dependency baseline, then repeat the complete staging gate before any
-  production work.
+- HRMS exact source commit and clean-install compatibility are now verified;
+  the remaining gate is candidate-bound staging reconciliation and independent
+  read-only review.
 - Champion role names, payroll rules, tax/deduction rules, final visibility,
   and acceptance authority remain business decisions; technical verification
   must not be represented as Champion acceptance.

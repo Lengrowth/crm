@@ -68,7 +68,7 @@ if not isinstance(hrms_record, dict):
 if hrms_record.get("intended_version") != "15.64.1" or hrms_record.get("intended_commit") != "e68a3deaa95ae5b2c3d743297d0a4ab505733fc1":
     raise SystemExit("manifest HRMS application identity is incomplete")
 if hrms_record.get("verification_status") == "verified" and hrms_record.get("compatibility_status") != "verified":
-    raise SystemExit("manifest cannot mark incompatible HRMS as runtime verified")
+    raise SystemExit("manifest cannot mark unverified HRMS as runtime verified")
 for field in (
     "custom_app_commit",
     "custom_app_version",

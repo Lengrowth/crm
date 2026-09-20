@@ -29,6 +29,7 @@ def test_staging_workflow_verifies_the_installed_custom_app_candidate():
     bundle_commit = (ROOT / "ops" / "staging" / "lenerp_core" / "SOURCE_COMMIT.txt").read_text(encoding="utf-8").strip()
     assert 'CUSTOM_APP_VERSION: "0.2.0"' in workflow
     assert 'CUSTOM_APP_COMMIT="$core_commit"' in workflow
+    assert 'SOURCE_COMMIT.txt' in workflow
     assert bundle_commit == "a7e47208baf6583295f5f2632f4787262cd3f475"
     assert "lenerp_core-${core_commit}.tar" in workflow
     assert 'staging.joinpath("lenerp_core.archive.sha256")' in workflow

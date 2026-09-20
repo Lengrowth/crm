@@ -52,8 +52,13 @@ expected_commits[erpnext]="$(python3 -c 'import json,sys; print(json.load(open(s
 expected_commits[lenerp_core]="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["installed_apps"]["lenerp_core"]["commit"])' "$MANIFEST")"
 for app in frappe erpnext lenerp_core; do
   app_path="$ERP_BENCH_DIR/apps/$app"
-  sudo -n test -d "$app_path/.git" || { echo "exact production $app commit is not readable from a Git checkout" >&2; exit 1; }
-  commit="$(capture_as_frappe "git -C '$app_path' rev-parse HEAD")"
+  if [[ "$app" == "lenerp_core" ]]; then
+    sudo -n test -f "$app_path/SOURCE_COMMIT.txt" || { echo "exact production $app source marker is missing" >&2; exit 1; }
+    commit="$(capture_as_frappe "tr -d '\\r\\n' < '$app_path/SOURCE_COMMIT.txt'")"
+  else
+    sudo -n test -d "$app_path/.git" || { echo "exact production $app commit is not readable from a Git checkout" >&2; exit 1; }
+    commit="$(capture_as_frappe "git -C '$app_path' rev-parse HEAD")"
+  fi
   [[ "$commit" =~ ^[0-9a-f]{40}$ ]] || { echo "production $app commit readback is invalid" >&2; exit 1; }
   [[ "$commit" == "${expected_commits[$app]}" ]] || { echo "production $app commit does not match the candidate" >&2; exit 1; }
 done

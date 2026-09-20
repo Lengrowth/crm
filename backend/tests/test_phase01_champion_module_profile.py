@@ -13,7 +13,7 @@ from app.core.config import settings
 from app.integrations.erpnext_client import OperationResult
 from app.integrations.mock_erpnext import MockERPNextClient
 from app.main import app
-from app.models.domain import ModuleApplicationStatus, ModuleBundle, ModuleBundleItem, ModuleEntitlementAudit, ModuleEntitlementRequest, OrganizationMembership, ProvisioningJob, ProvisioningStep, SaaSUser, Tenant
+from app.models.domain import ModuleApplicationStatus, ModuleBundle, ModuleBundleItem, ModuleEntitlementAudit, ModuleEntitlementRequest, OrganizationMembership, ProvisioningJob, SaaSUser, Tenant
 from app.schemas.auth import AuthRegisterRequest
 from app.schemas.control import OrganizationCreateRequest
 from app.schemas.modules import ModuleChangeRequest
@@ -228,11 +228,16 @@ def test_provider_and_worker_keep_hrms_modules_pending_without_hrms_readback():
                 return super().install_app(site_id, app_name)
 
         result = run_next_job(session, client=MissingHRMSReadbackClient())
-        assert result is not None and result.status == "failed"
-        failed_step = session.query(ProvisioningStep).filter_by(job_id=result.id, status="failed").one()
-        assert failed_step.failure_category == "dependency"
-        assert "clean-install compatibility evidence" in (failed_step.sanitized_error or "")
-        assert "expense_claim_type" not in (failed_step.sanitized_error or "")
-        assert session.get(Tenant, converted.tenant_id).status != "ready"
+        assert result is not None and result.status == "queued"
+        tenant = session.get(Tenant, converted.tenant_id)
+        assert tenant is not None
+        statuses = session.query(ModuleApplicationStatus).filter_by(tenant_id=tenant.id).all()
+        by_module = {session.get(_models.Module, row.module_id).code: row for row in statuses}
+        assert by_module["hr"].application_state == "pending"
+        assert by_module["hr"].verification_state == "pending"
+        assert "hrms" in (by_module["hr"].failure_reason or "")
+        assert by_module["payroll"].verification_state == "pending"
+        assert all(row.verification_state != "verified" for row in statuses if session.get(_models.Module, row.module_id).code in {"hr", "payroll"})
+        assert tenant.status != "ready"
     finally:
         settings.feature_flags = original_flags

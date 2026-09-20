@@ -73,8 +73,8 @@ MODULE_APPLICATION_PINS: dict[str, ApplicationPin] = {
         "e68a3deaa95ae5b2c3d743297d0a4ab505733fc1",
         "module",
         "GNU General Public License (v3)",
-        "blocked",
-        "Official HRMS v15.64.1 still creates the removed Frappe Expense Claim Type fixture; no clean-install-compatible official HRMS v15 release is verified for the pinned Frappe/ERPNext baseline.",
+        "verified",
+        "Verified by the clean disposable Frappe/ERPNext/HRMS/lenerp_core install recorded in ops/staging/evidence/phase2-clean-disposable-install.json.",
     ),
 }
 

@@ -13,6 +13,7 @@ HRMS_COMMIT="e68a3deaa95ae5b2c3d743297d0a4ab505733fc1"
 LENERP_VERSION="0.2.0"
 LENERP_COMMIT="a7e47208baf6583295f5f2632f4787262cd3f475"
 HRMS_DIR="$BENCH_DIR/apps/hrms"
+LENERP_DIR="$BENCH_DIR/apps/lenerp_core"
 
 [[ -s "$BACKUP_EVIDENCE_FILE" ]] || { echo "verified production backup evidence is required" >&2; exit 1; }
 backup_dir="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["local_backup_dir"])' "$BACKUP_EVIDENCE_FILE")"
@@ -34,19 +35,20 @@ trap 'status=$?; if [[ "$status" -ne 0 ]]; then rollback_site || echo "CRITICAL:
 
 apps="$(sudo -n -u frappe bash -lc "cd '$BENCH_DIR' && bench --site '$SITE' list-apps")"
 if ! grep -Eq '^hrms[[:space:]]+15\.64\.1([[:space:]]|$)' <<<"$apps"; then
-  echo "Pinned HRMS is not already installed; the Phase 02 production gate refuses installation without a clean-install-compatible verified pin." >&2
+  echo "Pinned HRMS is not already installed; the Phase 02 production gate refuses an unreviewed production mutation." >&2
   exit 1
 fi
 grep -Eq "^frappe[[:space:]]+$FRAPPE_VERSION([[:space:]]|$)" <<<"$apps"
 grep -Eq "^erpnext[[:space:]]+$ERPNEXT_VERSION([[:space:]]|$)" <<<"$apps"
 grep -Eq "^lenerp_core[[:space:]]+$LENERP_VERSION([[:space:]]|$)" <<<"$apps"
-for app in frappe erpnext hrms lenerp_core; do
+for app in frappe erpnext hrms; do
   sudo -n test -d "$BENCH_DIR/apps/$app/.git"
 done
+sudo -n test -f "$LENERP_DIR/SOURCE_COMMIT.txt"
 test "$(sudo -n -u frappe git -C "$BENCH_DIR/apps/frappe" rev-parse HEAD)" = "$FRAPPE_COMMIT"
 test "$(sudo -n -u frappe git -C "$BENCH_DIR/apps/erpnext" rev-parse HEAD)" = "$ERPNEXT_COMMIT"
 test "$(sudo -n -u frappe git -C "$HRMS_DIR" rev-parse HEAD)" = "$HRMS_COMMIT"
-test "$(sudo -n -u frappe git -C "$BENCH_DIR/apps/lenerp_core" rev-parse HEAD)" = "$LENERP_COMMIT"
+test "$(sudo -n -u frappe tr -d '\r\n' < "$LENERP_DIR/SOURCE_COMMIT.txt")" = "$LENERP_COMMIT"
 sudo -n -u frappe bash -lc "cd '$BENCH_DIR' && bench setup requirements hrms"
 sudo -n -u frappe bash -lc "cd '$BENCH_DIR' && bench --site '$SITE' migrate"
 sudo -n -u frappe bash -lc "cd '$BENCH_DIR' && bench build --app hrms"

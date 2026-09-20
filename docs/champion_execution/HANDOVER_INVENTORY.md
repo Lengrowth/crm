@@ -77,17 +77,17 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; `PLAT-P3` PASS; 
 ## Phase 02 HRMS dependency baseline
 
 - HRMS source identity is recorded at upstream tag `v15.64.1`, commit
-  `e68a3deaa95ae5b2c3d743297d0a4ab505733fc1`, licensed under GNU GPL v3, but
-  the pin is blocked: its official `after_install` fixture still references
-  the removed Frappe `Expense Claim Type` controller on the declared Frappe
-  v15.119.1 / ERPNext v15.120.0 baseline. The authoritative dependency record
-  is `ops/staging/application-dependencies.json`.
+  `e68a3deaa95ae5b2c3d743297d0a4ab505733fc1`, licensed under GNU GPL v3. The
+  exact pin is verified by the disposable clean-install evidence in
+  `ops/staging/evidence/phase2-clean-disposable-install.json`; the authoritative
+  dependency record is `ops/staging/application-dependencies.json`.
 - The resolver derives platform applications separately from effective module
   metadata and includes HRMS only for HR/Payroll. Exact app/version/commit
   readback, migration, role/workspace verification, and truthful hidden/
   needs-attention states are implemented locally; the provider and release
-  preflight now fail closed before mutation while compatibility is blocked.
-  Staging and production gates have not passed.
+  preflight now require the verified compatibility/readback record. Staging
+  is still subject to the final protected candidate gate; production remains
+  unchanged.
 
 - The local PLAT-P4 implementation is on `codex/plat-p4` from authoritative
   `lengrowth/main` `2a697a831d04a41aaabb3e6f2413f53ce4e749c6`; the candidate is

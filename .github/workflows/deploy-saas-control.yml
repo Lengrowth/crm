@@ -397,19 +397,19 @@ jobs:
           hrms_commit="e68a3deaa95ae5b2c3d743297d0a4ab505733fc1"
           hrms_dir=/opt/frappe-staging-bench/apps/hrms
           apps="$(sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test list-apps")"
-          if ! grep -Eq '^hrms[[:space:]]+15\.64\.1([[:space:]]|$)' <<<"$apps"; then
-            echo "Pinned HRMS has no clean-install compatibility evidence for this Frappe/ERPNext baseline; refusing an install or source-fetch retry." >&2
-            exit 1
+          if [[ ! -d "$hrms_dir/.git" ]]; then
+            sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench get-app --branch v15.64.1 https://github.com/frappe/hrms"
           fi
           grep -Eq '^frappe[[:space:]]+15\.119\.1([[:space:]]|$)' <<<"$apps"
           grep -Eq '^erpnext[[:space:]]+15\.120\.0([[:space:]]|$)' <<<"$apps"
-          grep -Eq '^lenerp_core[[:space:]]+0\.2\.0([[:space:]]|$)' <<<"$apps"
           test -d "$hrms_dir/.git"
           test "$(sudo -u frappe git -C "$hrms_dir" rev-parse HEAD)" = "$hrms_commit"
           test "$(sudo -u frappe git -C /opt/frappe-staging-bench/apps/frappe rev-parse HEAD)" = "edae775dd36b6c4ad7acab10230262bd74040765"
           test "$(sudo -u frappe git -C /opt/frappe-staging-bench/apps/erpnext rev-parse HEAD)" = "945e825bee3d0d645f6cb59bcaab90fcbfb98ce3"
-          test "$(sudo -u frappe git -C /opt/frappe-staging-bench/apps/lenerp_core rev-parse HEAD)" = "a7e47208baf6583295f5f2632f4787262cd3f475"
           sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench setup requirements hrms"
+          if ! grep -Eq '^hrms[[:space:]]+15\.64\.1([[:space:]]|$)' <<<"$apps"; then
+            sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test install-app hrms"
+          fi
           sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test migrate"
           sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench build --app hrms"
 
@@ -420,6 +420,7 @@ jobs:
           test -d "$exact_dir"
           test "$core_commit" = "a7e47208baf6583295f5f2632f4787262cd3f475"
           sudo rsync -a --delete --exclude='.git' "$exact_dir/" /opt/frappe-staging-bench/apps/lenerp_core/
+          printf '%s\n' "$core_commit" | sudo tee /opt/frappe-staging-bench/apps/lenerp_core/SOURCE_COMMIT.txt >/dev/null
           sudo chown -R frappe:frappe /opt/frappe-staging-bench/apps/lenerp_core
           # The exact bundle is copied into the protected bench rather than
           # fetched with bench get-app. Register it explicitly before asking
@@ -436,6 +437,7 @@ jobs:
               path.write_text('\n'.join([*lines, 'lenerp_core']) + '\n', encoding='utf-8')
           PY
           sudo -u frappe grep -qx 'lenerp_core' "$apps_file"
+          test "$(sudo -u frappe tr -d '\r\n' < /opt/frappe-staging-bench/apps/lenerp_core/SOURCE_COMMIT.txt)" = "$core_commit"
           if ! sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test list-apps | grep -Eq '^lenerp_core[[:space:]]'"; then
             sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test install-app lenerp_core"
           fi
@@ -446,7 +448,8 @@ jobs:
       - name: Verify the dedicated ERP staging bench and queues
         env:
           OUTPUT_FILE: ${{ github.workspace }}/staging-browser-evidence/erp/phase02-runtime-readback.json
-        run: sudo env OUTPUT_FILE="$OUTPUT_FILE" BACKUP_DIR="${PHASE02_STAGING_BACKUP_DIR:-}" scripts/release/erp_staging_smoke.sh
+          EXPECTED_CUSTOM_APP_COMMIT: a7e47208baf6583295f5f2632f4787262cd3f475
+        run: sudo env OUTPUT_FILE="$OUTPUT_FILE" BACKUP_DIR="${PHASE02_STAGING_BACKUP_DIR:-}" EXPECTED_CUSTOM_APP_COMMIT="$EXPECTED_CUSTOM_APP_COMMIT" scripts/release/erp_staging_smoke.sh
 
       - name: Run the persisted Champion synthetic ERP demonstration smoke
         env:

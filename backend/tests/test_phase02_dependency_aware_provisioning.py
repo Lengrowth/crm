@@ -46,7 +46,7 @@ def test_application_resolver_adds_hrms_once_in_stable_order():
     assert resolution.applications == ("frappe", "erpnext", "hrms", "lenerp_core")
     assert resolution.exact_versions["hrms"] == "15.64.1"
     assert resolution.commits["hrms"] == "e68a3deaa95ae5b2c3d743297d0a4ab505733fc1"
-    assert resolution.unverified_applications == ("hrms",)
+    assert resolution.unverified_applications == ()
     assert [item.required_by for item in resolution.ordered if item.pin.name == "hrms"] == [("hr", "payroll")]
 
 
@@ -59,10 +59,10 @@ def test_exact_application_commit_readback_is_required():
     assert any(item.startswith("erpnext commit") for item in incompatible)
 
 
-def test_unverified_hrms_pin_blocks_before_provider_mutation():
+def test_verified_hrms_pin_is_allowed_before_provider_mutation():
     session = make_session()
-    with pytest.raises(StepFailure, match="clean-install compatibility evidence"):
-        _application_resolution(session, ["hr"])
+    resolution = _application_resolution(session, ["hr"])
+    assert resolution.exact_versions["hrms"] == "15.64.1"
 
 
 def test_cyclic_module_dependency_rejected_before_provider_mutation():
