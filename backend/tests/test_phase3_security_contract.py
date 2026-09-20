@@ -18,7 +18,7 @@ def test_erp_callback_is_browser_bound_and_consumed_under_a_lock() -> None:
     assert "_STATE_COOKIE" in source
     assert "browser_binding" in source
     assert "secrets.compare_digest" in source
-    assert "with frappe.db.advisory_lock" in source
+    assert "with _advisory_lock" in source
     assert "manager.set_cookie" in source
     assert "samesite=\"Lax\"" in source
 

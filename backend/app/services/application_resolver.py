@@ -63,7 +63,7 @@ class ApplicationResolution:
 PLATFORM_APPLICATION_PINS: tuple[ApplicationPin, ...] = (
     ApplicationPin("frappe", "15.119.1", "edae775dd36b6c4ad7acab10230262bd74040765", "platform"),
     ApplicationPin("erpnext", "15.120.0", "945e825bee3d0d645f6cb59bcaab90fcbfb98ce3", "platform"),
-    ApplicationPin("lenerp_core", "0.2.0", "a1b74431165bfc202fbd3717df21f3372ffee984", "platform"),
+    ApplicationPin("lenerp_core", "0.2.0", "8d77cec7504d22f9c0a235034777e31fa07fc62", "platform"),
 )
 
 MODULE_APPLICATION_PINS: dict[str, ApplicationPin] = {

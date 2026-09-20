@@ -12,10 +12,12 @@ import hashlib
 import json
 import secrets
 from base64 import urlsafe_b64encode
+from contextlib import contextmanager
 from urllib.parse import urlencode, urlsplit
 
 import frappe
 import requests
+from frappe.exceptions import DuplicateEntryError
 
 
 MANAGED_ROLES = {
@@ -28,6 +30,8 @@ MANAGED_ROLES = {
     "Champion Platform Operator",
 }
 DEFAULT_ROLE_PROFILES = {"champion-v1": ["Champion Sales User"]}
+_STATE_COOKIE = "lenerp_sso_state"
+_STATE_TTL_SECONDS = 300
 
 
 def _conf(name: str, default: str | None = None) -> str | None:
@@ -77,6 +81,20 @@ def _cache_key(state: str) -> str:
     return f"lenerp-sso:{hashlib.sha256(state.encode('utf-8')).hexdigest()}"
 
 
+def _state_binding(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _set_state_cookie(value: str, *, delete: bool = False) -> None:
+    manager = getattr(frappe.local, "cookie_manager", None)
+    if manager is None:
+        frappe.throw("Central sign-in is not configured for this ERP site.")
+    if delete:
+        manager.delete_cookie(_STATE_COOKIE)
+    else:
+        manager.set_cookie(_STATE_COOKIE, value, max_age=_STATE_TTL_SECONDS, httponly=True, secure=True, samesite="Lax")
+
+
 def _safe_path(path: str) -> str:
     candidate = path or "/app"
     parsed = urlsplit(candidate)
@@ -104,7 +122,10 @@ def _start_transaction(next_path: str = "/app") -> str:
         "callback": callback,
         "requested_path": _safe_path(next_path),
     }
-    frappe.cache().set_value(_cache_key(state), json.dumps(transaction), expires_in=300)
+    browser_nonce = secrets.token_urlsafe(32)
+    transaction["browser_binding"] = _state_binding(browser_nonce)
+    frappe.cache().set_value(_cache_key(state), json.dumps(transaction), expires_in_sec=300)
+    _set_state_cookie(browser_nonce)
     query = urlencode(
         {
             "tenant_id": tenant_id,
@@ -126,11 +147,15 @@ def begin(next_path: str = "/app") -> dict[str, str]:
 
 
 def _redirect_to(url: str) -> None:
-    frappe.local.response["type"] = "redirect"
-    frappe.local.response["location"] = url
-    frappe.local.response["http_status_code"] = 302
+    if getattr(getattr(frappe.local, "request", None), "path", "").startswith("/api/"):
+        frappe.local.response["type"] = "redirect"
+        frappe.local.response["location"] = url
+        frappe.local.response["http_status_code"] = 302
+        return
+    frappe.redirect(url)
 
 
+@frappe.whitelist(allow_guest=True)
 def direct_visit(next_path: str = "/app") -> None:
     _redirect_to(_start_transaction(next_path))
 
@@ -140,9 +165,31 @@ def _read_transaction(state: str) -> dict[str, str]:
     if not raw:
         frappe.throw("This sign-in link is expired. Start again from LenERP.")
     transaction = json.loads(raw) if isinstance(raw, str) else raw
-    if not isinstance(transaction, dict) or transaction.get("state") != state:
+    browser_nonce = getattr(getattr(frappe.local, "request", None), "cookies", {}).get(_STATE_COOKIE)
+    if not isinstance(transaction, dict) or transaction.get("state") != state or not browser_nonce or not secrets.compare_digest(str(transaction.get("browser_binding", "")), _state_binding(browser_nonce)):
         frappe.throw("This sign-in request is invalid. Start again from LenERP.")
     return transaction
+
+
+@contextmanager
+def _advisory_lock(key: str, timeout: int = 5):
+    """Use the MariaDB advisory-lock primitive available on the staging bench."""
+    result = frappe.db.sql("SELECT GET_LOCK(%s, %s)", (key, timeout))
+    if not result or result[0][0] != 1:
+        frappe.throw("This sign-in request is busy. Retry safely from LenERP.")
+    try:
+        yield
+    finally:
+        frappe.db.sql("SELECT RELEASE_LOCK(%s)", (key,))
+
+
+def _consume_transaction(state: str) -> dict[str, str]:
+    """Atomically consume a browser-bound transaction before creating a session."""
+    with _advisory_lock(_cache_key(state), timeout=5):
+        transaction = _read_transaction(state)
+        frappe.cache().delete_value(_cache_key(state))
+        _set_state_cookie("", delete=True)
+        return transaction
 
 
 def _role_profile(version: str) -> list[str]:
@@ -162,21 +209,33 @@ def _break_glass_user() -> str:
     return _conf("lenerp_break_glass_user", "Administrator") or "Administrator"
 
 
+def _same_identity(left: object, right: object) -> bool:
+    return str(left or "").strip().casefold() == str(right or "").strip().casefold()
+
+
 def _provision_user(email: str, full_name: str, role_profile_version: str) -> tuple[str, bool]:
-    if email.lower() == _break_glass_user().lower():
+    if _same_identity(email, _break_glass_user()):
         frappe.throw("The break-glass account is not managed by central sign-in.")
     existing_name = frappe.db.exists("User", {"email": email})
     created = not bool(existing_name)
     if created:
         if not _jit_enabled():
             frappe.throw("Just-in-time ERP user provisioning is not enabled for this site.")
-        user = frappe.get_doc({"doctype": "User", "email": email, "first_name": full_name, "enabled": 1, "user_type": "System User", "send_welcome_email": 0})
-        user.insert(ignore_permissions=True)
+        try:
+            user = frappe.get_doc({"doctype": "User", "email": email, "first_name": full_name, "enabled": 1, "user_type": "System User", "send_welcome_email": 0})
+            user.insert(ignore_permissions=True)
+        except DuplicateEntryError:
+            existing_name = frappe.db.exists("User", {"email": email})
+            if not existing_name:
+                raise
+            created = False
+            user = frappe.get_doc("User", existing_name)
     else:
         user = frappe.get_doc("User", existing_name)
         if not user.enabled:
             frappe.throw("The ERP user is inactive.")
         user.first_name = full_name or user.first_name
+    frappe.db.sql("SELECT name FROM `tabUser` WHERE name=%s FOR UPDATE", (user.name,))
     roles = _role_profile(role_profile_version)
     if not roles:
         frappe.throw("The approved ERP role profile is not available.")
@@ -192,7 +251,7 @@ def callback(code: str | None = None, state: str | None = None) -> None:
     transaction = _read_transaction(state)
     try:
         response = requests.post(
-            f"{_control_plane_api_url()}/sso/token",
+            f"{_control_plane_api_url()}/api/sso/token",
             json={
                 "code": code,
                 "client_id": _client_id(),
@@ -209,7 +268,7 @@ def callback(code: str | None = None, state: str | None = None) -> None:
         frappe.throw("The control plane is temporarily unavailable. Retry safely.")
     if response.status_code != 200:
         frappe.cache().delete_value(_cache_key(state))
-        frappe.throw("Central sign-in could not be completed. Retry safely or contact an administrator.")
+        frappe.throw(f"Central sign-in could not be completed (token exchange status {response.status_code}). Retry safely or contact an administrator.")
     try:
         token = response.json()
     except (TypeError, ValueError):
@@ -229,19 +288,15 @@ def callback(code: str | None = None, state: str | None = None) -> None:
     ):
         frappe.cache().delete_value(_cache_key(state))
         frappe.throw("Central sign-in returned an invalid tenant or issuer.")
+    transaction = _consume_transaction(state)
     user_name, created = _provision_user(token["email"], token.get("full_name", ""), token["role_profile_version"])
     try:
         mapping = requests.post(
-            f"{_control_plane_api_url()}/sso/mappings",
+            f"{_control_plane_api_url()}/api/sso/mappings",
             json={
-                "client_id": _client_id(),
+                "exchange_handle": token["mapping_handle"],
                 "client_secret": _conf("lenerp_sso_exchange_secret"),
-                "control_plane_user_id": token["control_plane_user_id"],
-                "organization_id": token["organization_id"],
-                "tenant_id": token["tenant_id"],
-                "erp_site": frappe.local.site,
                 "erp_user": user_name,
-                "role_profile_version": token["role_profile_version"],
             },
             timeout=10,
             verify=_tls_verify(),
@@ -251,7 +306,6 @@ def callback(code: str | None = None, state: str | None = None) -> None:
         if created:
             frappe.db.set_value("User", user_name, "enabled", 0, update_modified=False)
         frappe.throw("Central sign-in could not save the identity mapping. Retry safely.")
-    frappe.cache().delete_value(_cache_key(state))
     frappe.local.flags.lenerp_sso_authenticated = True
     frappe.local.login_manager.login_as(user_name)
     _redirect_to(frappe.utils.get_url(transaction["requested_path"]))
@@ -268,7 +322,13 @@ def extend_bootinfo(bootinfo: dict[str, object]) -> None:
 
 
 def on_login(login_manager: object) -> None:
-    if not enabled() or frappe.session.user in {"Guest", _break_glass_user()}:
+    login_identity = getattr(login_manager, "user", None) or getattr(login_manager, "username", None)
+    if (
+        not enabled()
+        or _same_identity(frappe.session.user, "Guest")
+        or _same_identity(frappe.session.user, _break_glass_user())
+        or _same_identity(login_identity, _break_glass_user())
+    ):
         return
     if getattr(frappe.local.flags, "lenerp_sso_authenticated", False):
         return
