@@ -752,7 +752,7 @@ jobs:
           values['SSO_EXCHANGE_SECRET'] = secret
           path.write_text('\n'.join(f'{key}={value}' for key, value in values.items()) + '\n', encoding='utf-8')
           PY
-          sudo -n -u frappe /usr/local/bin/bench --site erp-staging.example.test clear-cache
+          sudo -n -u frappe bash -lc 'cd /opt/frappe-staging-bench && /usr/local/bin/bench --site erp-staging.example.test clear-cache'
           sudo systemctl restart frappe-staging-web.service
           sudo systemctl restart saas-control-staging-backend
           sleep 3
@@ -838,7 +838,7 @@ jobs:
           if [[ -f "$identity_dir/site_config.before.json" ]]; then
             sudo cp -- "$identity_dir/site_config.before.json" /opt/frappe-staging-bench/sites/erp-staging.example.test/site_config.json
           fi
-          sudo -n -u frappe /usr/local/bin/bench --site erp-staging.example.test clear-cache || true
+          sudo -n -u frappe bash -lc 'cd /opt/frappe-staging-bench && /usr/local/bin/bench --site erp-staging.example.test clear-cache' || true
           sudo systemctl restart frappe-staging-web.service || true
           sudo systemctl restart saas-control-staging-backend || true
           if [[ -f "$identity_dir/manifest.json" ]]; then
