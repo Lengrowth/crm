@@ -15,7 +15,7 @@
     },
     "lenerp_core": {
       "version": "0.2.0",
-      "commit": "568b7fe947af344e7f4b67739f4f30b2b1c50d2d",
+      "commit": "a9fdc6de436d3a533b2293dcf852715d805b54a4",
       "source": "platform",
       "license": "Proprietary Len-OS application"
     }
