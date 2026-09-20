@@ -131,9 +131,14 @@ class SSOService:
     def _validate_requested_path(path: str) -> None:
         from urllib.parse import unquote
 
-        decoded = unquote(path)
+        decoded = path
+        for _ in range(5):
+            next_value = unquote(decoded)
+            if next_value == decoded:
+                break
+            decoded = next_value
         parsed = urlsplit(decoded)
-        if parsed.scheme or parsed.netloc or parsed.query or parsed.fragment or "\\" in decoded:
+        if parsed.scheme or parsed.netloc or parsed.query or parsed.fragment or "\\" in decoded or any(ord(char) < 0x20 for char in decoded):
             raise SSOBrokerError("The requested ERP destination is not allowed.", 400)
         if not decoded.startswith("/") or decoded.startswith("//") or ".." in decoded.split("/"):
             raise SSOBrokerError("The requested ERP destination is not allowed.", 400)
@@ -289,20 +294,32 @@ class SSOService:
         if request is not None:
             request.status = "exchanged"
             request.completed_at = now
+        mapping_handle = secrets.token_urlsafe(32)
+        code_record.mapping_handle_hash = self._hash(mapping_handle)
+        code_record.mapping_handle_expires_at = now + self.code_ttl
         self._audit(session, action="sso_exchange_succeeded", user_id=user.id, organization_id=tenant.organization_id, tenant_id=tenant.id, entity_id=code_record.request_id, metadata={"client_id": payload.client_id, "audience": payload.audience})
         session.commit()
-        return SSOTokenResponse(issuer=settings.frontend_base_url.rstrip("/"), audience=code_record.audience, client_id=code_record.client_id, control_plane_user_id=user.id, email=user.email, full_name=user.full_name, organization_id=tenant.organization_id, tenant_id=tenant.id, erp_user_key=user.email.lower(), role_profile_version=tenant.erp_role_profile_version or "", expires_in=60)
+        return SSOTokenResponse(issuer=settings.frontend_base_url.rstrip("/"), audience=code_record.audience, client_id=code_record.client_id, control_plane_user_id=user.id, email=user.email, full_name=user.full_name, organization_id=tenant.organization_id, tenant_id=tenant.id, erp_user_key=user.email.lower(), role_profile_version=tenant.erp_role_profile_version or "", mapping_handle=mapping_handle, expires_in=60)
 
     def record_mapping(self, session: Session, payload: SSOIdentityMappingRequest) -> SSOIdentityMappingResponse:
         self._require_exchange_secret(payload.client_secret)
         if not self.enabled():
             raise SSOBrokerError("Central ERP sign-in is not enabled.", 404, audit_action="sso_disabled")
-        if payload.client_id != settings.sso_client_id:
-            raise SSOBrokerError("The ERP identity exchange is unavailable.", 401, audit_action="sso_exchange_denied")
-        user = session.get(SaaSUser, payload.control_plane_user_id)
-        tenant = session.get(Tenant, payload.tenant_id)
-        if user is None or tenant is None or tenant.organization_id != payload.organization_id:
+        code_record = session.execute(select(SSOAuthorizationCode).where(SSOAuthorizationCode.mapping_handle_hash == self._hash(payload.exchange_handle))).scalar_one_or_none()
+        if code_record is None or code_record.consumed_at is None:
+            raise SSOBrokerError("The ERP identity mapping is invalid or expired.", 400, audit_action="sso_mapping_denied")
+        handle_expires_at = code_record.mapping_handle_expires_at
+        if handle_expires_at is None or (handle_expires_at.replace(tzinfo=timezone.utc) if handle_expires_at.tzinfo is None else handle_expires_at) <= self._now():
+            raise SSOBrokerError("The ERP identity mapping is invalid or expired.", 400, audit_action="sso_mapping_expired")
+        user = session.get(SaaSUser, code_record.user_id)
+        tenant = session.get(Tenant, code_record.tenant_id)
+        if user is None or tenant is None or code_record.client_id != settings.sso_client_id:
             raise SSOBrokerError("The ERP identity mapping is not valid.", 400, audit_action="sso_mapping_denied")
+        erp_site = tenant.erpnext_site_name
+        if not erp_site:
+            raise SSOBrokerError("The ERP site identity is not approved.", 409, audit_action="sso_site_denied")
+        if payload.erp_user != user.email.lower():
+            raise SSOBrokerError("The ERP identity mapping is not valid.", 400, audit_action="sso_mapping_identity_denied")
         try:
             self._validate_membership(session, user, tenant)
         except SSOBrokerError:
@@ -318,28 +335,32 @@ class SSOService:
             )
             session.commit()
             raise
-        if tenant.erp_role_profile_version != payload.role_profile_version:
-            raise SSOBrokerError("The ERP role profile is no longer current.", 409, audit_action="sso_role_profile_denied")
-        if not tenant.erpnext_site_name or tenant.erpnext_site_name != payload.erp_site:
-            raise SSOBrokerError("The ERP site identity is not approved.", 409, audit_action="sso_site_denied")
         existing = session.execute(select(ERPIdentityMapping).where(ERPIdentityMapping.user_id == user.id, ERPIdentityMapping.organization_id == tenant.organization_id, ERPIdentityMapping.tenant_id == tenant.id)).scalar_one_or_none()
         conflicting = session.execute(select(ERPIdentityMapping).where(ERPIdentityMapping.tenant_id == tenant.id, ERPIdentityMapping.erp_user == payload.erp_user, ERPIdentityMapping.user_id != user.id)).scalar_one_or_none()
         if conflicting is not None:
             raise SSOBrokerError("The ERP identity is already mapped to another central user.", 409, audit_action="sso_mapping_conflict")
-        replayed = existing is not None and existing.erp_user == payload.erp_user and existing.role_profile_version == payload.role_profile_version and existing.mapping_status == "active"
+        role_profile_version = tenant.erp_role_profile_version or ""
+        replayed = existing is not None and existing.erp_user == payload.erp_user and existing.role_profile_version == role_profile_version and existing.mapping_status == "active"
+        if code_record.mapping_handle_consumed_at is not None:
+            if replayed:
+                return SSOIdentityMappingResponse(mapping_id=existing.id, mapping_status=existing.mapping_status, role_profile_version=existing.role_profile_version, replayed=True)
+            raise SSOBrokerError("The ERP identity mapping is invalid or expired.", 400, audit_action="sso_mapping_replay")
+        consumed = session.execute(update(SSOAuthorizationCode).where(SSOAuthorizationCode.id == code_record.id, SSOAuthorizationCode.mapping_handle_consumed_at.is_(None)).values(mapping_handle_consumed_at=self._now()))
+        if consumed.rowcount != 1:
+            raise SSOBrokerError("The ERP identity mapping is invalid or expired.", 400, audit_action="sso_mapping_replay")
         previous_profile = existing.role_profile_version if existing else None
         if existing is None:
-            existing = ERPIdentityMapping(user_id=user.id, organization_id=tenant.organization_id, tenant_id=tenant.id, erp_site=payload.erp_site, erp_user=payload.erp_user, role_profile_version=payload.role_profile_version)
+            existing = ERPIdentityMapping(user_id=user.id, organization_id=tenant.organization_id, tenant_id=tenant.id, erp_site=erp_site, erp_user=payload.erp_user, role_profile_version=role_profile_version)
             session.add(existing)
         else:
-            existing.erp_site = payload.erp_site
+            existing.erp_site = erp_site
             existing.erp_user = payload.erp_user
-            existing.role_profile_version = payload.role_profile_version
+            existing.role_profile_version = role_profile_version
             existing.mapping_status = "active"
             existing.revoked_at = None
         existing.last_login_at = self._now()
         session.flush()
-        self._audit(session, action="sso_role_reconciled" if previous_profile and previous_profile != payload.role_profile_version else "sso_mapping_upserted", user_id=user.id, organization_id=tenant.organization_id, tenant_id=tenant.id, entity_id=existing.id, metadata={"role_profile_version": payload.role_profile_version, "replayed": replayed})
+        self._audit(session, action="sso_role_reconciled" if previous_profile and previous_profile != role_profile_version else "sso_mapping_upserted", user_id=user.id, organization_id=tenant.organization_id, tenant_id=tenant.id, entity_id=existing.id, metadata={"role_profile_version": role_profile_version, "replayed": replayed})
         session.commit()
         return SSOIdentityMappingResponse(mapping_id=existing.id, mapping_status=existing.mapping_status, role_profile_version=existing.role_profile_version, replayed=replayed)
 
@@ -357,22 +378,7 @@ class SSOService:
             raise SSOBrokerError("ERP destination unavailable.", 404)
         membership = session.execute(select(OrganizationMembership).where(OrganizationMembership.organization_id == tenant.organization_id, OrganizationMembership.user_id == user.id)).scalar_one_or_none()
         if membership is None:
-            if not user.is_platform_admin:
-                raise SSOBrokerError("ERP destination unavailable.", 404)
-            organization = session.get(Organization, tenant.organization_id)
-            if organization is None:
-                raise SSOBrokerError("ERP destination unavailable.", 404)
-            return SSOReadinessResponse(
-                tenant_id=tenant.id,
-                organization_id=tenant.organization_id,
-                organization_name=organization.name,
-                tenant_slug=tenant.tenant_slug,
-                environment=tenant.environment,
-                destination=tenant.erpnext_base_url,
-                enabled=False,
-                ready=False,
-                explanation="Your membership does not authorize central sign-in for this ERP site.",
-            )
+            raise SSOBrokerError("ERP destination unavailable.", 404)
         organization = session.get(Organization, tenant.organization_id)
         if organization is None:
             raise SSOBrokerError("ERP destination unavailable.", 404)

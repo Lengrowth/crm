@@ -1,6 +1,6 @@
 # Champion Pre-Kickoff Module Showcase — Orchestration Status
 
-Last updated: 2026-09-20 (Asia/Tbilisi)
+Last updated: 2026-09-21 (Asia/Tbilisi)
 
 ## Program state
 
@@ -9,7 +9,7 @@ Last updated: 2026-09-20 (Asia/Tbilisi)
 | 00 | Complete | PASS |
 | 01 | Complete; staging gate deferred by prior record | PASS WITH DEFERRED STAGING GATE |
 | 02 | Closed; exact protected candidate and browser evidence verified | PASS — Phase 03 permitted; production unchanged |
-| 03 | Protected staging PASS on isolated candidate; production SSO remains off | PASS — independent read-only review open |
+| 03 | Prior protected staging evidence retained; security remediation is locally ready and production SSO remains off | RERUN REQUIRED — independent read-only review open |
 
 ## Phase 02 — HRMS and dependency-aware provisioning
 
@@ -58,9 +58,10 @@ Phase 02 closure readback: protected staging run `35506309957` / job
 `staging-browser-evidence-9674a6a1b4adf9447af759458763b25721672272`, artifact
 ID `10603752341`, digest
 `sha256:bd808a20f5f9743e122dc064113160dbf60ad8bd073638b9dd132bf4c191a8ef`.
-Production and Cloudflare remain unchanged. Phase 02 is PASS and Phase 03
-protected staging is PASS. Independent read-only review remains open; this
-record does not claim production SSO.
+Production and Cloudflare remain unchanged. Phase 02 is PASS. The prior Phase 03
+protected staging run is retained as historical evidence; the remediation candidate
+requires a fresh protected rerun before independent review can close. This record
+does not claim production SSO.
 
 ## Phase 03 — Unified identity and cross-navigation
 
@@ -70,10 +71,12 @@ commit `3a7121974cb55ebcac120af6c07eaab53cfedb2c`. The immutable bundle SHA-256
 is `839AF05D5EDB3D05C3D94AE17FF0DB6614901F44D8286045C5621D7AD826A987`.
 Browser evidence artifact `10611928332` has digest
 `sha256:3e1f685518fd14b05cb656fa1148b8e14d4293f645788f7d9b4fb31850bb6b62`.
-The protected run passed the authorization-code/PKCE flow, replay and denial
+The prior protected run passed the authorization-code/PKCE flow, replay and denial
 checks, control-plane-to-ERP and ERP-to-control navigation, direct ERP access,
 membership/mapping revocation, feature-off rollback, independent ERP login,
-staging restoration, and synthetic cleanup. Phase 04 was not started.
+staging restoration, and synthetic cleanup. The remediation rerun additionally
+requires browser-bound state, mapping-handle isolation, durable rate-limit, and
+authenticated break-glass evidence. Phase 04 was not started.
 
 ## Worktree preservation
 

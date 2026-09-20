@@ -201,6 +201,18 @@ class SSOAuthorizationCode(Base, UUIDMixin, TimestampMixin):
     code_challenge: Mapped[str] = mapped_column(String(128), nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     consumed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    mapping_handle_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, unique=True)
+    mapping_handle_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    mapping_handle_consumed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class SSORateLimitBucket(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "sso_rate_limit_buckets"
+    __table_args__ = (UniqueConstraint("bucket_key", name="uq_sso_rate_limit_bucket_key"),)
+
+    bucket_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    window_started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    request_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
 
 class ERPIdentityMapping(Base, UUIDMixin, TimestampMixin):

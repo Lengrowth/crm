@@ -43,7 +43,15 @@ function SsoAuthorizeContent() {
         return;
       }
       setState(cause instanceof ApiError && cause.status < 500 ? "denied" : "error");
-      setMessage(cause instanceof Error ? cause.message : "Central sign-in is temporarily unavailable.");
+      if (cause instanceof ApiError && cause.status === 403) {
+        setMessage("Your account is not authorized for this ERP site. Return to the control plane and choose an authorized site, or contact your administrator.");
+      } else if (cause instanceof ApiError && cause.status === 404) {
+        setMessage("This ERP site is unavailable or central sign-in is disabled. Return to the control plane and choose another site.");
+      } else if (cause instanceof ApiError && cause.status === 409) {
+        setMessage("This sign-in request is no longer valid. Start a fresh sign-in from the ERP site.");
+      } else {
+        setMessage(cause instanceof Error ? cause.message : "Central sign-in is temporarily unavailable. Retry shortly or contact your administrator.");
+      }
     });
   }, [params, requestPath, router]);
 
@@ -55,6 +63,7 @@ function SsoAuthorizeContent() {
         <p className="mt-4 text-sm leading-7" style={{ color: "var(--muted)" }}>{message}</p>
         <div className="mt-6 flex flex-wrap gap-3">
           {state !== "loading" ? <Link className="ui-button ui-button-secondary" href="/app">Return to control plane</Link> : null}
+          {state === "denied" ? <Link className="ui-button ui-button-ghost" href="/app/tenants">View ERP sites</Link> : null}
           {state === "error" ? <button className="ui-button ui-button-primary" type="button" onClick={() => window.location.reload()}>Try again</button> : null}
         </div>
       </section>

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
-from app.core.hardening import InMemoryRateLimiter
+from app.core.hardening import DatabaseRateLimiter
 from app.core.config import settings
 from app.db.session import get_db_session
 from app.models.domain import SaaSUser
@@ -20,12 +20,13 @@ from app.services.sso_service import SSOBrokerError, sso_service
 
 
 router = APIRouter(prefix="/sso", tags=["sso"])
-request_limiter = InMemoryRateLimiter()
+request_limiter = DatabaseRateLimiter()
 
 
-def _limit(request: Request, operation: str) -> None:
+def _limit(request: Request, operation: str, session: Session) -> None:
     host = request.client.host if request.client else "anonymous"
     allowed, retry_after = request_limiter.allow(
+        session,
         f"{operation}:{host}",
         limit=30,
         window_seconds=60,
@@ -49,7 +50,7 @@ def authorize(
     session: Session = Depends(get_db_session),
     current_user: SaaSUser = Depends(get_current_user),
 ):
-    _limit(request, "authorize")
+    _limit(request, "authorize", session)
     try:
         return sso_service.authorize(session, current_user, payload)
     except SSOBrokerError as exc:
@@ -74,7 +75,7 @@ def token(
     request: Request,
     session: Session = Depends(get_db_session),
 ):
-    _limit(request, "token")
+    _limit(request, "token", session)
     try:
         return sso_service.exchange(session, payload)
     except SSOBrokerError as exc:
@@ -87,7 +88,7 @@ def mappings(
     request: Request,
     session: Session = Depends(get_db_session),
 ):
-    _limit(request, "mapping")
+    _limit(request, "mapping", session)
     try:
         return sso_service.record_mapping(session, payload)
     except SSOBrokerError as exc:

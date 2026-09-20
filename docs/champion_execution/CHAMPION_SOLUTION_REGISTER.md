@@ -26,7 +26,7 @@ The register is the initial decomposition. Add a new package only when a require
 |---|---|---|---|
 | C01 | `CHAMP-C01-R1` | `in_development` | Configurable branding boundary implemented; approved Champion values and staging evidence remain pending |
 | C02 | `CHAMP-C02-R1` | `in_development` | Synthetic role profiles and negative-permission boundary implemented; approved user/approval matrix remains pending |
-| C03 | `CHAMP-C03-R1` | `phase03_identity_implemented_staging_pending` | Unified identity and cross-navigation implemented locally behind server-controlled flags; protected staging evidence, approved role policy, and Champion acceptance remain pending |
+| C03 | `CHAMP-C03-R1` | `phase03_identity_remediation_ready_staging_rerun_required` | Unified identity and cross-navigation now include browser-bound state, exchange-handle mapping, authenticated break-glass rollback checks, durable SSO throttling, and accessibility fixes; protected staging evidence must be rerun before acceptance |
 | C04 | `CHAMP-C04-R1` | `in_development` | Persisted Well Site schema, links, coordinates, validation, and permissions implemented; approved identifiers/rules remain pending |
 | C05 | `CHAMP-C05-R1` | `in_development` | Persisted job workflow, assignment, lifecycle states, completion validation, and print format implemented; approved process remains pending |
 | C06 | `CHAMP-C06-R1` | `in_development` | Standard ERPNext inventory/buying/assets seed path implemented; approved stock and maintenance rules remain pending |

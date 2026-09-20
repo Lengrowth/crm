@@ -72,7 +72,29 @@ const evidence = {
   direct_erp: {},
   erp_to_control: {},
   responsive: {},
+  session_isolation: {},
 };
+
+// Start a transaction in one browser, then deliver its callback through a
+// second browser that has the control-plane session but not the ERP nonce.
+// The victim must be denied before any Frappe session is created.
+const attackerContext = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1440, height: 1000 }, reducedMotion: "reduce" });
+const attackerPage = await attackerContext.newPage();
+const transaction = await attackerPage.evaluate(async (url) => {
+  const response = await fetch(url, { credentials: "include" });
+  return { status: response.status, body: await response.json() };
+}, `${erpBase}/api/method/lenerp_core.sso.begin?next_path=%2Fapp%2Fasset-maintenance`);
+if (transaction.status !== 200 || !transaction.body.authorization_url) throw new Error("ERP did not issue a browser-bound identity transaction");
+const victimContext = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1440, height: 1000 }, reducedMotion: "reduce" });
+await addIdentityCookie(victimContext);
+const victimPage = await victimContext.newPage();
+const victimResponse = await victimPage.goto(transaction.body.authorization_url, { waitUntil: "domcontentloaded", timeout: 60000 }).catch(() => null);
+if (victimResponse && victimResponse.status() < 400) throw new Error("cross-browser callback was not rejected");
+evidence.session_isolation = { attacker_transaction_issued: true, victim_callback_denied: true, no_victim_erp_session: !victimPage.url().includes("/app") };
+await attackerPage.close();
+await victimPage.close();
+await attackerContext.close();
+await victimContext.close();
 
 const context = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1440, height: 1000 }, reducedMotion: "reduce" });
 await addIdentityCookie(context);
@@ -112,6 +134,9 @@ evidence.direct_erp = { final_url: new URL(directPage.url()).pathname, no_second
 await directPage.screenshot({ path: path.join(outputDir, "direct-erp.png"), fullPage: true });
 
 await directPage.waitForTimeout(1500);
+await assertReady(directPage, `${erpBase}/app/asset-maintenance`);
+if (!directPage.url().includes("/app/asset-maintenance")) throw new Error(`direct ERP task path was not preserved: ${directPage.url()}`);
+evidence.direct_erp.task_path = "/app/asset-maintenance";
 let returnLink = directPage.locator("[data-lenerp-control-plane]");
 if (await returnLink.count() === 0 || !(await returnLink.first().isVisible().catch(() => false))) {
   const toggles = directPage.locator(".dropdown-toggle, [data-toggle='dropdown'], [aria-haspopup='true']");

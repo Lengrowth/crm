@@ -11,6 +11,9 @@ import secrets
 import ssl
 import urllib.error
 import urllib.request
+import urllib.parse
+import http.cookiejar
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -139,6 +142,43 @@ def http_json(url: str, *, method: str = "GET", payload: dict | None = None, tok
         return error.code, value
 
 
+def break_glass_test(args: argparse.Namespace) -> None:
+    password = Path(args.password_file).read_text(encoding="utf-8").strip()
+    if not password:
+        raise SystemExit("break-glass password file is empty")
+    context = ssl.create_default_context(cafile=args.ca_bundle)
+    jar = http.cookiejar.CookieJar()
+    opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=context), urllib.request.HTTPCookieProcessor(jar))
+    login_body = urllib.parse.urlencode({"usr": args.user, "pwd": password}).encode("utf-8")
+    login_request = urllib.request.Request(f"{args.erp_base_url.rstrip('/')}/api/method/login", data=login_body, method="POST", headers={"Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json"})
+    try:
+        with opener.open(login_request, timeout=20) as response:
+            login_status = response.status
+    except urllib.error.HTTPError as error:
+        login_status = error.code
+    logged_user_status = 0
+    logged_user = None
+    app_status = 0
+    if login_status == 200:
+        try:
+            with opener.open(urllib.request.Request(f"{args.erp_base_url.rstrip('/')}/api/method/frappe.auth.get_logged_user", headers={"Accept": "application/json"}), timeout=20) as response:
+                logged_user_status = response.status
+                payload = json.loads(response.read().decode("utf-8"))
+                logged_user = payload.get("message") if isinstance(payload, dict) else None
+            with opener.open(urllib.request.Request(f"{args.erp_base_url.rstrip('/')}/app", headers={"Accept": "text/html"}), timeout=20) as response:
+                app_status = response.status
+        except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError):
+            pass
+    result = {"fresh_session": login_status == 200, "protected_identity_route": logged_user_status == 200 and logged_user == args.user, "protected_app_route": app_status == 200}
+    Path(args.evidence).parent.mkdir(parents=True, exist_ok=True)
+    evidence = json.loads(Path(args.evidence).read_text(encoding="utf-8")) if Path(args.evidence).exists() else {}
+    evidence.setdefault("break_glass", {})[args.phase] = result
+    Path(args.evidence).write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    if not all(result.values()):
+        raise SystemExit(f"Phase 03 break-glass check failed: {result}")
+    print(f"Phase 03 break-glass check passed: {args.phase}")
+
+
 def pkce() -> tuple[str, str]:
     verifier = secrets.token_urlsafe(48)
     challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode("ascii")).digest()).rstrip(b"=").decode("ascii")
@@ -166,10 +206,19 @@ def api_tests(args: argparse.Namespace) -> None:
     results["authorized_request"] = issued["status"] == 200
     code = issued["body"].get("code") if issued["status"] == 200 else None
     if code:
-        token_status, _ = http_json(f"{base}/api/sso/token", method="POST", context=context, payload={"code": code, "client_id": "lenerp-erp", "audience": "lenerp-erp", "redirect_uri": callback, "code_verifier": verifier, "client_secret": secret})
+        token_status, token_body = http_json(f"{base}/api/sso/token", method="POST", context=context, payload={"code": code, "client_id": "lenerp-erp", "audience": "lenerp-erp", "redirect_uri": callback, "code_verifier": verifier, "client_secret": secret})
         replay_status, _ = http_json(f"{base}/api/sso/token", method="POST", context=context, payload={"code": code, "client_id": "lenerp-erp", "audience": "lenerp-erp", "redirect_uri": callback, "code_verifier": verifier, "client_secret": secret})
         results["successful_exchange"] = token_status == 200
         results["authorization_code_replay_denied"] = replay_status == 400
+        if token_status == 200:
+            mapping_payload = {"exchange_handle": token_body.get("mapping_handle", ""), "client_secret": secret, "erp_user": token_body.get("erp_user_key", "")}
+            mapping_status, _ = http_json(f"{base}/api/sso/mappings", method="POST", context=context, payload=mapping_payload)
+            mapping_replay_status, _ = http_json(f"{base}/api/sso/mappings", method="POST", context=context, payload=mapping_payload)
+            results["mapping_handle_issued"] = bool(mapping_payload["exchange_handle"])
+            results["mapping_bound_to_exchange"] = mapping_status == 200
+            results["mapping_replay_is_idempotent"] = mapping_replay_status == 200
+            wrong_mapping_status, _ = http_json(f"{base}/api/sso/mappings", method="POST", context=context, payload={**mapping_payload, "exchange_handle": secrets.token_urlsafe(32)})
+            results["wrong_mapping_handle_denied"] = wrong_mapping_status == 400
 
     _, wrong_pkce = auth_payload(champion_token)
     if wrong_pkce["status"] == 200:
@@ -196,7 +245,20 @@ def api_tests(args: argparse.Namespace) -> None:
     _, platform_without_membership = auth_payload(platform_token)
     results["platform_admin_without_membership_denied"] = platform_without_membership["status"] == 403
     readiness_status, readiness = http_json(f"{base}/api/sso/readiness/{manifest['tenant_id']}", token=platform_token, context=context)
-    results["platform_admin_readiness_disabled"] = readiness_status == 200 and readiness.get("ready") is False
+    results["platform_admin_readiness_hidden"] = readiness_status == 404 and "tenant_id" not in readiness
+    concurrent_verifier, concurrent = auth_payload(champion_token)
+    if concurrent["status"] == 200:
+        concurrent_payload = {"code": concurrent["body"]["code"], "client_id": "lenerp-erp", "audience": "lenerp-erp", "redirect_uri": callback, "code_verifier": concurrent_verifier, "client_secret": secret}
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            concurrent_statuses = list(pool.map(lambda _: http_json(f"{base}/api/sso/token", method="POST", context=context, payload=concurrent_payload)[0], range(2)))
+        results["concurrent_code_replay_single_winner"] = sorted(concurrent_statuses) == [200, 400]
+    for _ in range(32):
+        rate_status, _ = http_json(f"{base}/api/sso/token", method="POST", context=context, payload={"code": "invalid-rate-limit-code", "client_id": "lenerp-erp", "audience": "lenerp-erp", "redirect_uri": callback, "code_verifier": secrets.token_urlsafe(48), "client_secret": secret})
+        if rate_status == 429:
+            results["sso_rate_limit_429"] = True
+            break
+    else:
+        results["sso_rate_limit_429"] = False
     if not all(value is True for value in results.values()):
         raise SystemExit(f"Phase 03 identity API checks failed: {json.dumps(results, sort_keys=True)}")
     Path(args.evidence).write_text(json.dumps({"synthetic": True, "results": results, "tenant_id": manifest["tenant_id"], "organization_id": manifest["organization_id"]}, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -297,8 +359,15 @@ def main() -> None:
     rollback_parser.add_argument("--manifest", required=True)
     rollback_parser.add_argument("--ca-bundle", required=True)
     rollback_parser.add_argument("--evidence", required=True)
+    break_glass_parser = subparsers.add_parser("break-glass-test")
+    break_glass_parser.add_argument("--erp-base-url", required=True)
+    break_glass_parser.add_argument("--ca-bundle", required=True)
+    break_glass_parser.add_argument("--evidence", required=True)
+    break_glass_parser.add_argument("--user", required=True)
+    break_glass_parser.add_argument("--password-file", required=True)
+    break_glass_parser.add_argument("--phase", choices=("before_enable", "sso_enabled", "after_rollback"), required=True)
     args = parser.parse_args()
-    {"prepare": prepare, "api-tests": api_tests, "cleanup": cleanup, "post-tests": post_tests, "rollback-test": rollback_test}[args.command](args)
+    {"prepare": prepare, "api-tests": api_tests, "cleanup": cleanup, "post-tests": post_tests, "rollback-test": rollback_test, "break-glass-test": break_glass_test}[args.command](args)
 
 
 if __name__ == "__main__":

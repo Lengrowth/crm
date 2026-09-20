@@ -121,9 +121,8 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; `PLAT-P3` PASS; 
 
 ## Phase 03 identity handover
 
-- Protected staging PASS is isolated on `codex/phase3-unified-identity`; control-plane candidate `ce2a339f2e57784ca933e85c78cac6ce60310b14` uses canonical LenERP source `3a7121974cb55ebcac120af6c07eaab53cfedb2c` with bundle SHA-256 `839AF05D5EDB3D05C3D94AE17FF0DB6614901F44D8286045C5621D7AD826A987`.
-- Additive migration `20260920_0013_phase3_unified_identity` adds broker requests/codes, identity mappings, and tenant role-profile/rollout state.
-- Protected staging run `35533376911` / job `106137957752` passed; browser artifact `10611928332` has digest `sha256:3e1f685518fd14b05cb656fa1148b8e14d4293f645788f7d9b4fb31850bb6b62`. The Phase 03 server flag is off by default; production activation and Champion acceptance remain open pending independent read-only review.
+- The prior protected staging PASS is retained on `codex/phase3-unified-identity`; remediation adds migration `20260921_0014_phase3_security_hardening` after `20260920_0013_phase3_unified_identity`.
+- The prior protected staging run `35533376911` / job `106137957752` and browser artifact `10611928332` remain historical evidence. A fresh protected rerun must verify browser-bound state, mapping-handle isolation, durable rate limiting, accessibility, and authenticated break-glass recovery before independent review closes.
 - Rollback disables SSO entry points and restores independent logins without deleting identity mappings or audit history.
 
 - Phase 2 implementation is isolated on branch `codex/plat-p2` from verified

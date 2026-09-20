@@ -98,7 +98,7 @@ jobs:
       - name: Verify the commit-pinned LenERP Core staging bundle
         run: |
           core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
-          test "$core_commit" = "3a7121974cb55ebcac120af6c07eaab53cfedb2c"
+          test "$core_commit" = "de9cb6fea722071d191f8993c4d9f2a2e5f6010a"
           archive="ops/staging/lenerp_core-${core_commit}.tar"
           test -f "$archive"
           python3 - <<'PY'
@@ -433,7 +433,7 @@ jobs:
           core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
           exact_dir="$RUNNER_TEMP/lenerp_core-exact"
           test -d "$exact_dir"
-          test "$core_commit" = "3a7121974cb55ebcac120af6c07eaab53cfedb2c"
+          test "$core_commit" = "de9cb6fea722071d191f8993c4d9f2a2e5f6010a"
           sudo rsync -a --delete --exclude='.git' "$exact_dir/" /opt/frappe-staging-bench/apps/lenerp_core/
           printf '%s\n' "$core_commit" | sudo tee /opt/frappe-staging-bench/apps/lenerp_core/SOURCE_COMMIT.txt >/dev/null
           sudo chown -R frappe:frappe /opt/frappe-staging-bench/apps/lenerp_core
@@ -712,7 +712,14 @@ jobs:
           organization_id="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["organization_id"])' "$manifest")"
           site_config=/opt/frappe-staging-bench/sites/erp-staging.example.test/site_config.json
           sudo cp -- "$site_config" "$identity_dir/site_config.before.json"
-          sudo python3 - "$site_config" "$tenant_id" "$organization_id" "$identity_dir/exchange-secret" <<'PY'
+          break_glass_user="champion-demo-role-${GITHUB_RUN_ID}-champion-administrator@example.test"
+          sudo -n -E env PYTHONPATH=/opt/saas-control-staging/current/backend \
+            /opt/saas-control-staging/shared/backend-venv/bin/python \
+            scripts/release/phase3_identity_staging.py break-glass-test \
+            --erp-base-url "https://erp-staging.example.test:18443" \
+            --ca-bundle "$tls_dir/server.crt" --evidence "$GITHUB_WORKSPACE/staging-browser-evidence/phase3-identity-api.json" \
+            --user "$break_glass_user" --password-file "$RUNNER_TEMP/erp-role-password-${GITHUB_RUN_ID}" --phase before_enable
+          sudo python3 - "$site_config" "$tenant_id" "$organization_id" "$identity_dir/exchange-secret" "$GITHUB_RUN_ID" <<'PY'
           import json
           import sys
           from pathlib import Path
@@ -731,6 +738,7 @@ jobs:
               'lenerp_sso_exchange_secret': Path(sys.argv[4]).read_text(encoding='utf-8').strip(),
               'lenerp_sso_ca_bundle': '/run/saas-control-staging/phase3-identity/ca.crt',
               'lenerp_sso_role_profiles': '{"champion-v1":["Champion Sales User"]}',
+              'lenerp_break_glass_user': f'champion-demo-role-{sys.argv[5]}-champion-administrator@example.test',
           })
           path.write_text(json.dumps(payload, indent=2, sort_keys=True) + '\n', encoding='utf-8')
           PY
@@ -757,6 +765,12 @@ jobs:
           sudo systemctl restart frappe-staging-web.service
           sudo systemctl restart saas-control-staging-backend
           sleep 3
+          sudo -n -E env PYTHONPATH=/opt/saas-control-staging/current/backend \
+            /opt/saas-control-staging/shared/backend-venv/bin/python \
+            scripts/release/phase3_identity_staging.py break-glass-test \
+            --erp-base-url "https://erp-staging.example.test:18443" \
+            --ca-bundle "$tls_dir/server.crt" --evidence "$GITHUB_WORKSPACE/staging-browser-evidence/phase3-identity-api.json" \
+            --user "$break_glass_user" --password-file "$RUNNER_TEMP/erp-role-password-${GITHUB_RUN_ID}" --phase sso_enabled
 
       - name: Run Phase 03 identity API contract
         if: ${{ inputs.phase3_identity_staging == 'on' }}
@@ -824,6 +838,13 @@ jobs:
           set -a
           . /opt/saas-control-staging/shared/env/staging-backend.env
           set +a
+          break_glass_user="champion-demo-role-${GITHUB_RUN_ID}-champion-administrator@example.test"
+          sudo -n -E env PYTHONPATH=/opt/saas-control-staging/current/backend \
+            /opt/saas-control-staging/shared/backend-venv/bin/python \
+            scripts/release/phase3_identity_staging.py break-glass-test \
+            --erp-base-url "https://erp-staging.example.test:18443" \
+            --ca-bundle "$PHASE3_CA" --evidence "$PHASE3_EVIDENCE" \
+            --user "$break_glass_user" --password-file "$RUNNER_TEMP/erp-role-password-${GITHUB_RUN_ID}" --phase after_rollback
           sudo -n -E env PYTHONPATH=/opt/saas-control-staging/current/backend \
             /opt/saas-control-staging/shared/backend-venv/bin/python \
             scripts/release/phase3_identity_staging.py rollback-test \

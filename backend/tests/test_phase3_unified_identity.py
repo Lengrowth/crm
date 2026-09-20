@@ -75,7 +75,7 @@ def test_successful_exchange_is_single_use_and_mapping_replay_is_idempotent():
     authorization = sso_service.authorize(session, user, payload)
     token = sso_service.exchange(session, SSOTokenRequest(code=authorization.code, client_id=payload.client_id, audience=payload.audience, redirect_uri=payload.redirect_uri, code_verifier=verifier, client_secret=settings.sso_exchange_secret))
     assert token.issuer == settings.frontend_base_url
-    mapping_payload = SSOIdentityMappingRequest(client_id=settings.sso_client_id, client_secret=settings.sso_exchange_secret, control_plane_user_id=token.control_plane_user_id, organization_id=organization.id, tenant_id=tenant.id, erp_site="erp.synthetic.example", erp_user="champion@example.test", role_profile_version=token.role_profile_version)
+    mapping_payload = SSOIdentityMappingRequest(exchange_handle=token.mapping_handle, client_secret=settings.sso_exchange_secret, erp_user="champion@example.test")
     first = sso_service.record_mapping(session, mapping_payload)
     replay = sso_service.record_mapping(session, mapping_payload)
     assert first.mapping_id == replay.mapping_id
@@ -90,7 +90,7 @@ def test_authorization_and_exchange_bind_state_pkce_audience_redirect_and_path(m
     session, user, _, tenant = ready_fixture()
     verifier, payload = request_payload(tenant)
     if mutation == "path":
-        payload.requested_path = "/safe/%2e%2e/other"
+        payload.requested_path = "/safe/%252e%252e/other"
         with pytest.raises(SSOBrokerError):
             sso_service.authorize(session, user, payload)
         return
@@ -143,30 +143,32 @@ def test_missing_role_profile_and_feature_flag_fail_closed_without_codes():
     assert session.execute(select(SSOAuthorizationCode)).scalars().all() == []
 
 
-def test_platform_admin_without_membership_sees_disabled_readiness_and_site_mapping_is_exact():
+def test_platform_admin_without_membership_cannot_probe_readiness_and_mapping_handle_is_exact():
     session, user, _, tenant = ready_fixture()
     user.is_platform_admin = True
     session.delete(session.execute(select(OrganizationMembership).where(OrganizationMembership.user_id == user.id, OrganizationMembership.organization_id == tenant.organization_id)).scalar_one())
     session.commit()
-    readiness = sso_service.readiness(session, user, tenant.id)
-    assert readiness.ready is False
-    assert readiness.enabled is False
+    with pytest.raises(SSOBrokerError, match="unavailable"):
+        sso_service.readiness(session, user, tenant.id)
 
-    session, user, organization, tenant = ready_fixture()
+    session, user, _, tenant = ready_fixture()
     verifier, payload = request_payload(tenant)
     authorization = sso_service.authorize(session, user, payload)
     token = sso_service.exchange(session, SSOTokenRequest(code=authorization.code, client_id=payload.client_id, audience=payload.audience, redirect_uri=payload.redirect_uri, code_verifier=verifier, client_secret=settings.sso_exchange_secret))
-    mapping_payload = SSOIdentityMappingRequest(client_id=settings.sso_client_id, client_secret=settings.sso_exchange_secret, control_plane_user_id=token.control_plane_user_id, organization_id=organization.id, tenant_id=tenant.id, erp_site="another-site.example", erp_user="champion@example.test", role_profile_version=token.role_profile_version)
-    with pytest.raises(SSOBrokerError, match="site identity"):
+    mapping_payload = SSOIdentityMappingRequest(exchange_handle=secrets.token_urlsafe(32), client_secret=settings.sso_exchange_secret, erp_user="champion@example.test")
+    with pytest.raises(SSOBrokerError, match="invalid or expired"):
         sso_service.record_mapping(session, mapping_payload)
+    valid_handle_payload = SSOIdentityMappingRequest(exchange_handle=token.mapping_handle, client_secret=settings.sso_exchange_secret, erp_user="another-user@example.test")
+    with pytest.raises(SSOBrokerError, match="not valid"):
+        sso_service.record_mapping(session, valid_handle_payload)
 
 
 def test_membership_removal_revokes_existing_mapping_during_next_exchange_boundary():
-    session, user, organization, tenant = ready_fixture()
+    session, user, _, tenant = ready_fixture()
     verifier, payload = request_payload(tenant)
     authorization = sso_service.authorize(session, user, payload)
     token = sso_service.exchange(session, SSOTokenRequest(code=authorization.code, client_id=payload.client_id, audience=payload.audience, redirect_uri=payload.redirect_uri, code_verifier=verifier, client_secret=settings.sso_exchange_secret))
-    mapping_payload = SSOIdentityMappingRequest(client_id=settings.sso_client_id, client_secret=settings.sso_exchange_secret, control_plane_user_id=token.control_plane_user_id, organization_id=organization.id, tenant_id=tenant.id, erp_site=tenant.erpnext_site_name, erp_user="champion@example.test", role_profile_version=token.role_profile_version)
+    mapping_payload = SSOIdentityMappingRequest(exchange_handle=token.mapping_handle, client_secret=settings.sso_exchange_secret, erp_user="champion@example.test")
     mapping = sso_service.record_mapping(session, mapping_payload)
     membership = session.execute(select(OrganizationMembership).where(OrganizationMembership.user_id == user.id, OrganizationMembership.organization_id == tenant.organization_id)).scalar_one()
     session.delete(membership)

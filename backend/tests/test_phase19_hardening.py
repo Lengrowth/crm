@@ -11,7 +11,7 @@ from sqlalchemy.orm import sessionmaker
 from app import models as _models  # noqa: F401
 from app.api.dependencies import get_current_user, get_db_session
 from app.core.config import settings
-from app.core.hardening import rate_limiter
+from app.core.hardening import DatabaseRateLimiter, rate_limiter
 from app.db.base import Base
 from app.main import app
 from app.models.domain import AuditLog, Tenant
@@ -171,6 +171,15 @@ class Phase19HardeningTestCase(unittest.TestCase):
         self.assertEqual(first_response.status_code, 200)
         self.assertEqual(second_response.status_code, 429)
         self.assertEqual(second_response.json()["detail"], "Rate limit exceeded.")
+
+    def test_sso_rate_limit_counter_survives_limiter_recreation(self) -> None:
+        first_limiter = DatabaseRateLimiter()
+        second_limiter = DatabaseRateLimiter()
+        allowed, _ = first_limiter.allow(self.session, "token:synthetic-client", limit=1, window_seconds=60)
+        blocked, retry_after = second_limiter.allow(self.session, "token:synthetic-client", limit=1, window_seconds=60)
+        self.assertTrue(allowed)
+        self.assertFalse(blocked)
+        self.assertGreaterEqual(retry_after, 1)
 
 
 if __name__ == "__main__":

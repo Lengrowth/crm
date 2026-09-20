@@ -49,18 +49,14 @@ class SSOTokenResponse(SSOBaseModel):
     tenant_id: str
     erp_user_key: str
     role_profile_version: str
+    mapping_handle: str
     expires_in: int
 
 
 class SSOIdentityMappingRequest(SSOBaseModel):
-    client_id: str = Field(min_length=1, max_length=128)
+    exchange_handle: str = Field(min_length=16, max_length=512)
     client_secret: Optional[str] = Field(default=None, min_length=1, max_length=512)
-    control_plane_user_id: str
-    organization_id: str
-    tenant_id: str
-    erp_site: str = Field(min_length=1, max_length=255)
     erp_user: str = Field(min_length=1, max_length=255)
-    role_profile_version: str = Field(min_length=1, max_length=64)
 
     @field_validator("erp_user")
     @classmethod

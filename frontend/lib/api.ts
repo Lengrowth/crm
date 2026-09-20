@@ -16,7 +16,7 @@ export class ApiError extends Error {
 
 function safeMessage(status: number, detail: unknown): string {
   if (status === 401) return "Your session has expired. Sign in again to continue.";
-  if (status === 403) return "You do not have permission to perform this action.";
+  if (status === 403) return "This action is not authorized. Return to the relevant workspace or contact your administrator.";
   if (status === 404) return "The requested record was not found.";
   if (status >= 500) return "The service is temporarily unavailable. Try again shortly.";
   if (typeof detail === "string" && detail.length > 0 && detail.length < 240 && !(/[\r\n]|traceback|exception|secret|token|password/i.test(detail))) return detail;

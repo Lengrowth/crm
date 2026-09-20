@@ -99,6 +99,8 @@ AWS account/region readback: account `288947333598`, region `us-east-1`, EC2
 limited to Cloudflare IP ranges on 80/443 and the approved SSH `/32`; no raw
 staging-port ingress was added. The temporary inspection SSH rule for
 `212.58.102.127/32` was revoked after readback.
+Independent AWS verification on 2026-09-21 confirms rule
+`sgr-06bd8278b02f611ad` is absent from `sg-0387e9287e4817700`.
 
 Current external readback on 2026-09-20 confirms the production control-plane
 pointers remain `current -> 4a63264e1e8cb7c998c767262a6e1022647ff7b0` and

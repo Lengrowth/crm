@@ -65,7 +65,7 @@
 | ID | Type | Status | Owner | Required action |
 |---|---|---|---|---|
 | P3-ID-D01 | Decision | Recorded | Release owner / security owner | Use the temporary isolated authorization-code broker only behind `phase3_unified_identity`; replace it with a maintained OAuth/OIDC provider before production authority. |
-| P3-ID-R01 | Risk | Open pending staging | Release owner | Run exactly one immutable protected staging candidate with synthetic identities, both navigation directions, denial/replay/role/membership/removal cases, accessibility/responsive evidence, cleanup, and rollback readback. |
+| P3-ID-R01 | Risk | Open — remediation candidate staging rerun required | Release owner | Run exactly one immutable protected staging candidate with browser-bound state, exchange-handle mapping isolation, denial/replay/role/membership/removal cases, durable rate-limit evidence, accessibility/responsive evidence, authenticated break-glass checks before/during/after rollback, cleanup, and rollback readback. |
 | P3-ID-B01 | Blocker | Open | Release owner / acceptance authority | No production SSO or Champion acceptance until the protected staging artifact and independent read-only review pass. |
 
 | ID | Type | Status | Owner | Required action |
