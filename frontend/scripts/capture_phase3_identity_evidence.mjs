@@ -36,6 +36,8 @@ function safeUrl(raw) {
 
 function safeText(raw) {
   return raw
+    .replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
     .replace(/(?:code|state|token|secret|password|cookie|authorization)[^<\s]*/gi, "[REDACTED]")
     .replace(/[A-Za-z0-9_-]{24,}/g, "[REDACTED]")
     .replace(/[\w.+-]+@[\w.-]+/g, "[REDACTED_EMAIL]")
