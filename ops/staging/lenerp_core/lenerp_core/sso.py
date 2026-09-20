@@ -60,6 +60,11 @@ def _control_plane_api_url() -> str:
     return _validated_control_plane_url(value)
 
 
+def _tls_verify() -> str | bool:
+    """Use the system trust store unless an isolated staging CA is configured."""
+    return _conf("lenerp_sso_ca_bundle") or True
+
+
 def _client_id() -> str:
     return _conf("lenerp_sso_client_id", "lenerp-erp") or "lenerp-erp"
 
@@ -197,6 +202,7 @@ def callback(code: str | None = None, state: str | None = None) -> None:
                 "client_secret": _conf("lenerp_sso_exchange_secret"),
             },
             timeout=10,
+            verify=_tls_verify(),
         )
     except requests.RequestException:
         frappe.cache().delete_value(_cache_key(state))
@@ -238,6 +244,7 @@ def callback(code: str | None = None, state: str | None = None) -> None:
                 "role_profile_version": token["role_profile_version"],
             },
             timeout=10,
+            verify=_tls_verify(),
         )
         mapping.raise_for_status()
     except requests.RequestException:

@@ -6,8 +6,8 @@
 - State: `implemented_locally_staging_gate_open`
 - Control-plane branch: `codex/phase3-unified-identity`
 - Control-plane implementation commit: `6fcca9105c4ab811b0124beba5040b7adbb30aee`
-- Canonical LenERP commit: `b9fb94a6426e119452ba7d69252e4fc58b98c5c1`
-- Immutable LenERP bundle SHA-256: `7F63D970EB4560F6ABFE4B013F7D530F4FEB125115E63EC6C5F6F4CC6851C5C7`
+- Canonical LenERP commit: `568b7fe947af344e7f4b67739f4f30b2b1c50d2d`
+- Immutable LenERP bundle SHA-256: `D4AB4EA8D683E8F0D9FC29668379FE334D20B76968C0A961E1015BCE3AAB9EC3`
 - Migration: `20260920_0013_phase3_unified_identity`
 - Feature flag: `phase3_unified_identity=off` by default; production remains off
 - Champion acceptance: not claimed

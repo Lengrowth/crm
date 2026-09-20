@@ -9,9 +9,9 @@
 - Control-plane branch: `codex/phase3-unified-identity`.
 - Control-plane implementation commit: `6fcca9105c4ab811b0124beba5040b7adbb30aee`.
 - Canonical `lenerp_core` branch: `codex/phase3-unified-identity`.
-- Canonical LenERP implementation commit: `b9fb94a6426e119452ba7d69252e4fc58b98c5c1`.
-- Immutable bundle: `ops/staging/lenerp_core-b9fb94a6426e119452ba7d69252e4fc58b98c5c1.tar`.
-- Bundle SHA-256: `7F63D970EB4560F6ABFE4B013F7D530F4FEB125115E63EC6C5F6F4CC6851C5C7`.
+- Canonical LenERP implementation commit: `568b7fe947af344e7f4b67739f4f30b2b1c50d2d`.
+- Immutable bundle: `ops/staging/lenerp_core-568b7fe947af344e7f4b67739f4f30b2b1c50d2d.tar`.
+- Bundle SHA-256: `D4AB4EA8D683E8F0D9FC29668379FE334D20B76968C0A961E1015BCE3AAB9EC3`.
 - Control-plane dependency manifest and installed source marker point to that exact commit.
 - Migration: `20260920_0013_phase3_unified_identity`, additive and downgrade-tested.
 

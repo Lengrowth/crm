@@ -23,6 +23,8 @@ def test_erp_identity_boundary_is_code_based_and_secret_safe():
     assert "_safe_path" in SSO
     assert "lenerp_break_glass_user" in SSO
     assert "lenerp_sso_jit_enabled" in SSO
+    assert "lenerp_sso_ca_bundle" in SSO
+    assert "verify=_tls_verify()" in SSO
     assert "lenerp-sso:" in SSO
 
 
