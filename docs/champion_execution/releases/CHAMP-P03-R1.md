@@ -3,15 +3,15 @@
 ## Release identity
 
 - Release type: Champion package / platform identity implementation
-- State: `local_remediation_ready_staging_rerun_required`
+- State: `local_remediation_complete_staging_rerun_required`
 - Control-plane branch: `codex/phase3-unified-identity`
-- Control-plane candidate commit: `ce2a339f2e57784ca933e85c78cac6ce60310b14`
-- Canonical LenERP commit: `3a7121974cb55ebcac120af6c07eaab53cfedb2c`
-- Immutable LenERP bundle SHA-256: `839AF05D5EDB3D05C3D94AE17FF0DB6614901F44D8286045C5621D7AD826A987`
+- Control-plane candidate commit: `b2b6debbdd2af0fee1e8a974b7988b979145b40b`
+- Canonical LenERP commit: `8d77cec7504d22f9c0a235034777e31fa07fc62`
+- Immutable LenERP bundle SHA-256: `D136208D613DEECE9A51F25A7A1A5B4C7C916D8E657043FFFC7BEEC03B90AAA7`
 - Migration: `20260921_0014_phase3_security_hardening` (after `20260920_0013_phase3_unified_identity`)
 - Feature flag: `phase3_unified_identity=off` by default; production remains off
-- Protected staging run: `35533376911`; job `106137957752`.
-- Browser evidence artifact: `10611928332`, digest `sha256:3e1f685518fd14b05cb656fa1148b8e14d4293f645788f7d9b4fb31850bb6b62`.
+- Previous protected staging run: `35542421306` (failed in the Phase 03 browser step on an unavailable Frappe advisory-lock API; cleanup completed).
+- Protected rerun: required for this exact candidate; no passing artifact is claimed.
 - Champion acceptance: not claimed; independent read-only review remains open.
 
 ## Gate status
@@ -24,10 +24,10 @@
 - [x] Secret-safe logs and rate-limit paths are implemented.
 - [x] Protected staging candidate deployed exactly once for the prior gate run; a new protected remediation run is required.
 - [x] Browser control-plane-to-ERP and ERP-to-control-plane journeys captured.
-- [ ] Protected remediation staging denial, replay, membership-removal, role, authenticated break-glass rollback, and cleanup evidence captured.
+- [ ] Protected remediation staging denial, replay, membership-removal, role, authenticated break-glass rollback, and cleanup evidence captured for the current candidate.
 - [ ] Independent read-only review completed.
 
-Local validation totals: backend `105 passed, 5 skipped`, frontend `12 passed`, canonical
+Local validation totals: backend `109 passed, 5 skipped`, frontend `12 passed`, canonical
 LenERP `11 passed`; frontend typecheck/build, workflow YAML validation, and Python compilation passed.
 
 ## Safe current state

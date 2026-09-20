@@ -9,7 +9,7 @@ Last updated: 2026-09-21 (Asia/Tbilisi)
 | 00 | Complete | PASS |
 | 01 | Complete; staging gate deferred by prior record | PASS WITH DEFERRED STAGING GATE |
 | 02 | Closed; exact protected candidate and browser evidence verified | PASS — Phase 03 permitted; production unchanged |
-| 03 | Prior protected staging evidence retained; security remediation is locally ready and production SSO remains off | RERUN REQUIRED — independent read-only review open |
+| 03 | Security remediation implemented locally; protected staging rerun is pending workflow registration | RERUN REQUIRED — independent read-only review open |
 
 ## Phase 02 — HRMS and dependency-aware provisioning
 
@@ -65,18 +65,16 @@ does not claim production SSO.
 
 ## Phase 03 — Unified identity and cross-navigation
 
-Protected run `35533376911` / job `106137957752` passed for control-plane
-candidate `ce2a339f2e57784ca933e85c78cac6ce60310b14` and canonical LenERP
-commit `3a7121974cb55ebcac120af6c07eaab53cfedb2c`. The immutable bundle SHA-256
-is `839AF05D5EDB3D05C3D94AE17FF0DB6614901F44D8286045C5621D7AD826A987`.
-Browser evidence artifact `10611928332` has digest
-`sha256:3e1f685518fd14b05cb656fa1148b8e14d4293f645788f7d9b4fb31850bb6b62`.
-The prior protected run passed the authorization-code/PKCE flow, replay and denial
-checks, control-plane-to-ERP and ERP-to-control navigation, direct ERP access,
-membership/mapping revocation, feature-off rollback, independent ERP login,
-staging restoration, and synthetic cleanup. The remediation rerun additionally
-requires browser-bound state, mapping-handle isolation, durable rate-limit, and
-authenticated break-glass evidence. Phase 04 was not started.
+The current remediation candidate is CRM `b2b6debbdd2af0fee1e8a974b7988b979145b40b`
+with canonical LenERP commit `8d77cec7504d22f9c0a235034777e31fa07fc62` and
+bundle SHA-256 `D136208D613DEECE9A51F25A7A1A5B4C7C916D8E657043FFFC7BEEC03B90AAA7`.
+Local contracts pass, including browser-bound state, mapping-handle isolation,
+durable rate limiting, and authenticated break-glass checks. Protected run
+`35542421306` reached the Phase 03 browser step but exposed an unavailable
+`frappe.db.advisory_lock` compatibility call; the lock was replaced with the
+supported MariaDB advisory primitive and the exact bundle was repinned. A fresh
+protected rerun is still required; production SSO remains off and Phase 04 was
+not started.
 
 ## Worktree preservation
 

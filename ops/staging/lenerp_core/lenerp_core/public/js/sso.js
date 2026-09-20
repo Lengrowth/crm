@@ -59,5 +59,13 @@
     addControlPlaneLink();
     var observer = new MutationObserver(addControlPlaneLink);
     observer.observe(document.body, { childList: true, subtree: true });
+    var attempts = 0;
+    var retry = window.setInterval(function () {
+      addControlPlaneLink();
+      attempts += 1;
+      if (document.querySelector("[data-lenerp-control-plane]") || attempts >= 40) {
+        window.clearInterval(retry);
+      }
+    }, 250);
   });
 })();

@@ -24,7 +24,10 @@
 		{% include "templates/includes/splash_screen.html" %}
 		<div class="main-section">
 			<header></header>
-			<div id="body"></div>
+			<main id="main-content" role="main" aria-label="LenERP workspace">
+				<h1 class="sr-only">LenERP workspace</h1>
+				<div id="body"></div>
+			</main>
 			<footer></footer>
 		</div>
 		<div id="all-symbols" style="display:none"></div>
@@ -55,6 +58,9 @@
 
 		<script type="text/javascript">
 		{% include "lenerp_core/public/js/accessibility.js" %}
+		</script>
+		<script type="text/javascript">
+		{% include "lenerp_core/public/js/sso.js" %}
 		</script>
 
 		{% include "templates/includes/app_analytics/google_analytics.html" %}

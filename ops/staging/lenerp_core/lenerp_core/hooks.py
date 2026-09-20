@@ -10,12 +10,10 @@ app_license = "MIT"
 # These are app-owned assets; the pinned Frappe/ERPNext sources remain
 # unchanged.
 app_include_js = [
-    "/assets/lenerp_core/js/accessibility.js",
-    "/assets/lenerp_core/js/sso.js",
+    "/assets/lenerp_core/js/lenerp_core.bundle.js",
 ]
 web_include_js = [
-    "/assets/lenerp_core/js/accessibility.js",
-    "/assets/lenerp_core/js/sso.js",
+    "/assets/lenerp_core/js/lenerp_core.bundle.js",
 ]
 update_website_context = ["lenerp_core.accessibility.update_context"]
 base_template = "lenerp_core/templates/base.html"

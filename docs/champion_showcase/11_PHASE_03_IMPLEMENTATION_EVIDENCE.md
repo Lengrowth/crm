@@ -1,17 +1,17 @@
 # Phase 03 — Unified Identity and Cross-Navigation Evidence
 
-**Date:** 2026-09-20 (Asia/Tbilisi)
-**Status:** LOCAL REMEDIATION READY — protected staging rerun required; production SSO is disabled.
+**Date:** 2026-09-21 (Asia/Tbilisi)
+**Status:** LOCAL REMEDIATION COMPLETE — protected staging rerun required; production SSO is disabled.
 **Scope:** additive authorization-code broker boundary, canonical LenERP relying-party bridge, and control-plane/ERP navigation.
 
 ## Release identity
 
 - Control-plane branch: `codex/phase3-unified-identity`.
-- Control-plane candidate commit: `ce2a339f2e57784ca933e85c78cac6ce60310b14`.
+- Control-plane candidate commit: `b2b6debbdd2af0fee1e8a974b7988b979145b40b`.
 - Canonical `lenerp_core` branch: `codex/phase3-unified-identity`.
-- Canonical LenERP remediation commit: `de9cb6fea722071d191f8993c4d9f2a2e5f6010a`.
-- Immutable remediation bundle: `ops/staging/lenerp_core-de9cb6fea722071d191f8993c4d9f2a2e5f6010a.tar`.
-- Bundle SHA-256: `48619CBC4A0DAECEB39C8EBB7871825052F03CDB6F77F7363F3DBE04A75880B0`.
+- Canonical LenERP remediation commit: `8d77cec7504d22f9c0a235034777e31fa07fc62`.
+- Immutable remediation bundle: `ops/staging/lenerp_core-8d77cec7504d22f9c0a235034777e31fa07fc62.tar`.
+- Bundle SHA-256: `D136208D613DEECE9A51F25A7A1A5B4C7C916D8E657043FFFC7BEEC03B90AAA7`.
 - Control-plane dependency manifest and installed source marker point to that exact commit.
 - Migration: `20260920_0013_phase3_unified_identity`, additive and downgrade-tested.
 
@@ -54,7 +54,7 @@ gate for a maintained OIDC provider with back-channel logout support.
 
 ## Local validation
 
-- Backend full suite: PASS — 105 passed, 5 skipped, 25 existing deprecation warnings; focused Phase 03/control release gate passes.
+- Backend full suite: PASS — 109 passed, 5 skipped, 25 existing deprecation warnings; focused Phase 03/control release gate passes.
 - Phase 03 security/service tests: PASS, including browser-bound state contract, concurrent code replay, mapping-handle isolation/replay, expiry, PKCE, audience, redirect/path variants, membership, role readiness, deterministic mapping, durable rate limiting, and feature-off denial.
 - Frontend Vitest: PASS, 12 tests.
 - Frontend typecheck: PASS.
@@ -64,20 +64,15 @@ gate for a maintained OIDC provider with back-channel logout support.
 
 ## Staging and production boundary
 
-The prior protected Phase 03 staging run `35533376911` passed on candidate
-`ce2a339f2e57784ca933e85c78cac6ce60310b14`, job `106137957752`. The run verified
-the control-plane-to-ERP authorization-code flow, ERP-to-control navigation,
-direct ERP access, responsive/accessibility evidence, denial/replay/membership
-checks, identity-mapping revocation, feature-off rollback, independent ERP
-login, staging restoration, and synthetic cleanup. Durable browser artifact
-`staging-browser-evidence-ce2a339f2e57784ca933e85c78cac6ce60310b14` has ID
-`10611928332` and digest
-`sha256:3e1f685518fd14b05cb656fa1148b8e14d4293f645788f7d9b4fb31850bb6b62`.
-The server-controlled `phase3_unified_identity` flag defaults off. The remediation
-candidate must repeat this protected run with authenticated break-glass checks
-before enablement, during enablement, and after rollback. Production
-SSO has not been enabled, and production, Cloudflare, upstream Frappe, ERPNext,
-and HRMS remain unchanged.
+Protected run `35542421306` was executed against the prior remediation candidate
+and reached the Phase 03 browser flow, where it exposed an unsupported
+`frappe.db.advisory_lock` call. The current candidate replaces that call with an
+explicit MariaDB `GET_LOCK`/`RELEASE_LOCK` guard and repins the immutable bundle.
+The server-controlled `phase3_unified_identity` flag defaults off. A fresh
+protected run must still capture the browser artifact, API contracts, membership
+removal, authenticated break-glass checks before enablement/during enablement/after
+rollback, and exact cleanup. Production SSO, production, Cloudflare, upstream
+Frappe, ERPNext, and HRMS remain unchanged.
 
 ## Rollback
 
