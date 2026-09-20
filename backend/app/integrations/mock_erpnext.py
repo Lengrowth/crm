@@ -112,7 +112,7 @@ class MockERPNextClient(ERPNextClient):
             return OperationResult({"status": "success", "site_id": site_id, "app": app_name, "provider": "mock", "replayed": True, "provider_verified": True})
         self.sites[site_id]["apps"].append(app_name)
         self.sites[site_id]["app_versions"][app_name] = {"erpnext": "15.120.0", "hrms": "15.64.1", "lenerp_core": "0.2.0"}.get(app_name, "")
-        self.sites[site_id]["app_commits"][app_name] = {"erpnext": "945e825bee3d0d645f6cb59bcaab90fcbfb98ce3", "hrms": "e68a3deaa95ae5b2c3d743297d0a4ab505733fc1", "lenerp_core": "8669031997e69ad97e19b0a0230760c0355219a0"}.get(app_name, "")
+        self.sites[site_id]["app_commits"][app_name] = {"erpnext": "945e825bee3d0d645f6cb59bcaab90fcbfb98ce3", "hrms": "e68a3deaa95ae5b2c3d743297d0a4ab505733fc1", "lenerp_core": "77a966e6f013613b9982ca59c6eb6e6c94f8617d"}.get(app_name, "")
         return OperationResult(
             {"status": "success", "site_id": site_id, "app": app_name, "provider": "mock", "provider_verified": True, "version": self.sites[site_id]["app_versions"][app_name]}
         )
