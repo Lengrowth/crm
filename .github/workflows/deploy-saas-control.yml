@@ -772,6 +772,17 @@ jobs:
             --ca-bundle "$tls_dir/server.crt" --evidence "$GITHUB_WORKSPACE/staging-browser-evidence/phase3-identity-api.json" \
             --user "$break_glass_user" --password-file "$RUNNER_TEMP/erp-role-password-${GITHUB_RUN_ID}" --phase sso_enabled
 
+      - name: Capture Phase 03 identity browser and responsive evidence
+        if: ${{ inputs.phase3_identity_staging == 'on' }}
+        env:
+          PHASE3_IDENTITY_MANIFEST: ${{ runner.temp }}/phase3-identity/manifest.json
+          OUTPUT_DIR: ${{ github.workspace }}/staging-browser-evidence/phase3-identity
+        run: |
+          browser_path="$(find "$HOME/.cache/ms-playwright" -type f -name chrome -path '*/chrome*/chrome' -print -quit 2>/dev/null || true)"
+          [[ -n "$browser_path" ]] || { echo "Installed Chromium executable was not found" >&2; exit 1; }
+          evidence_script="/opt/saas-control-staging/current/frontend/scripts/capture_phase3_identity_evidence.mjs"
+          BROWSER_EXECUTABLE_PATH="$browser_path" node "$evidence_script"
+
       - name: Run Phase 03 identity API contract
         if: ${{ inputs.phase3_identity_staging == 'on' }}
         env:
@@ -786,17 +797,6 @@ jobs:
             /opt/saas-control-staging/shared/backend-venv/bin/python \
             scripts/release/phase3_identity_staging.py api-tests \
             --manifest "$PHASE3_MANIFEST" --ca-bundle "$PHASE3_CA" --evidence "$PHASE3_EVIDENCE"
-
-      - name: Capture Phase 03 identity browser and responsive evidence
-        if: ${{ inputs.phase3_identity_staging == 'on' }}
-        env:
-          PHASE3_IDENTITY_MANIFEST: ${{ runner.temp }}/phase3-identity/manifest.json
-          OUTPUT_DIR: ${{ github.workspace }}/staging-browser-evidence/phase3-identity
-        run: |
-          browser_path="$(find "$HOME/.cache/ms-playwright" -type f -name chrome -path '*/chrome*/chrome' -print -quit 2>/dev/null || true)"
-          [[ -n "$browser_path" ]] || { echo "Installed Chromium executable was not found" >&2; exit 1; }
-          evidence_script="/opt/saas-control-staging/current/frontend/scripts/capture_phase3_identity_evidence.mjs"
-          BROWSER_EXECUTABLE_PATH="$browser_path" node "$evidence_script"
 
       - name: Verify Phase 03 membership removal and mapping revocation
         if: ${{ inputs.phase3_identity_staging == 'on' }}
