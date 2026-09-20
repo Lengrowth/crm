@@ -396,29 +396,20 @@ jobs:
         run: |
           hrms_commit="e68a3deaa95ae5b2c3d743297d0a4ab505733fc1"
           hrms_dir=/opt/frappe-staging-bench/apps/hrms
-          if [[ ! -d "$hrms_dir/.git" ]]; then
-            sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench get-app --branch v15.64.1 https://github.com/frappe/hrms"
+          apps="$(sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test list-apps")"
+          if ! grep -Eq '^hrms[[:space:]]+15\.64\.1([[:space:]]|$)' <<<"$apps"; then
+            echo "Pinned HRMS has no clean-install compatibility evidence for this Frappe/ERPNext baseline; refusing an install or source-fetch retry." >&2
+            exit 1
           fi
+          grep -Eq '^frappe[[:space:]]+15\.119\.1([[:space:]]|$)' <<<"$apps"
+          grep -Eq '^erpnext[[:space:]]+15\.120\.0([[:space:]]|$)' <<<"$apps"
+          grep -Eq '^lenerp_core[[:space:]]+0\.2\.0([[:space:]]|$)' <<<"$apps"
           test -d "$hrms_dir/.git"
           test "$(sudo -u frappe git -C "$hrms_dir" rev-parse HEAD)" = "$hrms_commit"
+          test "$(sudo -u frappe git -C /opt/frappe-staging-bench/apps/frappe rev-parse HEAD)" = "edae775dd36b6c4ad7acab10230262bd74040765"
+          test "$(sudo -u frappe git -C /opt/frappe-staging-bench/apps/erpnext rev-parse HEAD)" = "945e825bee3d0d645f6cb59bcaab90fcbfb98ce3"
+          test "$(sudo -u frappe git -C /opt/frappe-staging-bench/apps/lenerp_core rev-parse HEAD)" = "a7e47208baf6583295f5f2632f4787262cd3f475"
           sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench setup requirements hrms"
-          if ! sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test list-apps | grep -Eq '^hrms[[:space:]]'"; then
-            # HRMS v15.64.1 has an upstream-reported first-install fixture
-            # race (frappe/hrms#1639).  Retry exactly once after removing a
-            # partial site registration; never continue without a successful
-            # provider readback on the exact pinned app.
-            set +e
-            sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test install-app hrms"
-            first_install_status=$?
-            set -e
-            if [[ "$first_install_status" -ne 0 ]]; then
-              if sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test list-apps | grep -Eq '^hrms[[:space:]]'"; then
-                sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test uninstall-app hrms --yes --force --no-backup"
-              fi
-              sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test clear-cache"
-              sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test install-app hrms"
-            fi
-          fi
           sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test migrate"
           sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench build --app hrms"
 

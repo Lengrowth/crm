@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "baseline_kind": "staging-candidate-build",
+  "environment": "staging",
+  "database_revision": "20260918_0011",
+  "upstream_frappe_commit": "edae775dd36b6c4ad7acab10230262bd74040765",
+  "upstream_erpnext_commit": "945e825bee3d0d645f6cb59bcaab90fcbfb98ce3",
+  "runtime_apps": {
+    "frappe": {
+      "version": "15.119.1",
+      "commit": "edae775dd36b6c4ad7acab10230262bd74040765",
+      "verification_status": "candidate_expected"
+    },
+    "erpnext": {
+      "version": "15.120.0",
+      "commit": "945e825bee3d0d645f6cb59bcaab90fcbfb98ce3",
+      "verification_status": "candidate_expected"
+    },
+    "hrms": {
+      "version": "15.64.1",
+      "commit": "e68a3deaa95ae5b2c3d743297d0a4ab505733fc1",
+      "verification_status": "blocked_pending_clean_install"
+    },
+    "lenerp_core": {
+      "version": "0.2.0",
+      "commit": "a7e47208baf6583295f5f2632f4787262cd3f475",
+      "verification_status": "candidate_expected"
+    }
+  },
+  "staging_pre_deployment": {
+    "observed_runtime": "recorded in candidate-bound workflow evidence",
+    "mutation_status": "not_assumed"
+  },
+  "staging_verified_post_deployment": null
+}

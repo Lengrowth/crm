@@ -29,6 +29,7 @@ required = {
     "dependency_lock_hashes",
     "feature_flags",
     "application_dependencies",
+    "application_records",
     "database_revision_before",
     "database_revision_after",
 }
@@ -58,8 +59,16 @@ if compatibility.get("metadata_sufficiency") != "broad major-version constraints
     raise SystemExit("manifest does not record the HRMS compatibility limitation")
 if compatibility.get("upstream_issue") != "https://github.com/frappe/hrms/issues/1639":
     raise SystemExit("manifest does not bind the authoritative HRMS install evidence")
-if "bounded" not in str(compatibility.get("verified_install_path") or "").lower():
-    raise SystemExit("manifest does not record the bounded HRMS recovery path")
+if compatibility.get("status") != "verified":
+    raise SystemExit("candidate is blocked: HRMS has no clean-install compatibility evidence for the declared baseline")
+records = payload.get("application_records")
+hrms_record = records.get("hrms") if isinstance(records, dict) else None
+if not isinstance(hrms_record, dict):
+    raise SystemExit("manifest does not record HRMS as a required runtime application")
+if hrms_record.get("intended_version") != "15.64.1" or hrms_record.get("intended_commit") != "e68a3deaa95ae5b2c3d743297d0a4ab505733fc1":
+    raise SystemExit("manifest HRMS application identity is incomplete")
+if hrms_record.get("verification_status") == "verified" and hrms_record.get("compatibility_status") != "verified":
+    raise SystemExit("manifest cannot mark incompatible HRMS as runtime verified")
 for field in (
     "custom_app_commit",
     "custom_app_version",
@@ -70,7 +79,10 @@ for field in (
 ):
     if payload.get(field) in {None, "", "unknown", "not-installed"}:
         raise SystemExit(f"manifest has incomplete runtime field: {field}")
-baseline_path = path.parent / "ops/production/release-runtime-baseline.json"
+baseline_ref = payload.get("runtime_baseline")
+if not isinstance(baseline_ref, str) or not baseline_ref:
+    raise SystemExit("candidate runtime baseline reference is missing")
+baseline_path = path.parent / baseline_ref
 if not baseline_path.is_file():
     raise SystemExit("candidate runtime baseline is missing")
 baseline = json.loads(baseline_path.read_text(encoding="utf-8"))

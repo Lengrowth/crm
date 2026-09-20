@@ -25,7 +25,7 @@ def test_staging_smoke_defaults_to_the_synthetic_demo_app_version():
 
 def test_staging_workflow_verifies_the_installed_custom_app_candidate():
     workflow = (ROOT / ".github" / "workflows" / "deploy-saas-control.yml").read_text(encoding="utf-8")
-    baseline = (ROOT / "ops" / "production" / "release-runtime-baseline.json").read_text(encoding="utf-8")
+    baseline = (ROOT / "ops" / "staging" / "release-runtime-baseline.json").read_text(encoding="utf-8")
     bundle_commit = (ROOT / "ops" / "staging" / "lenerp_core" / "SOURCE_COMMIT.txt").read_text(encoding="utf-8").strip()
     assert 'CUSTOM_APP_VERSION: "0.2.0"' in workflow
     assert 'CUSTOM_APP_COMMIT="$core_commit"' in workflow

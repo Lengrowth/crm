@@ -32,12 +32,30 @@
         "frappe": ">=15.0.0,<16.0.0",
         "erpnext": ">=15.0.0,<16.0.0",
         "reviewed_baseline": {
+          "frappe_commit": "edae775dd36b6c4ad7acab10230262bd74040765",
           "frappe": "15.119.1",
+          "erpnext_commit": "945e825bee3d0d645f6cb59bcaab90fcbfb98ce3",
           "erpnext": "15.120.0"
         },
+        "status": "blocked",
+        "clean_install_rehearsal": {
+          "status": "failed",
+          "failure_stage": "hrms.after_install fixture creation",
+          "error_class": "ImportError",
+          "missing_module": "frappe.core.doctype.expense_claim_type",
+          "tested_frappe_commit": "edae775dd36b6c4ad7acab10230262bd74040765",
+          "tested_erpnext_commit": "945e825bee3d0d645f6cb59bcaab90fcbfb98ce3",
+          "tested_hrms_commit": "e68a3deaa95ae5b2c3d743297d0a4ab505733fc1",
+          "replay_result": "not a compatibility fix; no retry is authorized"
+        },
         "metadata_sufficiency": "broad major-version constraints are not sufficient to prove install compatibility",
-        "verified_install_path": "official HRMS v15.64.1 exact commit with one bounded uninstall/clear-cache/reinstall replay after the upstream Expense Claim Type fixture failure, followed by migrate and direct installed-app/role/workspace readback",
-        "upstream_issue": "https://github.com/frappe/hrms/issues/1639"
+        "upstream_issue": "https://github.com/frappe/hrms/issues/1639",
+        "upstream_source_observation": "v15.64.1 and the official version-15-hotfix branch retain the Expense Claim Type fixture; the pinned Frappe v15 baseline has no matching controller",
+        "rejected_alternatives": [
+          "HRMS v15.64.1 with uninstall/clear-cache/reinstall replay — rejected because it does not change the incompatible source or baseline",
+          "local HRMS fixture patch or skipped fixture — prohibited",
+          "floating HRMS v15 branch — rejected because it is not an exact release identity"
+        ]
       },
       "source_archive_url": "https://github.com/frappe/hrms/archive/refs/tags/v15.64.1.tar.gz",
       "source_archive_sha256": null

@@ -1,7 +1,7 @@
 # Phase 02 — Implementation Evidence
 
 **Date:** 2026-09-20
-**Status:** Corrected implementation committed locally; exact staging candidate is pending the protected staging run. Production remains unchanged until that run passes.
+**Status:** Corrected locally; staging is blocked by the unresolved official HRMS/Frappe compatibility defect. Production remains unchanged.
 **Release scope:** dependency-aware HRMS provisioning for synthetic Champion tenants only.
 
 ## Evidence boundary
@@ -23,16 +23,17 @@ readback succeeds.
 | Frappe compatibility | `>=15.0.0,<16.0.0` |
 | ERPNext compatibility | `>=15.0.0,<16.0.0` |
 | Reviewed baseline | Frappe `15.119.1`, ERPNext `15.120.0` |
-| Source authority | Official upstream `pyproject.toml`, `__init__.py`, `hooks.py`, `setup.py`, tag readback, and [HRMS issue #1639](https://github.com/frappe/hrms/issues/1639) |
+| Source authority | Official upstream `pyproject.toml`, `__init__.py`, `hooks.py`, `setup.py`, tag/branch readback, and [HRMS issue #1639](https://github.com/frappe/hrms/issues/1639) |
 | Artifact checksum | Not packaged in this repository; immutable commit/tag is the release identity |
 
 The exact dependency record is [application-dependencies.json](../../ops/staging/application-dependencies.json). The broad
-`>=15,<16` metadata is not treated as an installation guarantee: the pinned
-ERPNext baseline removed the legacy Frappe HR module path, while official
-HRMS v15.64.1 still calls its own `Expense Claim Type` fixture from
-`after_install`. Issue #1639 records the same traceback and the supported
-operator recovery is a bounded uninstall/clear-cache/reinstall replay on the
-isolated synthetic site. No upstream source or fixture is patched.
+`>=15,<16` metadata is not treated as an installation guarantee: official
+Frappe v15.119.1 has no `frappe.core.doctype.expense_claim_type` controller,
+while official HRMS v15.64.1 still calls its `Expense Claim Type` fixture from
+`after_install`. Issue #1639 records the same traceback. A retry, uninstall,
+cache clear, or skipped fixture does not alter that source incompatibility, so
+the candidate now fails closed before provider mutation. No upstream source or
+fixture is patched.
 
 ## Implementation
 
@@ -54,18 +55,17 @@ isolated synthetic site. No upstream source or fixture is patched.
   requires installed-app, module, role, and workspace readback.
 - The operator UI presents `Installing People & Payroll capability` with
   expandable technical detail; exact step names remain operator-only detail.
-- The staging install workflow and provider adapter perform at most one
-  HRMS-specific recovery replay after this known upstream fixture failure;
-  success still requires exact installed-app, commit, migration, role and
-  workspace readback.
+- The staging install workflow and provider adapter refuse the blocked HRMS
+  pin; no recovery replay is presented as compatibility evidence. Exact
+  installed-app, commit, migration, role and workspace readback remain
+  mandatory once an official compatible set is selected.
 
 ## Local validation
 
 | Check | Result |
 |---|---|
-| Focused Phase 02 tests | PASS — 5 tests |
-| Existing Phase 01/Phase 4/provider tests | PASS — 13 tests |
-| Complete backend suite | PASS — 68 tests |
+| Focused Phase 02/provider/release tests | PASS — 18 tests |
+| Complete backend suite | PASS — 89 tests |
 | Python compile/import | PASS — `python -m compileall -q backend/app` |
 | Frontend tests | PASS — 12 tests |
 | Frontend typecheck/build | PASS — `npm --prefix frontend run typecheck` and `npm --prefix frontend run build` |
@@ -102,40 +102,40 @@ route change was needed.
 The prior evidence's `c032a37f78240bba1b8b8593bd3bd439e66a3fb6` is stale and
 is not this correction candidate. The corrected candidate is the new immutable
 commit recorded in the release record and orchestration status after commit.
-Before the corrected staging mutation, a fresh verified backup was captured
-under `/opt/saas-control-staging/shared/backups/phase2-20260920T020224Z/`,
-including the control-plane SQLite snapshot and the four Frappe
-database/config/public/private backup artifacts. The backup inventory and
-SHA-256 manifest are retained on the staging host.
+The corrected candidate has not entered staging mutation: its candidate
+preflight stops on the blocked HRMS compatibility record before the control
+plane pointer switch or ERP application mutation. No new staging backup was
+created for this intentionally blocked path.
 
 The first staging attempt failed during `bench --site erp-staging.example.test
 install-app hrms` because HRMS `15.64.1` attempted to create the legacy
 `Expense Claim Type` fixture while the pinned Frappe `15.119.1` / ERPNext
 `15.120.0` runtime has no `frappe.core.doctype.expense_claim_type` module.
 This is an upstream fixture-order compatibility defect, not a worker
-success/readback failure. The corrected workflow retains the exact official
-HRMS revision, removes only a partial HRMS site registration when present,
-clears the isolated site cache, retries once, then migrates and fails closed
-unless the exact app, commit, roles and workspaces are read back.
+success/readback failure. The corrected workflow refuses the blocked official
+HRMS pin before staging mutation; it does not uninstall, clear cache, retry,
+patch, or skip the incompatible fixture. A future compatible set must still
+pass exact app, commit, roles, and workspace readback.
 
 The control-plane candidate was never switched: `current` remained
 `802f1bdb0f7642ea627b08235dfa3aa16e7b9eda`, and no `.staging-smoke-passed`
-marker was created for Phase 02. The ERP site/database/files were restored from
-the pre-attempt backup; HRMS was removed from the bench, Python package, and
-bench app registries. Final readback shows only Frappe `15.119.1`, ERPNext
-`15.120.0`, and `lenerp_core 0.2.0` installed, with all staging services healthy
-and local health responses `18001=200`, `13001=200`, and ERP unauthenticated API
-`28000=403`.
+marker was created for Phase 02. The historical ERP site/database/files were
+restored from the pre-attempt backup; HRMS was removed from the bench, Python
+package, and bench app registries. The last recorded staging readback showed
+only Frappe `15.119.1`, ERPNext `15.120.0`, and `lenerp_core 0.2.0` installed,
+with staging services healthy. Those are historical host readbacks, not a
+current candidate-bound staging pass.
 
 ## Staging candidate
 
-At the time this record was authored, the corrected candidate had not yet
-completed the protected staging workflow. The required candidate-bound gates
-remain direct HRMS install/replay, migration, installed-app/version/commit
-readback, HR/Payroll role/workspace readback, provisioning retry/replay,
+No staging candidate has passed. The candidate build preflight now stops before
+the control-plane pointer switch because the declared HRMS set is marked
+`blocked` in the dependency manifest. The required future gates remain clean
+HRMS installation, migration, installed-app/version/commit readback,
+HR/Payroll and LenERP role/workspace readback, provisioning retry/replay,
 authorization and tenant-isolation smoke, and rollback evidence. Promotion
-must use the exact corrected candidate and cannot substitute another HRMS
-version or weaken exact verification.
+must use one exact candidate and cannot substitute another HRMS version or
+weaken exact verification.
 
 ## Production promotion
 
@@ -158,7 +158,7 @@ structures, payroll entries, tax rules, or accounting postings are authorized.
   Worker/Pages configuration; the installed/authenticated Wrangler check did
   not produce a usable local CLI response. No Cloudflare mutation was made.
 
-## Correction operator readback (2026-09-20)
+## Historical failed operator attempt (superseded)
 
 The isolated staging host was revalidated before the corrected candidate run:
 
@@ -170,20 +170,16 @@ The isolated staging host was revalidated before the corrected candidate run:
   `/opt/saas-control-staging/shared/backups/phase2-20260920T020224Z/` with
   database, site config, public files, private files, and control-plane SQLite
   artifacts plus a SHA-256 manifest.
-- The exact official HRMS tag/commit installed and `bench --site
-  erp-staging.example.test migrate` completed successfully after the bounded
-  replay path. Readback reported Frappe `15.119.1`, ERPNext `15.120.0`, HRMS
-  `15.64.1`, HRMS commit `e68a3deaa95ae5b2c3d743297d0a4ab505733fc1`, and
-  installed apps `frappe`, `erpnext`, `lenerp_core`, `hrms`.
-- Direct provider readback found HRMS `Expense Claim Type`, `Employee`, and
-  `Salary Structure` DocTypes, HR roles `HR User` and `HR Manager`, and the
-  HRMS-owned `HR` and `Payroll` workspaces. ERP root returned HTTP `200` after
-  the required service restart.
+- The official HRMS tag/commit was attempted against Frappe `15.119.1` and
+  ERPNext `15.120.0`; installation failed in `hrms.after_install` while
+  creating the removed `Expense Claim Type` fixture. The site was restored
+  from the fresh backup and the control-plane pointer was not accepted.
+- Any readback recorded after a bounded retry is historical diagnostic evidence
+  only; it is superseded and cannot establish clean-install compatibility.
 
-These are operator readbacks of the isolated ERP lane. They do not yet claim
-that the corrected control-plane commit has passed its protected staging
-workflow; the candidate hash, staging run, production backup/promotion, and
-final Phase 02 verdict remain pending until that exact workflow completes.
+These are historical operator readbacks of the isolated ERP lane. They do not
+claim a clean installation, candidate-bound staging pass, production backup or
+promotion, independent review, or Phase 02 acceptance.
 
 ## Protected candidate attempt and runner recovery
 

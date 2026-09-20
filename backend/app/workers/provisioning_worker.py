@@ -81,7 +81,10 @@ def _application_resolution(session: Session, codes: list[str]):
     if any(module is None for module in modules):
         raise StepFailure("An approved module is unavailable.", "validation", manual_confirmation=True)
     try:
-        return calculate_required_applications(module for module in modules if module is not None)
+        resolution = calculate_required_applications(module for module in modules if module is not None)
+        if resolution.unverified_applications:
+            raise StepFailure("The approved application dependency plan has no clean-install compatibility evidence.", "dependency", manual_confirmation=True)
+        return resolution
     except ValueError as exc:
         raise StepFailure("The approved application dependency plan is invalid.", "validation", manual_confirmation=True) from exc
 
@@ -251,10 +254,12 @@ def _run_step(session: Session, job: ProvisioningJob, step: ProvisioningStep, re
         installed_payload = inventory.get("installed_apps") or {}
         actual_apps = set(installed_payload.keys()) if isinstance(installed_payload, dict) else set(installed_payload)
         actual_version = installed_payload.get(app, "") if isinstance(installed_payload, dict) else ""
-        if app in actual_apps and expected_version and actual_version != expected_version:
+        installed_commits = inventory.get("installed_app_commits") or {}
+        expected_commit = resolution.commits.get(app, "")
+        if app in actual_apps and ((expected_version and actual_version != expected_version) or (expected_commit and installed_commits.get(app) != expected_commit)):
             raise StepFailure(f"Installed {app} does not match the pinned version.", "dependency", manual_confirmation=True)
         if app in installed and app in actual_apps:
-            evidence = {"app": app, "version": actual_version or expected_version, "replayed": True, "provider_verified": True}
+            evidence = {"app": app, "version": actual_version or expected_version, "commit": installed_commits.get(app) or expected_commit, "replayed": True, "provider_verified": True}
         else:
             result = client.install_app(site_id, app)
             if result.get("status") != "success" or result.get("provider_verified") is False:
@@ -263,7 +268,9 @@ def _run_step(session: Session, job: ProvisioningJob, step: ProvisioningStep, re
             refreshed_apps = refreshed.get("installed_apps") or {}
             refreshed_names = set(refreshed_apps.keys()) if isinstance(refreshed_apps, dict) else set(refreshed_apps)
             refreshed_version = refreshed_apps.get(app, "") if isinstance(refreshed_apps, dict) else ""
-            if app not in refreshed_names or (expected_version and refreshed_version != expected_version):
+            refreshed_commits = refreshed.get("installed_app_commits") or {}
+            expected_commit = resolution.commits.get(app, "")
+            if app not in refreshed_names or (expected_version and refreshed_version != expected_version) or (expected_commit and refreshed_commits.get(app) != expected_commit):
                 for code in codes:
                     module = module_entitlement_service.module_by_code(session, code)
                     if module is not None and module.required_app == app:
@@ -274,7 +281,7 @@ def _run_step(session: Session, job: ProvisioningJob, step: ProvisioningStep, re
                 raise StepFailure(f"The installed-app readback did not confirm pinned {app}.", "dependency")
             installed.add(app)
             refs["installed_apps"] = sorted(installed)
-            evidence = {"app": app, "version": refreshed_version, "pinned": True, "provider_readback": sanitize_value(result), "installed_app_readback": sanitize_value(refreshed)}
+            evidence = {"app": app, "version": refreshed_version, "commit": refreshed_commits.get(app), "pinned": True, "provider_readback": sanitize_value(result), "installed_app_readback": sanitize_value(refreshed)}
     elif step.step_key == "apply_approved_modules":
         codes = module_entitlement_service.resolve_requested_codes(session, version.requested_module_codes_json, version.bundle_key, version.bundle_version)
         if not site_id:
@@ -291,7 +298,7 @@ def _run_step(session: Session, job: ProvisioningJob, step: ProvisioningStep, re
         if inventory.get("status") != "success" or inventory.get("provider_verified") is not True:
             raise StepFailure("The tenant installed-app readback could not be verified before applying modules.", "retryable")
         missing_apps, _, _ = _missing_runtime_requirements(inventory, requirements, [], [])
-        _, incompatible_apps = compare_installed_applications(inventory.get("installed_apps") or {}, resolution)
+        _, incompatible_apps = compare_installed_applications(inventory.get("installed_apps") or {}, resolution, inventory.get("installed_app_commits") or {})
         for code in codes:
             module = module_entitlement_service.module_by_code(session, code)
             row = session.execute(select(ModuleApplicationStatus).where(ModuleApplicationStatus.tenant_id == tenant.id, ModuleApplicationStatus.module_id == module.id)).scalar_one_or_none()
@@ -362,7 +369,7 @@ def _run_step(session: Session, job: ProvisioningJob, step: ProvisioningStep, re
         codes = module_entitlement_service.resolve_requested_codes(session, version.requested_module_codes_json, version.bundle_key, version.bundle_version)
         requirements, required_roles, required_workspaces = _module_runtime_requirements(session, codes)
         resolution = _application_resolution(session, codes)
-        provider_result = client.verify_site_configuration(site_id, codes, required_apps=requirements, required_roles=required_roles, required_workspaces=required_workspaces, required_app_versions=resolution.exact_versions)
+        provider_result = client.verify_site_configuration(site_id, codes, required_apps=requirements, required_roles=required_roles, required_workspaces=required_workspaces, required_app_versions=resolution.exact_versions, required_app_commits=resolution.commits)
         missing_apps = list(provider_result.get("missing_required_apps") or [])
         incompatible_apps = list(provider_result.get("incompatible_apps") or [])
         missing_roles = list(provider_result.get("missing_required_roles") or [])

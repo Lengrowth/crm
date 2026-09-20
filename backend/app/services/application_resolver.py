@@ -19,6 +19,8 @@ class ApplicationPin:
     commit: str
     source: str
     license: str = ""
+    compatibility_status: str = "verified"
+    compatibility_reason: str = ""
 
 
 @dataclass(frozen=True)
@@ -51,6 +53,10 @@ class ApplicationResolution:
     def platform_applications(self) -> tuple[str, ...]:
         return tuple(item.pin.name for item in self.ordered if item.pin.source == "platform")
 
+    @property
+    def unverified_applications(self) -> tuple[str, ...]:
+        return tuple(item.pin.name for item in self.ordered if item.pin.compatibility_status != "verified")
+
 
 # These values are the reviewed Frappe v15 staging baseline.  HRMS is pinned
 # to an immutable upstream tag/commit; it is not a floating branch dependency.
@@ -67,6 +73,8 @@ MODULE_APPLICATION_PINS: dict[str, ApplicationPin] = {
         "e68a3deaa95ae5b2c3d743297d0a4ab505733fc1",
         "module",
         "GNU General Public License (v3)",
+        "blocked",
+        "Official HRMS v15.64.1 still creates the removed Frappe Expense Claim Type fixture; no clean-install-compatible official HRMS v15 release is verified for the pinned Frappe/ERPNext baseline.",
     ),
 }
 
@@ -127,6 +135,7 @@ def calculate_required_applications(modules: Iterable[Any], *, include_platform:
 def compare_installed_applications(
     installed_apps: dict[str, str] | list[str] | tuple[str, ...],
     resolution: ApplicationResolution,
+    installed_commits: dict[str, str] | None = None,
 ) -> tuple[list[str], list[str]]:
     """Return missing and incompatible app names from a provider readback."""
 
@@ -136,10 +145,13 @@ def compare_installed_applications(
         installed = {str(name): "" for name in installed_apps}
     missing: list[str] = []
     incompatible: list[str] = []
+    commits = {str(name): str(commit or "") for name, commit in (installed_commits or {}).items()}
     for requirement in resolution.ordered:
         actual = installed.get(requirement.pin.name)
         if actual is None:
             missing.append(requirement.pin.name)
         elif requirement.pin.version and actual != requirement.pin.version:
             incompatible.append(f"{requirement.pin.name} (expected {requirement.pin.version}, read {actual or 'unknown'})")
+        elif requirement.pin.commit and commits.get(requirement.pin.name) != requirement.pin.commit:
+            incompatible.append(f"{requirement.pin.name} commit (expected {requirement.pin.commit}, read {commits.get(requirement.pin.name) or 'unknown'})")
     return sorted(missing), sorted(incompatible)

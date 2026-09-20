@@ -63,6 +63,13 @@ jobs:
           OUTPUT_FILE: ${{ github.workspace }}/phase2-production-backup.json
         run: ./scripts/release/run_verified_production_backup.sh "$OUTPUT_FILE"
 
+      - name: Verify production baseline before any Phase 02 application mutation
+        env:
+          BACKUP_EVIDENCE_FILE: ${{ github.workspace }}/phase2-production-backup.json
+          TARGET_ENVIRONMENT: production
+          ERP_SITE: erp.lengrowth.com
+        run: ./scripts/release/phase2_production_preflight.sh "/opt/saas-control/releases/${{ inputs.release_id }}"
+
       - name: Install and migrate exact HRMS, then verify production readbacks
         env:
           OUTPUT_FILE: ${{ github.workspace }}/phase2-production-erp-readback.json
