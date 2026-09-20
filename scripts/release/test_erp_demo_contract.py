@@ -30,11 +30,11 @@ def test_staging_workflow_verifies_the_installed_custom_app_candidate():
     assert 'CUSTOM_APP_VERSION: "0.2.0"' in workflow
     assert 'CUSTOM_APP_COMMIT="$core_commit"' in workflow
     assert 'SOURCE_COMMIT.txt' in workflow
-    assert bundle_commit == "66a062cd60b51cc64818548b0296444cf7365870"
+    assert bundle_commit == "6466f2141e0ad2e400d77c0cb405498dfd6991f5"
     assert "lenerp_core-${core_commit}.tar" in workflow
     assert 'staging.joinpath("lenerp_core.archive.sha256")' in workflow
     assert '"version": "0.2.0"' in baseline
-    assert '"commit": "66a062cd60b51cc64818548b0296444cf7365870"' in baseline
+    assert '"commit": "6466f2141e0ad2e400d77c0cb405498dfd6991f5"' in baseline
     assert "erp_staging_smoke.sh" in workflow
     assert "erp_demo_smoke.sh" in workflow
     assert "erp_role_smoke.sh" in workflow
@@ -48,7 +48,7 @@ def test_staging_workflow_verifies_the_installed_custom_app_candidate():
     assert '"runtime_readback": runtime_readback' in workflow
     assert '"documentation": {' in workflow
     assert 'documentation_target = evidence_dir / "documentation"' in workflow
-    archive = ROOT / "ops" / "staging" / "lenerp_core-66a062cd60b51cc64818548b0296444cf7365870.tar"
+    archive = ROOT / "ops" / "staging" / "lenerp_core-6466f2141e0ad2e400d77c0cb405498dfd6991f5.tar"
     with tarfile.open(archive, mode="r:*") as handle:
         assert "lenerp_core/public/js/accessibility.js" in handle.getnames()
 
