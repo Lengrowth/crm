@@ -15,7 +15,8 @@ run_id="${prefix##*/}"
 local_dir="/var/lib/saas-control/r2-backups/$run_id"
 sudo -n test -d "$local_dir/erp"
 sudo -n test -s "$local_dir/manifest.sha256"
-sudo -n bash -lc "cd '$local_dir' && sha256sum -c manifest.sha256" >/dev/null
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+sudo -n bash "$SCRIPT_DIR/verify_backup_manifest.sh" "$local_dir" >/dev/null
 
 python3 - "$OUTPUT_FILE" "$prefix" "$run_id" "$local_dir" <<'PY'
 import json
