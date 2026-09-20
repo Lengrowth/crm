@@ -1,17 +1,17 @@
 # Phase 03 — Unified Identity and Cross-Navigation Evidence
 
 **Date:** 2026-09-20 (Asia/Tbilisi)
-**Status:** IMPLEMENTED LOCALLY — protected staging verification required; production SSO is disabled.
+**Status:** PROTECTED STAGING PASS — independent read-only review remains open; production SSO is disabled.
 **Scope:** additive authorization-code broker boundary, canonical LenERP relying-party bridge, and control-plane/ERP navigation.
 
 ## Release identity
 
 - Control-plane branch: `codex/phase3-unified-identity`.
-- Control-plane implementation commit: `6fcca9105c4ab811b0124beba5040b7adbb30aee`.
+- Control-plane candidate commit: `ce2a339f2e57784ca933e85c78cac6ce60310b14`.
 - Canonical `lenerp_core` branch: `codex/phase3-unified-identity`.
-- Canonical LenERP implementation commit: `568b7fe947af344e7f4b67739f4f30b2b1c50d2d`.
-- Immutable bundle: `ops/staging/lenerp_core-568b7fe947af344e7f4b67739f4f30b2b1c50d2d.tar`.
-- Bundle SHA-256: `D4AB4EA8D683E8F0D9FC29668379FE334D20B76968C0A961E1015BCE3AAB9EC3`.
+- Canonical LenERP implementation commit: `3a7121974cb55ebcac120af6c07eaab53cfedb2c`.
+- Immutable bundle: `ops/staging/lenerp_core-3a7121974cb55ebcac120af6c07eaab53cfedb2c.tar`.
+- Bundle SHA-256: `839AF05D5EDB3D05C3D94AE17FF0DB6614901F44D8286045C5621D7AD826A987`.
 - Control-plane dependency manifest and installed source marker point to that exact commit.
 - Migration: `20260920_0013_phase3_unified_identity`, additive and downgrade-tested.
 
@@ -54,7 +54,7 @@ gate for a maintained OIDC provider with back-channel logout support.
 
 ## Local validation
 
-- Backend full suite: PASS — 82 tests, 25 existing deprecation warnings.
+- Backend full suite: PASS — 82 tests, 25 existing deprecation warnings; focused Phase 03/control release gate: 15 passed.
 - Phase 03 security/service tests: PASS, including success, replay, expiry, PKCE, audience, redirect, path, membership, role readiness, deterministic mapping, and feature-off denial.
 - Frontend Vitest: PASS, 12 tests.
 - Frontend typecheck: PASS.
@@ -64,12 +64,18 @@ gate for a maintained OIDC provider with back-channel logout support.
 
 ## Staging and production boundary
 
-Protected Phase 03 staging browser journeys, responsive/accessibility captures,
-synthetic identity/mapping cleanup, protected run/job IDs, and rollback
-readback are not yet recorded in this local implementation evidence. The
-server-controlled `phase3_unified_identity` flag defaults off. Production SSO
-has not been enabled, and production, Cloudflare, upstream Frappe, ERPNext, and
-HRMS remain unchanged.
+Protected Phase 03 staging run `35533376911` passed on candidate
+`ce2a339f2e57784ca933e85c78cac6ce60310b14`, job `106137957752`. The run verified
+the control-plane-to-ERP authorization-code flow, ERP-to-control navigation,
+direct ERP access, responsive/accessibility evidence, denial/replay/membership
+checks, identity-mapping revocation, feature-off rollback, independent ERP
+login, staging restoration, and synthetic cleanup. Durable browser artifact
+`staging-browser-evidence-ce2a339f2e57784ca933e85c78cac6ce60310b14` has ID
+`10611928332` and digest
+`sha256:3e1f685518fd14b05cb656fa1148b8e14d4293f645788f7d9b4fb31850bb6b62`.
+The server-controlled `phase3_unified_identity` flag defaults off. Production
+SSO has not been enabled, and production, Cloudflare, upstream Frappe, ERPNext,
+and HRMS remain unchanged.
 
 ## Rollback
 
