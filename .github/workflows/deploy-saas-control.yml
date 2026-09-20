@@ -680,6 +680,7 @@ jobs:
             -keyout "$tls_dir/server.key" -out "$tls_dir/server.crt" \
             -subj "/CN=staging.example.test" \
             -addext "subjectAltName=DNS:staging.example.test,DNS:erp-staging.example.test"
+          printf '127.0.0.1 staging.example.test erp-staging.example.test # phase3-identity-%s\n' "$GITHUB_RUN_ID" | sudo tee -a /etc/hosts >/dev/null
           sudo install -d -o root -g frappe -m 0750 /run/saas-control-staging/phase3-identity
           sudo install -o root -g frappe -m 0640 "$tls_dir/server.crt" /run/saas-control-staging/phase3-identity/ca.crt
           nohup python3 scripts/release/phase3_staging_tls_proxy.py \
@@ -841,6 +842,7 @@ jobs:
           sudo -n -u frappe bash -lc 'cd /opt/frappe-staging-bench && /usr/local/bin/bench --site erp-staging.example.test clear-cache' || true
           sudo systemctl restart frappe-staging-web.service || true
           sudo systemctl restart saas-control-staging-backend || true
+          sudo sed -i "/# phase3-identity-${GITHUB_RUN_ID}$/d" /etc/hosts || true
           if [[ -f "$identity_dir/manifest.json" ]]; then
             set -a
             . /opt/saas-control-staging/shared/env/staging-backend.env
