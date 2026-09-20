@@ -122,7 +122,10 @@ if (await returnLink.count() === 0 || !(await returnLink.first().isVisible().cat
 if (await returnLink.count() !== 1) throw new Error("ERP user navigation did not expose exactly one LenERP Control Plane link");
 const returnHref = await returnLink.getAttribute("href");
 if (!returnHref || !returnHref.startsWith(`${controlBase}/app/tenants/${manifest.tenant_id}`)) throw new Error("ERP return link was not bound to the synthetic tenant");
-await Promise.all([directPage.waitForURL(new RegExp(`${controlBase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/app/tenants/${manifest.tenant_id}`), { timeout: 60000 }), returnLink.click({ force: true })]);
+await Promise.all([
+  directPage.waitForURL(new RegExp(`${controlBase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/app/tenants/${manifest.tenant_id}`), { timeout: 60000 }),
+  returnLink.evaluate((element) => element.click()),
+]);
 evidence.erp_to_control = { final_url: new URL(directPage.url()).pathname, exact_tenant_return: true };
 await directPage.screenshot({ path: path.join(outputDir, "erp-to-control.png"), fullPage: true });
 
