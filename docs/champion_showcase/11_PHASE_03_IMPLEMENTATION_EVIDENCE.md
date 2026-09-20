@@ -11,7 +11,7 @@
 - Canonical `lenerp_core` branch: `codex/phase3-unified-identity`.
 - Canonical LenERP remediation commit: `de9cb6fea722071d191f8993c4d9f2a2e5f6010a`.
 - Immutable remediation bundle: `ops/staging/lenerp_core-de9cb6fea722071d191f8993c4d9f2a2e5f6010a.tar`.
-- Bundle SHA-256: `48619CBC4A0DAECEB39C8EBB7871825052F03CDB6F77F7363F3DBE04A75880D0`.
+- Bundle SHA-256: `48619CBC4A0DAECEB39C8EBB7871825052F03CDB6F77F7363F3DBE04A75880B0`.
 - Control-plane dependency manifest and installed source marker point to that exact commit.
 - Migration: `20260920_0013_phase3_unified_identity`, additive and downgrade-tested.
 
