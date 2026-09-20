@@ -49,7 +49,7 @@ const context = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { 
 await addIdentityCookie(context);
 const controlPage = await context.newPage();
 await assertReady(controlPage, `${controlBase}/app/tenants/${manifest.tenant_id}`);
-const openLink = controlPage.getByRole("link", { name: /Open ERP in this tab/i });
+const openLink = controlPage.getByRole("link", { name: /^Open ERP for /i });
 if (await openLink.count() !== 1) throw new Error("ready tenant page did not expose exactly one Open ERP action");
 await controlPage.screenshot({ path: path.join(outputDir, "control-tenant-open-erp.png"), fullPage: true });
 await openLink.click();
