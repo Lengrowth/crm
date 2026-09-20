@@ -1,0 +1,61 @@
+name: Read Phase 02 production ERP state
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase2-production-recovery-readback
+  cancel-in-progress: false
+
+jobs:
+  readback:
+    name: Read production ERP state without mutation
+    runs-on:
+      - self-hosted
+      - linux
+      - saas-control
+    environment: production
+    steps:
+      - name: Check out recovery readback tooling
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 1
+
+      - name: Validate AWS production target and services
+        run: |
+          set -euo pipefail
+          test "$(aws sts get-caller-identity --query Account --output text)" = "288947333598"
+          target="$(aws ec2 describe-instances --region us-east-1 --instance-ids i-0f54fba441caa7154 --query 'Reservations[0].Instances[0].[InstanceId,PrivateIpAddress,PublicIpAddress,State.Name]' --output text)"
+          test "$target" = $'i-0f54fba441caa7154\t172.31.26.214\t100.62.163.246\trunning'
+          systemctl is-active --quiet saas-backend.service
+          systemctl is-active --quiet saas-frontend.service
+          systemctl is-active --quiet nginx.service
+
+      - name: Capture non-mutating ERP readback
+        run: |
+          set -euo pipefail
+          chmod +x scripts/release/read_phase2_production_erp.sh
+          scripts/release/read_phase2_production_erp.sh phase2-production-erp-state.json
+
+      - name: Capture control-plane health readback
+        if: always()
+        run: |
+          set -euo pipefail
+          chmod +x scripts/release/capture_production_readback.sh
+          sudo scripts/release/capture_production_readback.sh production-readback.json
+          sudo chown "$(id -u):$(id -g)" production-readback.json
+
+      - name: Upload recovery readback evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase2-production-recovery-readback-${{ github.run_id }}
+          path: |
+            phase2-production-erp-state.json
+            production-readback.json
+          if-no-files-found: error
+          retention-days: 30
