@@ -91,7 +91,30 @@ if (transaction.status !== 200 || !transaction.body.authorization_url) throw new
 const victimContext = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1440, height: 1000 }, reducedMotion: "reduce" });
 await addIdentityCookie(victimContext);
 const victimPage = await victimContext.newPage();
-const victimResponse = await victimPage.goto(transaction.body.authorization_url, { waitUntil: "domcontentloaded", timeout: 60000 }).catch(() => null);
+await victimPage.goto(transaction.body.authorization_url, { waitUntil: "domcontentloaded", timeout: 60000 });
+const authorization = await victimPage.evaluate(async ({ authorizationUrl, bearer }) => {
+  const query = new URL(authorizationUrl).searchParams;
+  const response = await fetch("/api/sso/authorize", {
+    method: "POST",
+    credentials: "include",
+    headers: { Accept: "application/json", "Content-Type": "application/json", Authorization: `Bearer ${bearer}` },
+    body: JSON.stringify({
+      tenant_id: query.get("tenant_id"),
+      client_id: query.get("client_id"),
+      audience: query.get("audience"),
+      redirect_uri: query.get("redirect_uri"),
+      state: query.get("state"),
+      code_challenge: query.get("code_challenge"),
+      code_challenge_method: query.get("code_challenge_method"),
+      requested_path: query.get("requested_path"),
+    }),
+  });
+  return { status: response.status, body: await response.json() };
+}, { authorizationUrl: transaction.body.authorization_url, bearer: token });
+const authorizationBody = authorization.body.message ?? authorization.body;
+if (authorization.status !== 200 || !authorizationBody.code) throw new Error("control plane did not issue a browser callback code");
+const callbackUrl = `${new URL(authorizationBody.redirect_uri).origin}${new URL(authorizationBody.redirect_uri).pathname}?code=${encodeURIComponent(authorizationBody.code)}&state=${encodeURIComponent(authorizationBody.state)}`;
+const victimResponse = await victimPage.goto(callbackUrl, { waitUntil: "domcontentloaded", timeout: 60000 }).catch(() => null);
 if (victimResponse && victimResponse.status() < 400) throw new Error("cross-browser callback was not rejected");
 evidence.session_isolation = { attacker_transaction_issued: true, victim_callback_denied: true, no_victim_erp_session: !victimPage.url().includes("/app") };
 await attackerPage.close();
