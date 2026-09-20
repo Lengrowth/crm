@@ -130,7 +130,7 @@ if not isinstance(workspaces, list) or not {"HR", "Payroll"}.issubset({str(item.
 bench_root = Path(os.environ.get("BENCH_ROOT", "/opt/frappe-staging-bench"))
 site = os.environ.get("SITE", "erp-staging.example.test")
 hrms_path = bench_root / "apps" / "hrms"
-commit = subprocess.check_output(["git", "-C", str(hrms_path), "rev-parse", "HEAD"], text=True).strip()
+commit = subprocess.check_output(["sudo", "-u", "frappe", "git", "-C", str(hrms_path), "rev-parse", "HEAD"], text=True).strip()
 expected_commit = os.environ.get("EXPECTED_HRMS_COMMIT", "")
 if commit != expected_commit:
     raise SystemExit("ERP staging HRMS commit readback is not the expected immutable revision")

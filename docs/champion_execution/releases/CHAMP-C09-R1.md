@@ -35,6 +35,13 @@ unreferenced historical control-plane release directories were removed only
 after validating that the active and previous rollback targets were preserved;
 the next candidate must be independently staged and reviewed.
 
+The subsequent candidate `3793b9870461828a8421272ac7ace6fd17297561` run
+`35484379236` captured the exact backup, deployed, installed/migrated HRMS and
+`lenerp_core`, and passed HTTP/service checks, but its HRMS commit readback
+failed on Git dubious ownership because the smoke script used the runner user
+instead of `frappe`. The readback is corrected in the next immutable candidate;
+production remains unchanged.
+
 ## Recovery
 
 Code rollback uses the immutable staging/production pointer workflow. Site schema

@@ -201,3 +201,14 @@ previous rollback targets were verified and retained. Twelve explicitly named
 older directories were removed after path and pointer validation, leaving
 approximately 8.9 GB free. The next correction commit is a new immutable
 candidate and must repeat the complete protected staging gate.
+
+The next protected workflow (`35484379236`) used candidate
+`3793b9870461828a8421272ac7ace6fd17297561`. It captured and verified the
+candidate-bound backup at
+`/opt/saas-control-staging/shared/backups/phase2-67eb84e2dc304fa6dbab538fc9ad2d3bb932a84b-35484379236/`, deployed the exact candidate, installed/migrated HRMS and
+`lenerp_core`, and passed service, port, HTTP 200/403, and migration steps.
+The run failed at the final HRMS commit readback because the smoke script
+invoked Git as the runner account against the `frappe`-owned checkout and Git
+correctly rejected the repository as dubious ownership. This is a readback
+implementation defect; production was unchanged and a new candidate is
+required after the script runs the readback as `frappe`.

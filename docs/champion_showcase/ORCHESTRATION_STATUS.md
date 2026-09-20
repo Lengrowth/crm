@@ -27,7 +27,11 @@ Last updated: 2026-09-20 (Asia/Tbilisi)
 - Fresh staging backup: `/opt/saas-control-staging/shared/backups/phase2-20260920T020224Z/`; database/config/public/private/control-plane artifacts created and SHA-256 manifest retained before HRMS mutation.
 - Staging compatibility replay: exact HRMS revision installed and migrated after the bounded replay path; direct readbacks showed Frappe `15.119.1`, ERPNext `15.120.0`, HRMS `15.64.1`, HRMS commit `e68a3de...`, HR roles `HR User`/`HR Manager`, HR workspaces `HR`/`Payroll`, and `Expense Claim Type` DocType. Candidate-bound control-plane staging and production promotion are not yet complete.
 - Deployment/rollback state: staging ERP services were restarted after HRMS asset build; loopback ERP root returned `200`; production was not changed. Protected staging workflow must still deploy the corrected candidate and capture candidate-bound evidence before promotion.
-- Unresolved decisions: new exact corrected candidate hash after the pre-deployment runner failure, protected staging workflow result, production backup/promotion/readback, and final Phase 02 gate.
+- Correction commits: `cdae0535cb3af425b423f6858aaa779d4edf3b98` (HRMS recovery/readbacks), `e8757881735bd4a2d7ba2ebec3fdd22a94a66981` (recorded protected-run ENOSPC and capacity remediation), `3793b9870461828a8421272ac7ace6fd17297561` (candidate-bound backup, lenerp_core bench registration, backup-bound ERP readback).
+- Current immutable correction candidate: `3793b9870461828a8421272ac7ace6fd17297561`.
+- Protected workflow `35484021724` validated/deployed and installed/migrated exact HRMS but exposed the existing bench-registration defect: lenerp_core source was present but absent from `sites/apps.txt`; production stayed unchanged. Current candidate-bound validation workflow: `35484379236`, job `106007919123`.
+- Unresolved decisions: completion/result of workflow `35484379236`, candidate-bound staging evidence, production backup/promotion/readback, temporary SSH /32 revocation, and final Phase 02 gate.
+- Workflow `35484379236` captured and verified backup `/opt/saas-control-staging/shared/backups/phase2-67eb84e2dc304fa6dbab538fc9ad2d3bb932a84b-35484379236`, deployed the exact candidate, installed/migrated HRMS and `lenerp_core`, and passed HTTP/service checks. It failed at HRMS commit readback because the smoke script ran Git as the runner user against the `frappe`-owned checkout (`dubious ownership`). No production mutation occurred; the readback is corrected in the next immutable candidate.
 
 ## Worktree preservation
 
