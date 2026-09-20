@@ -28,6 +28,7 @@ required = {
     "installed_apps",
     "dependency_lock_hashes",
     "feature_flags",
+    "application_dependencies",
     "database_revision_before",
     "database_revision_after",
 }
@@ -46,6 +47,19 @@ for app_name in ("frappe", "erpnext"):
     app = payload["installed_apps"][app_name]
     if app.get("commit") in {None, "", "unknown"}:
         raise SystemExit(f"manifest installed_apps has unknown {app_name} commit")
+dependencies = payload.get("application_dependencies")
+if not isinstance(dependencies, dict) or dependencies.get("schema_version") != 1:
+    raise SystemExit("manifest application dependency pin is missing")
+hrms = dependencies.get("module_dependencies", {}).get("hrms", {})
+if hrms.get("commit") != "e68a3deaa95ae5b2c3d743297d0a4ab505733fc1" or hrms.get("version") != "15.64.1":
+    raise SystemExit("manifest HRMS pin is not the reviewed immutable revision")
+compatibility = hrms.get("compatibility") or {}
+if compatibility.get("metadata_sufficiency") != "broad major-version constraints are not sufficient to prove install compatibility":
+    raise SystemExit("manifest does not record the HRMS compatibility limitation")
+if compatibility.get("upstream_issue") != "https://github.com/frappe/hrms/issues/1639":
+    raise SystemExit("manifest does not bind the authoritative HRMS install evidence")
+if "bounded" not in str(compatibility.get("verified_install_path") or "").lower():
+    raise SystemExit("manifest does not record the bounded HRMS recovery path")
 for field in (
     "custom_app_commit",
     "custom_app_version",

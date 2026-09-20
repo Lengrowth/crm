@@ -50,6 +50,10 @@ Champion pages, modules, roles, workflows, reports, and configuration are delive
 
 Migration begins with source inventory and mapping before the files arrive, continues through repeatable staging imports and reconciliation, and ends with the production cutover. It is governed by [`06_CHAMPION_DATA_AND_WORKFLOWS.md`](06_CHAMPION_DATA_AND_WORKFLOWS.md) and tracked in [`DATA_MIGRATION_REGISTER.md`](DATA_MIGRATION_REGISTER.md).
 
+### Pre-kickoff module showcase program
+
+The AI-executable staging program for `champion-drilling@2`, dependency-aware HRMS installation, unified control-plane/ERP identity, role-based ERP UX, Office Board, Support, Quality, HR/Payroll and the Matt demonstration is maintained in [`../champion_showcase/README.md`](../champion_showcase/README.md). It contributes to C02, C03, C04–C09 and cannot bypass this execution pack's release gates or Champion acceptance requirements.
+
 ## What can be ready before Champion data
 
 - Release safety, staging, rollback, and the `lenerp_core` application boundary.

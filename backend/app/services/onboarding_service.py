@@ -51,6 +51,7 @@ from app.schemas.onboarding import (
 )
 from app.services.billing_service import BillingService
 from app.services.control_plane_service import ControlPlaneService
+from app.services.application_resolver import calculate_required_applications
 from app.services.module_entitlement_service import ModuleEntitlementError, module_entitlement_service
 from app.services.provisioning_service import provisioning_service
 from app.workers.provisioning_worker import run_next_job
@@ -74,6 +75,26 @@ STEP_DEFINITIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("prepare_first_login", ("verify_apps_modules",)),
     ("mark_ready", ("prepare_first_login",)),
 )
+
+
+def step_definitions_for_request(session: Session, requested_codes: list[str], bundle_key: Optional[str], bundle_version: Optional[int]) -> tuple[tuple[str, tuple[str, ...]], ...]:
+    """Return the durable sequence, adding HRMS only when metadata requires it."""
+
+    effective_codes = module_entitlement_service.resolve_requested_codes(session, requested_codes, bundle_key, bundle_version)
+    modules = [module_entitlement_service.module_by_code(session, code) for code in effective_codes]
+    resolution = calculate_required_applications(module for module in modules if module is not None)
+    if "hrms" not in resolution.applications:
+        return STEP_DEFINITIONS
+    expanded: list[tuple[str, tuple[str, ...]]] = []
+    for step in STEP_DEFINITIONS:
+        expanded.append(step)
+        if step[0] == "install_pinned_erpnext":
+            expanded.append(("install_pinned_hrms", ("install_pinned_erpnext",)))
+    # The custom-app step must follow HRMS when HR/Payroll is selected.
+    return tuple(
+        ("install_lenerp_custom_app", ("install_pinned_hrms",)) if key == "install_lenerp_custom_app" else (key, deps)
+        for key, deps in expanded
+    )
 
 
 class OnboardingError(Exception):
@@ -318,7 +339,7 @@ class Phase4OnboardingService:
         job = ProvisioningJob(tenant_id=tenant.id, job_type="onboarding_provisioning", status="awaiting_execution_authorization", requested_by_user_id=actor.id, onboarding_request_id=request.id, onboarding_version=version.version, workflow_version="phase4-1", max_attempts=5, target_environment="staging", target_isolation_json={"lane": "isolated_synthetic", "site_namespace": f"phase4-{request.id[:8]}", "dns_mutation": "manual_only"}, logs_json=[{"event": "converted", "ts": now.isoformat(), "message": "Approved onboarding converted; execution remains separately authorized."}])
         session.add(job)
         session.flush()
-        for ordinal, (key, deps) in enumerate(STEP_DEFINITIONS, start=1):
+        for ordinal, (key, deps) in enumerate(step_definitions_for_request(session, version.requested_module_codes_json, version.bundle_key, version.bundle_version), start=1):
             session.add(ProvisioningStep(job_id=job.id, step_key=key, ordinal=ordinal, dependency_keys_json=list(deps)))
         session.add(ProvisioningOutboxEvent(aggregate_type="onboarding_request", aggregate_id=request.id, event_type="onboarding.conversion_committed", idempotency_key=f"onboarding-conversion:{request.id}:{version.version}", payload_json={"request_id": request.id, "version": version.version, "job_id": job.id}))
         session.add(FirstLoginHandoff(request_id=request.id, tenant_id=tenant.id, user_id=admin.id, status="pending_provisioning", delivery_status="disabled"))

@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "baseline": {
+    "frappe": {
+      "version": "15.119.1",
+      "commit": "edae775dd36b6c4ad7acab10230262bd74040765",
+      "source": "platform",
+      "license": "MIT"
+    },
+    "erpnext": {
+      "version": "15.120.0",
+      "commit": "945e825bee3d0d645f6cb59bcaab90fcbfb98ce3",
+      "source": "platform",
+      "license": "GNU General Public License (v3)"
+    },
+    "lenerp_core": {
+      "version": "0.2.0",
+      "commit": "a7e47208baf6583295f5f2632f4787262cd3f475",
+      "source": "platform",
+      "license": "Proprietary Len-OS application"
+    }
+  },
+  "module_dependencies": {
+    "hrms": {
+      "repository": "https://github.com/frappe/hrms.git",
+      "tag": "v15.64.1",
+      "version": "15.64.1",
+      "commit": "e68a3deaa95ae5b2c3d743297d0a4ab505733fc1",
+      "source": "module",
+      "license": "GNU General Public License (v3)",
+      "compatibility": {
+        "frappe": ">=15.0.0,<16.0.0",
+        "erpnext": ">=15.0.0,<16.0.0",
+        "reviewed_baseline": {
+          "frappe": "15.119.1",
+          "erpnext": "15.120.0"
+        },
+        "metadata_sufficiency": "broad major-version constraints are not sufficient to prove install compatibility",
+        "verified_install_path": "official HRMS v15.64.1 exact commit with one bounded uninstall/clear-cache/reinstall replay after the upstream Expense Claim Type fixture failure, followed by migrate and direct installed-app/role/workspace readback",
+        "upstream_issue": "https://github.com/frappe/hrms/issues/1639"
+      },
+      "source_archive_url": "https://github.com/frappe/hrms/archive/refs/tags/v15.64.1.tar.gz",
+      "source_archive_sha256": null
+    }
+  },
+  "install_order": ["frappe", "erpnext", "hrms", "lenerp_core"],
+  "notes": [
+    "Frappe is the site platform baseline and is not installed by the control-plane worker.",
+    "HRMS is required only when effective module metadata requires hrms; no permanent UI install switch is authoritative.",
+    "The production ERP site must not be treated as HRMS-verified until direct installed-app, role, and workspace readback succeeds."
+  ]
+}

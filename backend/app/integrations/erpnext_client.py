@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Optional
 
 
 class ProvisionRecord(dict[str, object]):
@@ -41,6 +41,9 @@ class ERPNextClient(ABC):
     def install_app(self, site_id: str, app_name: str) -> OperationResult:
         raise NotImplementedError
 
+    def migrate_site(self, site_id: str) -> OperationResult:
+        return OperationResult({"status": "unsupported", "site_id": site_id})
+
     @abstractmethod
     def bind_domain(self, site_id: str, domain: str) -> OperationResult:
         raise NotImplementedError
@@ -67,5 +70,5 @@ class ERPNextClient(ABC):
     def get_site_inventory(self, site_id: str) -> dict[str, object]:
         return {"status": "unsupported", "site_id": site_id}
 
-    def verify_site_configuration(self, site_id: str, requested_modules: list[str]) -> OperationResult:
-        return OperationResult({"status": "unsupported", "site_id": site_id, "requested_modules": requested_modules})
+    def verify_site_configuration(self, site_id: str, requested_modules: list[str], required_apps: Optional[dict[str, str]] = None, required_roles: Optional[list[str]] = None, required_workspaces: Optional[list[str]] = None, required_app_versions: Optional[dict[str, str]] = None) -> OperationResult:
+        return OperationResult({"status": "unsupported", "site_id": site_id, "requested_modules": requested_modules, "required_apps": required_apps or {}, "required_roles": required_roles or [], "required_workspaces": required_workspaces or [], "required_app_versions": required_app_versions or {}})

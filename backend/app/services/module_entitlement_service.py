@@ -34,6 +34,7 @@ from app.schemas.modules import (
     ModulePreviewRead,
     ModuleReversalRequest,
 )
+from app.services.application_resolver import calculate_required_applications
 
 
 class ModuleEntitlementError(Exception):
@@ -60,6 +61,12 @@ class ModuleDependencyConflictError(ModuleEntitlementValidationError):
 
 
 MODULE_WRITE_ROLES = {"owner", "admin", "implementation_manager"}
+
+# Champion's primary navigation deliberately keeps these capabilities out of
+# view until their owning workflow is configured and verified. This is a
+# presentation contract only; it never changes catalog or entitlement state.
+CHAMPION_PRESERVED_HIDDEN_CODES = {"manufacturing"}
+CHAMPION_HRMS_GATED_CODES = {"hr", "payroll"}
 
 
 class ModuleEntitlementService:
@@ -186,7 +193,38 @@ class ModuleEntitlementService:
                 explanation.append("required dependency")
             if not explanation:
                 explanation.append("not selected by the safe default")
-            items.append(ModuleEffectiveItem(code=code, name=module.name, category=module.category, requested=code in selected, entitled=entitled, marketed=bool(module.is_marketed), explicit=explicit_record is not None, source=sorted(set(explanation)), explanation=sorted(set(explanation)), application_state=app_state, verification_state=verification_state, tenant_states=tenant_states))
+            requested = code in selected
+            applied = app_state == "applied"
+            verified = verification_state == "verified"
+            hidden_reasons: list[str] = []
+            if not entitled:
+                hidden_reasons.append("Not included in the current entitlement.")
+            if module.administrative_visibility != "public":
+                hidden_reasons.append("This capability is restricted to operator administration.")
+            if code in CHAMPION_PRESERVED_HIDDEN_CODES:
+                hidden_reasons.append("Preserved capability; hidden from Champion navigation until a use case is approved.")
+            if code in CHAMPION_HRMS_GATED_CODES and not verified:
+                hidden_reasons.append("Hidden until HRMS is installed and the capability passes verification.")
+            hidden = bool(hidden_reasons)
+            attention_reasons: list[str] = []
+            if entitled and not applied:
+                if module.required_app == "hrms":
+                    attention_reasons.append("HRMS is missing from the verified tenant installed-app readback. Install HRMS, rerun the readback, then retry verification.")
+                else:
+                    attention_reasons.append("ERP application is pending provisioning/readback evidence; retry after the tenant provisioning step completes." if app_state == "pending" else "ERP application failed; review the provider readback and retry.")
+            if entitled and not verified:
+                if any("role" in str(state.get("failure_reason") or "").lower() or "workspace" in str(state.get("failure_reason") or "").lower() for state in tenant_states):
+                    attention_reasons.append("Required ERP roles or workspaces are missing from the verified readback. Configure them, rerun the readback, then retry verification.")
+                elif verification_state == "pending":
+                    attention_reasons.append("ERP verification is pending; rerun the tenant installed-app/module/role/workspace readback, then retry verification.")
+                else:
+                    attention_reasons.append("ERP verification failed; review the provider readback and retry.")
+            if entitled and module.required_app and not tenant_states:
+                attention_reasons.append(f"Required application `{module.required_app}` is not verified by the authorized staging readback.")
+            attention_reasons.extend(str(state["failure_reason"]) for state in tenant_states if state.get("failure_reason"))
+            needs_attention = bool(attention_reasons)
+            states = [state for state, present in (("requested", requested), ("entitled", entitled), ("applied", applied), ("verified", verified), ("hidden", hidden), ("needs_attention", needs_attention)) if present]
+            items.append(ModuleEffectiveItem(code=code, name=module.name, category=module.category, requested=requested, entitled=entitled, marketed=bool(module.is_marketed), explicit=explicit_record is not None, source=sorted(set(explanation)), explanation=sorted(set(explanation)), application_state=app_state, verification_state=verification_state, tenant_states=tenant_states, dependency_codes=list(module.dependency_codes_json or []), required_app=module.required_app, minimum_app_version=module.minimum_app_version, compatible_app_version=module.compatible_app_version, states=states, state_reasons=sorted(set(hidden_reasons + attention_reasons)), hidden=hidden, needs_attention=needs_attention))
         return ModuleEffectiveRead(organization_id=organization_id, requested_codes=requested_codes, effective_codes=effective_codes, items=items, warnings=warnings, generated_at=datetime.now(timezone.utc))
 
     def preview(self, session: Session, payload: ModuleChangeRequest, *, actor: Optional[SaaSUser] = None) -> ModulePreviewRead:
@@ -195,6 +233,9 @@ class ModuleEntitlementService:
         current_set, proposed_set = set(current.effective_codes), set(proposed.effective_codes)
         catalog = self._catalog(session)
         direct_enable = {self._canonical_code(catalog, code) for code in payload.enable_codes}
+        if payload.bundle_key:
+            bundle = self._find_bundle(session, payload.bundle_key, payload.bundle_version)
+            direct_enable.update(self._canonical_code(catalog, item.code) for item in self._bundle_items(session, bundle.id))
         identity = {
             "organization_id": payload.organization_id,
             "actor_user_id": actor.id if actor else None,
@@ -207,7 +248,16 @@ class ModuleEntitlementService:
             "current_entitlement_revision": self._entitlement_revision(session, payload.organization_id, current),
         }
         preview_hash = hashlib.sha256(json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
-        return ModulePreviewRead(organization_id=payload.organization_id, requested_enable_codes=sorted(set(payload.enable_codes)), requested_disable_codes=sorted(set(payload.disable_codes)), requested_clear_codes=sorted(set(payload.clear_codes)), dependency_additions=sorted((proposed_set - current_set) - direct_enable), dependency_removals=sorted(current_set - proposed_set), conflicts=[], effective=proposed, warnings=sorted(set(current.warnings + proposed.warnings)), preview_hash=preview_hash, is_current=True)
+        entitled_modules = [module for module in catalog.values() if module.code in proposed.effective_codes]
+        application_resolution = calculate_required_applications(entitled_modules)
+        # Keep the historical field scoped to module metadata.  Platform apps
+        # are exposed separately so a preview cannot silently conflate the
+        # Frappe baseline with an app newly required by a selected module.
+        required_applications = sorted({item.required_app for item in proposed.items if item.entitled and item.required_app})
+        bundle_version = None
+        if payload.bundle_key:
+            bundle_version = self._find_bundle(session, payload.bundle_key, payload.bundle_version).version
+        return ModulePreviewRead(organization_id=payload.organization_id, requested_enable_codes=sorted(set(payload.enable_codes)), requested_disable_codes=sorted(set(payload.disable_codes)), requested_clear_codes=sorted(set(payload.clear_codes)), dependency_additions=sorted((proposed_set - current_set) - direct_enable), dependency_removals=sorted(current_set - proposed_set), conflicts=[], effective=proposed, warnings=sorted(set(current.warnings + proposed.warnings)), preview_hash=preview_hash, is_current=True, bundle_key=payload.bundle_key, bundle_version=bundle_version, required_applications=required_applications, platform_required_applications=list(application_resolution.platform_applications), affected_tenants=self._tenant_targets(session, payload.organization_id))
 
     def apply(self, session: Session, actor: SaaSUser, payload: ModuleChangeRequest, *, operation: str = "apply", source_type_override: Optional[str] = None, source_ref_override: Optional[str] = None) -> ModuleChangeResult:
         request_fingerprint = self._request_fingerprint(payload)
@@ -227,6 +277,7 @@ class ModuleEntitlementService:
 
         before = self.resolve(session, payload.organization_id)
         previous_requested = self._requested_state_snapshot(session, payload.organization_id)
+        previous_bundle_key, previous_bundle_version = self._current_bundle_attribution(session, payload.organization_id)
         catalog = self._catalog(session)
         disable_set = {self._canonical_code(catalog, code) for code in payload.disable_codes}
         clear_set = {self._canonical_code(catalog, code) for code in payload.clear_codes}
@@ -264,7 +315,9 @@ class ModuleEntitlementService:
                 record.disabled_at = now
         session.flush()
         after = self.resolve(session, payload.organization_id)
-        audit = ModuleEntitlementAudit(actor_user_id=actor.id, organization_id=payload.organization_id, operation=operation, previous_requested_json=previous_requested, new_requested_json=self._requested_state_snapshot(session, payload.organization_id), previous_effective_json=self._effective_snapshot(before), new_effective_json=self._effective_snapshot(after), source_type=source_type, source_ref=source_ref, reason=payload.reason, idempotency_key=idempotency_key, result="applied")
+        tenant_ids = [tenant.id for tenant in session.execute(select(Tenant).where(Tenant.organization_id == payload.organization_id).order_by(Tenant.created_at.asc(), Tenant.id.asc())).scalars().all()]
+        new_bundle_version = self._find_bundle(session, payload.bundle_key, payload.bundle_version).version if payload.bundle_key else None
+        audit = ModuleEntitlementAudit(actor_user_id=actor.id, organization_id=payload.organization_id, tenant_id=tenant_ids[0] if len(tenant_ids) == 1 else None, tenant_ids_json=tenant_ids, operation=operation, previous_requested_json=previous_requested, new_requested_json=self._requested_state_snapshot(session, payload.organization_id), previous_effective_json=self._effective_snapshot(before), new_effective_json=self._effective_snapshot(after), source_type=source_type, source_ref=source_ref, previous_bundle_key=previous_bundle_key, previous_bundle_version=previous_bundle_version, new_bundle_key=payload.bundle_key, new_bundle_version=new_bundle_version, reason=payload.reason, idempotency_key=idempotency_key, result="applied")
         session.add(audit)
         session.flush()
         result = ModuleChangeResult(operation=operation, audit_id=audit.id, effective=after)
@@ -296,7 +349,7 @@ class ModuleEntitlementService:
 
     def list_audit(self, session: Session, organization_id: str, limit: int = 100) -> list[ModuleAuditRead]:
         rows = session.execute(select(ModuleEntitlementAudit).where(ModuleEntitlementAudit.organization_id == organization_id).order_by(ModuleEntitlementAudit.created_at.desc()).limit(max(1, min(limit, 500)))).scalars().all()
-        return [ModuleAuditRead(id=row.id, created_at=row.created_at, actor_user_id=row.actor_user_id, organization_id=row.organization_id, operation=row.operation, previous_requested=row.previous_requested_json, new_requested=row.new_requested_json, previous_effective=row.previous_effective_json, new_effective=row.new_effective_json, source_type=row.source_type, source_ref=row.source_ref, reason=row.reason, idempotency_key=row.idempotency_key, result=row.result) for row in rows]
+        return [ModuleAuditRead(id=row.id, created_at=row.created_at, actor_user_id=row.actor_user_id, organization_id=row.organization_id, tenant_id=row.tenant_id, tenant_ids=list(row.tenant_ids_json or []), operation=row.operation, previous_requested=row.previous_requested_json, new_requested=row.new_requested_json, previous_effective=row.previous_effective_json, new_effective=row.new_effective_json, source_type=row.source_type, source_ref=row.source_ref, previous_bundle_key=row.previous_bundle_key, previous_bundle_version=row.previous_bundle_version, new_bundle_key=row.new_bundle_key, new_bundle_version=row.new_bundle_version, reason=row.reason, idempotency_key=row.idempotency_key, result=row.result) for row in rows]
 
     def record_trusted_application_status(self, session: Session, *, tenant_id: str, module_code: str, application_state: str, verification_state: str = "pending", evidence_ref: Optional[str] = None, failure_reason: Optional[str] = None) -> ModuleApplicationStatus:
         module = session.execute(select(Module).where(Module.code == module_code)).scalar_one_or_none()
@@ -468,10 +521,14 @@ class ModuleEntitlementService:
 
     def _bundle_items(self, session: Session, bundle_id: str) -> list[ModuleBundleItemRead]:
         rows = session.execute(select(ModuleBundleItem, Module).join(Module, Module.id == ModuleBundleItem.module_id).where(ModuleBundleItem.bundle_id == bundle_id).order_by(ModuleBundleItem.sort_order.asc(), Module.code.asc())).all()
-        return [ModuleBundleItemRead(code=module.code, name=module.name, sort_order=item.sort_order) for item, module in rows]
+        return [ModuleBundleItemRead(code=module.code, name=module.name, sort_order=item.sort_order, dependency_codes=list(module.dependency_codes_json or []), required_app=module.required_app, minimum_app_version=module.minimum_app_version, compatible_app_version=module.compatible_app_version) for item, module in rows]
 
     def _bundle_read(self, session: Session, bundle: ModuleBundle) -> ModuleBundleRead:
-        return ModuleBundleRead(id=bundle.id, bundle_key=bundle.bundle_key, version=bundle.version, name=bundle.name, description=bundle.description, source=bundle.source, modules=self._bundle_items(session, bundle.id))
+        modules = self._bundle_items(session, bundle.id)
+        prior = session.execute(select(ModuleBundle).where(ModuleBundle.bundle_key == bundle.bundle_key, ModuleBundle.version < bundle.version).order_by(ModuleBundle.version.desc())).scalars().first()
+        prior_codes = {item.code for item in self._bundle_items(session, prior.id)} if prior else set()
+        current_codes = {item.code for item in modules}
+        return ModuleBundleRead(id=bundle.id, bundle_key=bundle.bundle_key, version=bundle.version, name=bundle.name, description=bundle.description, source=bundle.source, modules=modules, supersedes_version=prior.version if prior else None, added_module_codes=sorted(current_codes - prior_codes), removed_module_codes=sorted(prior_codes - current_codes))
 
     @staticmethod
     def _add_source(selected: set[str], sources: dict[str, list[str]], code: str, source: str) -> None:
@@ -482,7 +539,28 @@ class ModuleEntitlementService:
         return session.execute(select(OrganizationModule).where(OrganizationModule.organization_id == organization_id, OrganizationModule.module_id == module_id)).scalar_one_or_none()
 
     def _tenant_states(self, session: Session, tenants: list[Tenant], module_id: str) -> list[dict[str, object]]:
-        return [{"tenant_id": tenant.id, "application_state": (row.application_state if row else "pending"), "verification_state": (row.verification_state if row else "pending"), "evidence_ref": (row.evidence_ref if row else None)} for tenant in tenants for row in [session.execute(select(ModuleApplicationStatus).where(ModuleApplicationStatus.tenant_id == tenant.id, ModuleApplicationStatus.module_id == module_id)).scalar_one_or_none()]]
+        return [{"tenant_id": tenant.id, "application_state": (row.application_state if row else "pending"), "verification_state": (row.verification_state if row else "pending"), "evidence_ref": (row.evidence_ref if row else None), "failure_reason": (row.failure_reason if row else None)} for tenant in tenants for row in [session.execute(select(ModuleApplicationStatus).where(ModuleApplicationStatus.tenant_id == tenant.id, ModuleApplicationStatus.module_id == module_id)).scalar_one_or_none()]]
+
+    @staticmethod
+    def _tenant_targets(session: Session, organization_id: str) -> list[dict[str, object]]:
+        tenants = session.execute(select(Tenant).where(Tenant.organization_id == organization_id).order_by(Tenant.created_at.asc(), Tenant.id.asc())).scalars().all()
+        return [{"tenant_id": tenant.id, "tenant_slug": tenant.tenant_slug, "environment": tenant.environment, "status": tenant.status, "provisioning_status": tenant.provisioning_status} for tenant in tenants]
+
+    @staticmethod
+    def _parse_bundle_ref(source_ref: Optional[str]) -> tuple[Optional[str], Optional[int]]:
+        if not source_ref or "@" not in source_ref:
+            return None, None
+        key, raw_version = source_ref.rsplit("@", 1)
+        try:
+            return key, int(raw_version)
+        except ValueError:
+            return None, None
+
+    def _current_bundle_attribution(self, session: Session, organization_id: str) -> tuple[Optional[str], Optional[int]]:
+        refs = session.execute(select(OrganizationModule.source_ref).where(OrganizationModule.organization_id == organization_id, OrganizationModule.source_type == "bundle", OrganizationModule.source_ref.is_not(None))).scalars().all()
+        parsed = {self._parse_bundle_ref(ref) for ref in refs}
+        parsed.discard((None, None))
+        return next(iter(parsed)) if len(parsed) == 1 else (None, None)
 
     @staticmethod
     def _aggregate_erp_state(states: list[dict[str, object]], entitled: bool) -> tuple[str, str]:

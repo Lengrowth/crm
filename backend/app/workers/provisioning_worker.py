@@ -13,6 +13,7 @@ from app.integrations.erpnext_client import ERPNextClient
 from app.integrations.erpnext_runtime import get_erpnext_client
 from app.models.domain import (
     FirstLoginHandoff,
+    Module,
     ModuleApplicationStatus,
     OnboardingRequest,
     OnboardingRequestVersion,
@@ -24,6 +25,7 @@ from app.models.domain import (
 )
 from app.models.erpnext import TenantProvisioningRecord
 from app.services.erpnext_service import PersistentERPNextService
+from app.services.application_resolver import calculate_required_applications, compare_installed_applications
 from app.services.module_entitlement_service import ModuleEntitlementError, module_entitlement_service
 from app.services.provisioning_service import provisioning_service, sanitize_value
 
@@ -33,6 +35,7 @@ PHASE4_STEP_KEYS = (
     "reserve_site_name",
     "create_isolated_site",
     "install_pinned_erpnext",
+    "install_pinned_hrms",
     "install_lenerp_custom_app",
     "apply_approved_modules",
     "apply_roles_workspaces",
@@ -56,6 +59,44 @@ class StepFailure(RuntimeError):
 
 class LeaseLost(RuntimeError):
     """The worker lost its fenced lease while an external operation was running."""
+
+
+def _module_runtime_requirements(session: Session, codes: list[str]) -> tuple[dict[str, str], list[str], list[str]]:
+    required_apps: dict[str, str] = {}
+    required_roles: set[str] = set()
+    required_workspaces: set[str] = set()
+    for code in codes:
+        module = module_entitlement_service.module_by_code(session, code)
+        if module is None:
+            raise StepFailure("An approved module is unavailable.", "validation", manual_confirmation=True)
+        if module.required_app:
+            required_apps[code] = module.required_app
+        required_roles.update(module.default_roles_json or [])
+        required_workspaces.update(module.default_workspaces_json or [])
+    return required_apps, sorted(required_roles), sorted(required_workspaces)
+
+
+def _application_resolution(session: Session, codes: list[str]):
+    modules = [module_entitlement_service.module_by_code(session, code) for code in codes]
+    if any(module is None for module in modules):
+        raise StepFailure("An approved module is unavailable.", "validation", manual_confirmation=True)
+    try:
+        return calculate_required_applications(module for module in modules if module is not None)
+    except ValueError as exc:
+        raise StepFailure("The approved application dependency plan is invalid.", "validation", manual_confirmation=True) from exc
+
+
+def _installed_app_names(inventory: dict[str, object]) -> set[str]:
+    installed = inventory.get("installed_apps") or {}
+    return set(installed.keys()) if isinstance(installed, dict) else {str(app) for app in installed}
+
+
+def _missing_runtime_requirements(inventory: dict[str, object], required_apps: dict[str, str], required_roles: list[str], required_workspaces: list[str]) -> tuple[list[str], list[str], list[str]]:
+    installed = _installed_app_names(inventory)
+    configuration = inventory.get("configuration") or {}
+    roles = set(configuration.get("roles") or []) if isinstance(configuration, dict) else set()
+    workspaces = set(configuration.get("workspaces") or []) if isinstance(configuration, dict) else set()
+    return (sorted({app for app in required_apps.values() if app and app not in installed}), sorted(set(required_roles) - roles), sorted(set(required_workspaces) - workspaces))
 
 
 class ProvisioningWorker:
@@ -161,14 +202,23 @@ def _run_step(session: Session, job: ProvisioningJob, step: ProvisioningStep, re
         if request.approved_version != version.version or request.current_version != version.version:
             raise StepFailure("The approved request version is stale.", "authorization", manual_confirmation=True)
         try:
-            module_entitlement_service.validate_requested_selection(session, version.requested_module_codes_json, version.bundle_key, version.bundle_version)
+            codes = module_entitlement_service.validate_requested_selection(session, version.requested_module_codes_json, version.bundle_key, version.bundle_version)
+            resolution = _application_resolution(session, codes)
         except ModuleEntitlementError as exc:
             raise StepFailure("The approved module bundle is invalid.", "validation", manual_confirmation=True) from exc
+        for code in codes:
+            module = module_entitlement_service.module_by_code(session, code)
+            if module is None:
+                raise StepFailure("An approved module is unavailable.", "validation", manual_confirmation=True)
+            row = session.execute(select(ModuleApplicationStatus).where(ModuleApplicationStatus.tenant_id == tenant.id, ModuleApplicationStatus.module_id == module.id)).scalar_one_or_none()
+            if row is None:
+                session.add(ModuleApplicationStatus(tenant_id=tenant.id, module_id=module.id, application_state="pending", verification_state="pending"))
+        session.flush()
         job.status = "validation"
         session.add(job)
         request.state, request.applicant_visible_status = "validation", "validation"
         session.add(request)
-        evidence = {"version": version.version, "bundle_key": version.bundle_key, "bundle_version": version.bundle_version}
+        evidence = {"version": version.version, "bundle_key": version.bundle_key, "bundle_version": version.bundle_version, "required_applications": list(resolution.applications), "required_versions": resolution.exact_versions}
     elif step.step_key == "reserve_site_name":
         evidence = {"site_namespace": job.target_isolation_json.get("site_namespace"), "environment": job.target_environment, "isolated": True}
     elif step.step_key == "create_isolated_site":
@@ -189,39 +239,73 @@ def _run_step(session: Session, job: ProvisioningJob, step: ProvisioningStep, re
             refs["site_id"] = site_id
             refs["site_name"] = str(result.get("site_name") or "")
             evidence = {"site_id": site_id, "site_name": refs["site_name"], "isolated": True, "provider_verified": True, "provider": str(result.get("provider") or client.__class__.__name__), "provider_readback": sanitize_value(result)}
-    elif step.step_key in {"install_pinned_erpnext", "install_lenerp_custom_app"}:
+    elif step.step_key in {"install_pinned_erpnext", "install_pinned_hrms", "install_lenerp_custom_app"}:
         if not site_id:
             raise StepFailure("The isolated site reference is missing.", "manual_recovery")
-        app = "erpnext" if step.step_key == "install_pinned_erpnext" else "lenerp_core"
+        app = {"install_pinned_erpnext": "erpnext", "install_pinned_hrms": "hrms", "install_lenerp_custom_app": "lenerp_core"}[step.step_key]
+        codes = module_entitlement_service.resolve_requested_codes(session, version.requested_module_codes_json, version.bundle_key, version.bundle_version)
+        resolution = _application_resolution(session, codes)
+        expected_version = resolution.exact_versions.get(app, "")
         installed = set(refs.get("installed_apps") or [])
         inventory = client.get_site_inventory(site_id)
-        actual_apps = set((inventory.get("installed_apps") or {}).keys()) if isinstance(inventory.get("installed_apps"), dict) else set(inventory.get("installed_apps") or [])
+        installed_payload = inventory.get("installed_apps") or {}
+        actual_apps = set(installed_payload.keys()) if isinstance(installed_payload, dict) else set(installed_payload)
+        actual_version = installed_payload.get(app, "") if isinstance(installed_payload, dict) else ""
+        if app in actual_apps and expected_version and actual_version != expected_version:
+            raise StepFailure(f"Installed {app} does not match the pinned version.", "dependency", manual_confirmation=True)
         if app in installed and app in actual_apps:
-            evidence = {"app": app, "replayed": True, "provider_verified": True}
+            evidence = {"app": app, "version": actual_version or expected_version, "replayed": True, "provider_verified": True}
         else:
             result = client.install_app(site_id, app)
-            if result.get("status") != "success":
-                raise StepFailure("The pinned application could not be installed.", "retryable")
+            if result.get("status") != "success" or result.get("provider_verified") is False:
+                raise StepFailure(f"The pinned application {app} could not be installed.", "retryable")
+            refreshed = client.get_site_inventory(site_id)
+            refreshed_apps = refreshed.get("installed_apps") or {}
+            refreshed_names = set(refreshed_apps.keys()) if isinstance(refreshed_apps, dict) else set(refreshed_apps)
+            refreshed_version = refreshed_apps.get(app, "") if isinstance(refreshed_apps, dict) else ""
+            if app not in refreshed_names or (expected_version and refreshed_version != expected_version):
+                for code in codes:
+                    module = module_entitlement_service.module_by_code(session, code)
+                    if module is not None and module.required_app == app:
+                        row = session.execute(select(ModuleApplicationStatus).where(ModuleApplicationStatus.tenant_id == tenant.id, ModuleApplicationStatus.module_id == module.id)).scalar_one_or_none()
+                        if row is not None:
+                            row.application_state, row.verification_state, row.failure_reason, row.last_checked_at = "pending", "pending", f"Required application `{app}` is missing or incompatible in the verified installed-app readback.", utcnow()
+                session.flush()
+                raise StepFailure(f"The installed-app readback did not confirm pinned {app}.", "dependency")
             installed.add(app)
             refs["installed_apps"] = sorted(installed)
-            evidence = {"app": app, "pinned": True, "provider_readback": sanitize_value(result)}
+            evidence = {"app": app, "version": refreshed_version, "pinned": True, "provider_readback": sanitize_value(result), "installed_app_readback": sanitize_value(refreshed)}
     elif step.step_key == "apply_approved_modules":
         codes = module_entitlement_service.resolve_requested_codes(session, version.requested_module_codes_json, version.bundle_key, version.bundle_version)
         if not site_id:
             raise StepFailure("The isolated site reference is missing.", "manual_recovery")
+        resolution = _application_resolution(session, codes)
+        migration = client.migrate_site(site_id)
+        if migration.get("status") != "success" or migration.get("provider_verified") is not True:
+            raise StepFailure("The ERP migration was not confirmed by the provider.", "retryable")
         provider_result = client.apply_site_configuration(site_id, {"modules": codes})
         if provider_result.get("status") != "success" or provider_result.get("provider_verified") is not True:
             raise StepFailure("The approved modules were not confirmed by the ERP runtime.", "retryable")
+        requirements, required_roles, required_workspaces = _module_runtime_requirements(session, codes)
+        inventory = client.get_site_inventory(site_id)
+        if inventory.get("status") != "success" or inventory.get("provider_verified") is not True:
+            raise StepFailure("The tenant installed-app readback could not be verified before applying modules.", "retryable")
+        missing_apps, _, _ = _missing_runtime_requirements(inventory, requirements, [], [])
+        _, incompatible_apps = compare_installed_applications(inventory.get("installed_apps") or {}, resolution)
         for code in codes:
             module = module_entitlement_service.module_by_code(session, code)
-            if module is None:
-                raise StepFailure("An approved module is unavailable.", "validation", manual_confirmation=True)
             row = session.execute(select(ModuleApplicationStatus).where(ModuleApplicationStatus.tenant_id == tenant.id, ModuleApplicationStatus.module_id == module.id)).scalar_one_or_none()
             if row is None:
                 row = ModuleApplicationStatus(tenant_id=tenant.id, module_id=module.id)
                 session.add(row)
-            row.application_state, row.failure_reason, row.last_checked_at = "applied", None, utcnow()
-        evidence = {"requested": list(version.requested_module_codes_json), "effective": codes, "provider_readback": sanitize_value(provider_result), "verification": "provider_pending"}
+            required_app = requirements.get(code)
+            if required_app and (required_app in missing_apps or any(item.startswith(f"{required_app} ") for item in incompatible_apps)):
+                row.application_state, row.verification_state, row.failure_reason, row.last_checked_at = "pending", "pending", f"Required application `{required_app}` is missing from the verified installed-app readback. Install it, rerun the readback, then retry verification.", utcnow()
+            else:
+                row.application_state, row.failure_reason, row.last_checked_at = "applied", None, utcnow()
+        evidence = {"requested": list(version.requested_module_codes_json), "effective": codes, "migration": sanitize_value(migration), "provider_readback": sanitize_value(provider_result), "installed_app_readback": sanitize_value(inventory), "missing_required_apps": missing_apps, "incompatible_apps": incompatible_apps, "verification": "provider_pending"}
+        if missing_apps or incompatible_apps:
+            raise StepFailure("Required ERP applications are missing or incompatible with the pinned readback. Install the exact dependency versions and retry.", "dependency")
     elif step.step_key == "apply_roles_workspaces":
         if not site_id:
             raise StepFailure("The isolated site reference is missing.", "manual_recovery")
@@ -276,12 +360,37 @@ def _run_step(session: Session, job: ProvisioningJob, step: ProvisioningStep, re
         if not site_id:
             raise StepFailure("The isolated site reference is missing.", "manual_recovery")
         codes = module_entitlement_service.resolve_requested_codes(session, version.requested_module_codes_json, version.bundle_key, version.bundle_version)
-        provider_result = client.verify_site_configuration(site_id, codes)
+        requirements, required_roles, required_workspaces = _module_runtime_requirements(session, codes)
+        resolution = _application_resolution(session, codes)
+        provider_result = client.verify_site_configuration(site_id, codes, required_apps=requirements, required_roles=required_roles, required_workspaces=required_workspaces, required_app_versions=resolution.exact_versions)
+        missing_apps = list(provider_result.get("missing_required_apps") or [])
+        incompatible_apps = list(provider_result.get("incompatible_apps") or [])
+        missing_roles = list(provider_result.get("missing_required_roles") or [])
+        missing_workspaces = list(provider_result.get("missing_required_workspaces") or [])
+        for row in statuses:
+            module = session.get(Module, row.module_id)
+            required_app = module.required_app if module else None
+            if required_app and (required_app in missing_apps or any(item.startswith(f"{required_app} ") for item in incompatible_apps)):
+                row.application_state, row.verification_state, row.verified_at, row.failure_reason = "pending", "pending", None, f"Required application `{required_app}` is missing from the verified installed-app readback. Install it, rerun the readback, then retry verification."
+            elif missing_roles or missing_workspaces:
+                missing_detail = ", ".join([*(f"role:{item}" for item in missing_roles), *(f"workspace:{item}" for item in missing_workspaces)])
+                row.verification_state, row.verified_at, row.failure_reason = "pending", None, f"Required role/workspace readback is incomplete ({missing_detail}). Configure it, rerun the readback, then retry verification."
+            elif incompatible_apps:
+                row.application_state, row.verification_state, row.verified_at, row.failure_reason = "pending", "pending", None, "Pinned application version readback is incompatible. Install the exact reviewed application revision and retry."
+            elif provider_result.get("status") == "success" and provider_result.get("provider_verified") is True:
+                row.verification_state, row.verified_at, row.failure_reason = "verified", row.verified_at or utcnow(), None
+            else:
+                row.verification_state, row.verified_at, row.failure_reason = "pending", None, "Provider verification failed; review the installed-app/module/role/workspace readback and retry."
+            row.last_checked_at = utcnow()
+        evidence = {"verified_module_count": len(statuses) if not (missing_apps or incompatible_apps or missing_roles or missing_workspaces) else 0, "provider_readback": sanitize_value(provider_result), "missing_required_apps": missing_apps, "incompatible_apps": incompatible_apps, "missing_required_roles": missing_roles, "missing_required_workspaces": missing_workspaces, "trusted_evidence": not (missing_apps or incompatible_apps or missing_roles or missing_workspaces)}
+        if missing_apps:
+            raise StepFailure(f"Required ERP applications are missing from the verified readback: {', '.join(missing_apps)}. Install them and retry.", "dependency")
+        if incompatible_apps:
+            raise StepFailure("Required ERP applications have incompatible versions in the verified readback. Install the exact reviewed revisions and retry.", "dependency")
+        if missing_roles or missing_workspaces:
+            raise StepFailure("Required ERP roles or workspaces are missing from the verified readback. Configure them and retry.", "verification")
         if provider_result.get("status") != "success" or provider_result.get("provider_verified") is not True:
             raise StepFailure("The ERP runtime did not verify the installed apps and approved modules.", "retryable")
-        for row in statuses:
-            row.verification_state, row.verified_at, row.last_checked_at = "verified", row.verified_at or utcnow(), utcnow()
-        evidence = {"verified_module_count": len(statuses), "provider_readback": sanitize_value(provider_result), "trusted_evidence": True}
     elif step.step_key == "prepare_first_login":
         handoff = session.execute(select(FirstLoginHandoff).where(FirstLoginHandoff.request_id == request.id, FirstLoginHandoff.tenant_id == tenant.id)).scalars().first()
         if handoff is None or handoff.status != "prepared":

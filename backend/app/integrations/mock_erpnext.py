@@ -58,7 +58,8 @@ class MockERPNextClient(ERPNextClient):
             "tenant_id": tenant_id,
             "created_at": now.isoformat(),
             "status": "creating",
-            "apps": [],
+            "apps": ["frappe"],
+            "app_versions": {"frappe": "15.119.1"},
             "domains": [],
             "ssl": {},
             "configuration": {"modules": [], "roles": [], "workspaces": [], "branding": {}},
@@ -106,10 +107,21 @@ class MockERPNextClient(ERPNextClient):
                     "error": "simulated",
                 }
             )
+        if app_name in self.sites[site_id]["apps"]:
+            return OperationResult({"status": "success", "site_id": site_id, "app": app_name, "provider": "mock", "replayed": True, "provider_verified": True})
         self.sites[site_id]["apps"].append(app_name)
+        self.sites[site_id]["app_versions"][app_name] = {"erpnext": "15.120.0", "hrms": "15.64.1", "lenerp_core": "0.2.0"}.get(app_name, "")
         return OperationResult(
-            {"status": "success", "site_id": site_id, "app": app_name, "provider": "mock"}
+            {"status": "success", "site_id": site_id, "app": app_name, "provider": "mock", "provider_verified": True, "version": self.sites[site_id]["app_versions"][app_name]}
         )
+
+    def migrate_site(self, site_id: str) -> OperationResult:
+        if site_id not in self.sites:
+            return OperationResult({"status": "not_found", "site_id": site_id})
+        if self._should_fail("migrate_site"):
+            return OperationResult({"status": "failed", "site_id": site_id, "error": "simulated"})
+        self.sites[site_id]["migrated"] = True
+        return OperationResult({"status": "success", "site_id": site_id, "provider": "mock", "provider_verified": True, "replayed": bool(self.sites[site_id].get("migrated"))})
 
     def apply_site_configuration(self, site_id: str, configuration: dict[str, object]) -> OperationResult:
         if site_id not in self.sites:
@@ -123,17 +135,25 @@ class MockERPNextClient(ERPNextClient):
         site = self.sites.get(site_id)
         if site is None:
             return {"status": "not_found", "site_id": site_id}
-        return {"status": "success", "site_id": site_id, "provider": "mock", "provider_verified": True, "site_name": site["site_name"], "installed_apps": sorted(site["apps"]), "configuration": site["configuration"]}
+        return {"status": "success", "site_id": site_id, "provider": "mock", "provider_verified": True, "site_name": site["site_name"], "installed_apps": {app: site["app_versions"].get(app, "") for app in sorted(site["apps"])}, "configuration": site["configuration"], "migrated": bool(site.get("migrated"))}
 
-    def verify_site_configuration(self, site_id: str, requested_modules: list[str]) -> OperationResult:
+    def verify_site_configuration(self, site_id: str, requested_modules: list[str], required_apps: Optional[dict[str, str]] = None, required_roles: Optional[list[str]] = None, required_workspaces: Optional[list[str]] = None, required_app_versions: Optional[dict[str, str]] = None) -> OperationResult:
         inventory = self.get_site_inventory(site_id)
         if inventory.get("status") != "success":
             return OperationResult(inventory)
         configuration = inventory.get("configuration") or {}
-        installed = set(inventory.get("installed_apps") or [])
+        installed_payload = inventory.get("installed_apps") or {}
+        installed = set(installed_payload.keys()) if isinstance(installed_payload, dict) else set(installed_payload)
         modules = set(configuration.get("modules") or []) if isinstance(configuration, dict) else set()
-        verified = {"erpnext", "lenerp_core"}.issubset(installed) and set(requested_modules).issubset(modules)
-        return OperationResult({"status": "success" if verified else "failed", "site_id": site_id, "provider": "mock", "provider_verified": verified, "installed_apps": sorted(installed), "modules": sorted(modules)})
+        requirements = required_apps or {}
+        missing_required_apps = sorted({app for app in requirements.values() if app and app not in installed})
+        current_roles = set(configuration.get("roles") or []) if isinstance(configuration, dict) else set()
+        current_workspaces = set(configuration.get("workspaces") or []) if isinstance(configuration, dict) else set()
+        missing_required_roles = sorted(set(required_roles or []) - current_roles)
+        missing_required_workspaces = sorted(set(required_workspaces or []) - current_workspaces)
+        missing_versions = sorted(f"{app} (expected {version}, read {installed_payload.get(app) or 'unknown'})" for app, version in (required_app_versions or {}).items() if app in installed and installed_payload.get(app) != version)
+        verified = {"erpnext", "lenerp_core"}.issubset(installed) and set(requested_modules).issubset(modules) and not missing_required_apps and not missing_required_roles and not missing_required_workspaces and not missing_versions
+        return OperationResult({"status": "success" if verified else "failed", "site_id": site_id, "provider": "mock", "provider_verified": verified, "installed_apps": sorted(installed), "app_versions": installed_payload, "modules": sorted(modules), "required_apps": requirements, "missing_required_apps": missing_required_apps, "incompatible_apps": missing_versions, "missing_required_roles": missing_required_roles, "missing_required_workspaces": missing_required_workspaces})
 
     def bind_domain(self, site_id: str, domain: str) -> OperationResult:
         if site_id not in self.sites:
