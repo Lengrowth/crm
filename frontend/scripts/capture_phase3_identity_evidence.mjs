@@ -84,7 +84,12 @@ await controlPage.screenshot({ path: path.join(outputDir, "control-tenant-open-e
 controlPage.on("response", async (response) => {
   if (response.url().includes("/app") || response.url().includes("sso") || response.url().includes("callback")) {
     console.error(`identity response ${response.status()} ${safeUrl(response.url())} location=${safeUrl(response.headers().location ?? response.url())}`);
-    if (response.status() >= 400) console.error(`identity response detail ${response.status()}: ${safeText(await response.text().catch(() => ""))}`);
+    if (response.status() >= 400) {
+      const body = await response.text().catch(() => "");
+      const tokenStatus = body.match(/token exchange status (\d{3})/i)?.[1] ?? "unknown";
+      console.error(`identity token exchange status: ${tokenStatus}`);
+      console.error(`identity response detail ${response.status()}: ${safeText(body)}`);
+    }
   }
 });
 await openLink.click();
