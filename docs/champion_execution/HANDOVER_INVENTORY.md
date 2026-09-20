@@ -86,12 +86,13 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; `PLAT-P3` PASS; 
   readback, migration, role/workspace verification, and truthful hidden/
   needs-attention states are implemented locally; the provider and release
   preflight now require the verified compatibility/readback record.
-- Protected Phase 02 run [35505538638](https://github.com/Lengrowth/crm/actions/runs/35505538638)
-  / job `106064600813` passed for candidate-bound release
-  `fa137051b6675fbd09102c07942748ce68ea98b9`, with `lenerp_core` marker
-  `a7e47208baf6583295f5f2632f4787262cd3f475`. The final staging backup is
-  `/opt/saas-control-staging/shared/backups/phase2-fa137051b6675fbd09102c07942748ce68ea98b9-35505538638/`;
-  production remains unchanged and Phase 03 was not started.
+- Final protected Phase 02 run [35506309957](https://github.com/Lengrowth/crm/actions/runs/35506309957)
+  / job `106066811682` passed for merge candidate
+  `9674a6a1b4adf9447af759458763b25721672272`, with reviewed head
+  `796ea2e0cd7aae0bd2b19bc88e6750b93f1a5642`. Artifact
+  `staging-browser-evidence-9674a6a1b4adf9447af759458763b25721672272` has
+  digest `sha256:bd808a20f5f9743e122dc064113160dbf60ad8bd073638b9dd132bf4c191a8ef`;
+  production and Cloudflare remain unchanged and Phase 03 is permitted.
 
 - The local PLAT-P4 implementation is on `codex/plat-p4` from authoritative
   `lengrowth/main` `2a697a831d04a41aaabb3e6f2413f53ce4e749c6`; the candidate is
@@ -110,6 +111,13 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; `PLAT-P3` PASS; 
   reconciled.
 
 ## Phase 2 baseline
+
+## Phase 02 HRMS closure
+
+- Final verdict: `PASS`; Phase 03 is permitted, but no production promotion was executed.
+- Protected run `35506309957`, job `106066811682`, reviewed head `796ea2e0…`, merge candidate `9674a6a1b4adf9447af759458763b25721672272`.
+- Evidence artifact `staging-browser-evidence-9674a6a1b4adf9447af759458763b25721672272`, digest `sha256:bd808a20f5f9743e122dc064113160dbf60ad8bd073638b9dd132bf4c191a8ef`.
+- Production, Cloudflare, and upstream Frappe/ERPNext/HRMS sources remain unchanged.
 
 - Phase 2 implementation is isolated on branch `codex/plat-p2` from verified
   remote `main` `edb3f463ed50e1009a13e8e96b95b563ddc6f6b9`.

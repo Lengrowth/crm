@@ -32,7 +32,7 @@ The register is the initial decomposition. Add a new package only when a require
 | C06 | `CHAMP-C06-R1` | `in_development` | Standard ERPNext inventory/buying/assets seed path implemented; approved stock and maintenance rules remain pending |
 | C07 | `CHAMP-C07-R1` | `in_development` | Synthetic lead-to-payment seed path implemented; chart, tax, payment, and approval decisions remain pending |
 | C08 | `CHAMP-C08-R1` | `in_development` | Persisted operations dashboard/API now includes inventory exceptions, asset/maintenance status, well history, and alerts; approved KPI/audience/alert definitions remain pending |
-| C09 | `CHAMP-C09-R1` | `in_development` | Phase 02 HRMS pin, resolver, durable install/migrate/readback, truthful states, and tests implemented locally; exact staging evidence remains pending |
+| C09 | `CHAMP-C09-R1` | `phase02_pass_phase03_permitted` | Phase 02 HRMS pin, resolver, durable install/migrate/readback, truthful states, and tests passed in protected staging run `35506309957`; Champion acceptance and production promotion remain unclaimed |
 
 Each identity is independently reviewable. A later revision such as
 `CHAMP-C04-R2` is required when approved requirements or accepted behavior

@@ -8,8 +8,8 @@ Last updated: 2026-09-20 (Asia/Tbilisi)
 | --- | --- | --- |
 | 00 | Complete | PASS |
 | 01 | Complete; staging gate deferred by prior record | PASS WITH DEFERRED STAGING GATE |
-| 02 | Corrected locally; clean disposable compatibility proof passed; protected candidate verified | PASS — ready for independent read-only review |
-| 03–08 | Not started | Pending Phase 02 PASS |
+| 02 | Closed; exact protected candidate and browser evidence verified | PASS — Phase 03 permitted; production unchanged |
+| 03 | Local implementation in progress on isolated branches; staging not yet run | Pending protected Phase 03 evidence |
 
 ## Phase 02 — HRMS and dependency-aware provisioning
 
@@ -51,9 +51,15 @@ replay/idempotency, authorization, rollback evidence, and the immutable
 `lenerp_core/SOURCE_COMMIT.txt` marker. Cloudflare was not changed because no
 new verified edge defect appeared.
 
-Scoped Phase 02 production-path scripts remain locally validated but have not
-been executed against production. The final protected run created no Phase 3
-synthetic records; Phase 03 remains outside this request and is not authorized.
+Phase 02 closure readback: protected staging run `35506309957` / job
+`106066811682` passed for the reviewed PR head
+`796ea2e0cd7aae0bd2b19bc88e6750b93f1a5642` and immutable merge candidate
+`9674a6a1b4adf9447af759458763b25721672272`. The exact evidence artifact is
+`staging-browser-evidence-9674a6a1b4adf9447af759458763b25721672272`, artifact
+ID `10603752341`, digest
+`sha256:bd808a20f5f9743e122dc064113160dbf60ad8bd073638b9dd132bf4c191a8ef`.
+Production and Cloudflare remain unchanged. Phase 02 is PASS and Phase 03 is
+permitted; this record does not claim Phase 03 acceptance or production SSO.
 
 ## Worktree preservation
 
