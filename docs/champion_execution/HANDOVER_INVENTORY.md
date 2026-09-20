@@ -85,9 +85,13 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; `PLAT-P3` PASS; 
   metadata and includes HRMS only for HR/Payroll. Exact app/version/commit
   readback, migration, role/workspace verification, and truthful hidden/
   needs-attention states are implemented locally; the provider and release
-  preflight now require the verified compatibility/readback record. Staging
-  is still subject to the final protected candidate gate; production remains
-  unchanged.
+  preflight now require the verified compatibility/readback record.
+- Protected Phase 02 run [35505538638](https://github.com/Lengrowth/crm/actions/runs/35505538638)
+  / job `106064600813` passed for candidate-bound release
+  `fa137051b6675fbd09102c07942748ce68ea98b9`, with `lenerp_core` marker
+  `a7e47208baf6583295f5f2632f4787262cd3f475`. The final staging backup is
+  `/opt/saas-control-staging/shared/backups/phase2-fa137051b6675fbd09102c07942748ce68ea98b9-35505538638/`;
+  production remains unchanged and Phase 03 was not started.
 
 - The local PLAT-P4 implementation is on `codex/plat-p4` from authoritative
   `lengrowth/main` `2a697a831d04a41aaabb3e6f2413f53ce4e749c6`; the candidate is

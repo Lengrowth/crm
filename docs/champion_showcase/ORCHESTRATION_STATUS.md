@@ -8,7 +8,7 @@ Last updated: 2026-09-20 (Asia/Tbilisi)
 | --- | --- | --- |
 | 00 | Complete | PASS |
 | 01 | Complete; staging gate deferred by prior record | PASS WITH DEFERRED STAGING GATE |
-| 02 | Corrected locally; clean disposable compatibility proof passed; protected candidate verification pending | In progress — Phase 02 only |
+| 02 | Corrected locally; clean disposable compatibility proof passed; protected candidate verified | PASS — ready for independent read-only review |
 | 03–08 | Not started | Pending Phase 02 PASS |
 
 ## Phase 02 — HRMS and dependency-aware provisioning
@@ -35,13 +35,15 @@ Evidence is deliberately separated into four states:
    HRMS, `lenerp_core`; before HRMS the DocType and HR Module Def were absent,
    and afterward `Expense Claim Type` was `module=HR` with
    `Module Def.app_name=hrms`.
-4. Final candidate-bound staging result: pending the protected workflow for
-   the corrected PR head, including exact LenERP artifact reconciliation.
+4. Final candidate-bound staging result: protected run
+   `35505538638` / job `106064600813` passed for candidate-bound release
+   `fa137051b6675fbd09102c07942748ce68ea98b9`; the PR head was
+   `cffe8f9e5499f0845fce2dbceec1767c7a3e5ee4`.
 
-The real staging backup/control-plane snapshot for this correction is
-`/opt/saas-control-staging/shared/backups/phase2-cleanproof-20260920T101500Z/`
-with SHA-256 manifest. The staging pointer remained
-`47d1d6dd3b8ecbd0b490485d38160df7001b5169`; production was not changed.
+The final real-staging backup/control-plane snapshot is
+`/opt/saas-control-staging/shared/backups/phase2-fa137051b6675fbd09102c07942748ce68ea98b9-35505538638/`
+with SHA-256 manifest. Staging now points to the immutable release
+`fa137051b6675fbd09102c07942748ce68ea98b9`; production was not targeted or changed.
 
 The corrected implementation requires exact installed-app/version/commit
 readback, migration, roles, workspaces, queues, HTTP, synthetic ERP checks,
@@ -50,7 +52,8 @@ replay/idempotency, authorization, rollback evidence, and the immutable
 new verified edge defect appeared.
 
 Scoped Phase 02 production-path scripts remain locally validated but have not
-been executed against production. No Phase 03 work is included or authorized.
+been executed against production. The final protected run created no Phase 3
+synthetic records; Phase 03 remains outside this request and is not authorized.
 
 ## Worktree preservation
 

@@ -1,7 +1,7 @@
 # Phase 02 — Implementation Evidence
 
 **Date:** 2026-09-20
-**Status:** Clean disposable HRMS compatibility verified; corrected protected staging candidate pending final run. Production remains unchanged.
+**Status:** PASS — clean disposable HRMS compatibility verified and corrected protected staging candidate passed. Ready for independent read-only review; production remains unchanged.
 **Release scope:** dependency-aware HRMS provisioning for synthetic Champion tenants only.
 
 ## Evidence boundary
@@ -66,12 +66,12 @@ skipped, uninstalled, or replayed as acceptance evidence.
 
 | Check | Result |
 |---|---|
-| Focused Phase 02/provider/release tests | PASS — 18 tests |
-| Complete backend suite | PASS — 89 tests |
+| Focused Phase 02/provider/release tests | PASS — 17 tests, 4 warnings |
+| Complete backend suite | PASS — 74 tests, 25 warnings |
 | Python compile/import | PASS — `python -m compileall -q backend/app` |
 | Frontend tests | PASS — 12 tests |
 | Frontend typecheck/build | PASS — `npm --prefix frontend run typecheck` and `npm --prefix frontend run build` |
-| Staging/release package tests | PASS — 9 tests |
+| Staging/release package tests | PASS — 9 tests; additional contract/manifest check 5 tests |
 | Migration rehearsal | Existing Phase 01 rehearsal retained; Phase 02 additive migration has no new schema revision |
 | Secret scan | PASS — no high-confidence credential patterns |
 | Markdown links | No dedicated repository validator present; relative links in changed docs reviewed |
@@ -95,11 +95,13 @@ Current external readback on 2026-09-20 confirms the production control-plane
 pointers remain `current -> 4a63264e1e8cb7c998c767262a6e1022647ff7b0` and
 `previous -> 27ede631c667c67f45d534108abeb975816ee83e`. The production ERP site
 reports only Frappe `15.119.1` and ERPNext `15.120.0`; HRMS is not installed.
-The staging ERP site currently reports Frappe `15.119.1`, ERPNext `15.120.0`,
-HRMS `15.64.1`, and `lenerp_core 0.2.0`, but its LenERP source readback is
-`d8cb884405d844c50ca8c568ac80572b149f67f3`, not the pinned candidate commit
-`a7e47208baf6583295f5f2632f4787262cd3f475`. This is historical/replayed
-staging state and is not accepted as clean-install or candidate-bound evidence.
+The final staging ERP site reports Frappe `15.119.1`, ERPNext `15.120.0`,
+HRMS `15.64.1`, and `lenerp_core 0.2.0`, with source readbacks
+`edae775dd36b6c4ad7acab10230262bd74040765`,
+`945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`,
+`e68a3deaa95ae5b2c3d743297d0a4ab505733fc1`, and
+`a7e47208baf6583295f5f2632f4787262cd3f475`, respectively. The prior `d8cb884…`
+checkout is historical/replayed state and is superseded by the final artifact.
 Cloudflare DNS and public HTTPS readbacks for `lenerp.lengrowth.com` and
 `lenerp-api.lengrowth.com/health` returned HTTP 200; no edge mutation was made.
 
@@ -121,8 +123,10 @@ staging backup and control-plane copy were then captured at
 `/opt/saas-control-staging/shared/backups/phase2-cleanproof-20260920T101500Z/`;
 the staging pointer was unchanged at
 `/opt/saas-control-staging/releases/47d1d6dd3b8ecbd0b490485d38160df7001b5169`.
-The corrected protected candidate must retain that backup and reconcile the
-LenERP artifact marker to `a7e47208baf6583295f5f2632f4787262cd3f475`.
+The corrected protected candidate retained a new backup at
+`/opt/saas-control-staging/shared/backups/phase2-fa137051b6675fbd09102c07942748ce68ea98b9-35505538638/`
+and reconciled the LenERP artifact marker to
+`a7e47208baf6583295f5f2632f4787262cd3f475`.
 
 The first historical staging attempt failed while the dirty/partial site
 resolved the fixture through `frappe.core.doctype.expense_claim_type`. The
@@ -131,7 +135,8 @@ resolved the same DocType through `HR/hrms` on the same immutable versions;
 the corrected workflow therefore proceeds through the exact pin and keeps all
 readbacks fail-closed without uninstall, fixture skipping, or local patching.
 
-The control-plane candidate was never switched: `current` remained
+For the historical failed attempt, the control-plane candidate was never
+switched: `current` remained
 `802f1bdb0f7642ea627b08235dfa3aa16e7b9eda`, and no `.staging-smoke-passed`
 marker was created for Phase 02. The historical ERP site/database/files were
 restored from the pre-attempt backup; HRMS was removed from the bench, Python
@@ -140,15 +145,29 @@ only Frappe `15.119.1`, ERPNext `15.120.0`, and `lenerp_core 0.2.0` installed,
 with staging services healthy. Those are historical host readbacks, not a
 current candidate-bound staging pass.
 
-## Staging candidate
+## Final staging candidate
 
 The disposable clean-install candidate passed. Protected run `35484693593`
-(`106008810882`) also completed the pinned staging path for candidate
-`27f4907578f09e1f540c90e7e6d8fd30fd9aaeb5`. The corrected PR candidate still
-requires one final candidate-bound run after the blocked classification and
-LenERP source readback were corrected. That run must retain the exact
-installed-app/version/commit, HR/Payroll role/workspace, queues, HTTP,
-synthetic, replay/idempotency, authorization, and rollback evidence.
+(`106008810882`) completed the earlier pinned staging path for candidate
+`27f4907578f09e1f540c90e7e6d8fd30fd9aaeb5`. The corrected final run
+`35505538638` (`106064600813`) passed for candidate-bound release
+`fa137051b6675fbd09102c07942748ce68ea98b9` and PR head
+`cffe8f9e5499f0845fce2dbceec1767c7a3e5ee4`.
+
+Final staging readback: Frappe `15.119.1` /
+`edae775dd36b6c4ad7acab10230262bd74040765`, ERPNext `15.120.0` /
+`945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`, HRMS `15.64.1` /
+`e68a3deaa95ae5b2c3d743297d0a4ab505733fc1`, and `lenerp_core 0.2.0` /
+`a7e47208baf6583295f5f2632f4787262cd3f475`. Migration, HR/Payroll roles and
+workspaces, queues, HTTP, synthetic ERP, replay/idempotency, authorization,
+browser/accessibility, print/export, and cleanup gates passed. The artifact is
+[staging-browser-evidence-fa137051b6675fbd09102c07942748ce68ea98b9](https://github.com/Lengrowth/crm/actions/runs/35505538638/artifacts/10603289709).
+
+The final backup and rollback boundary is
+`/opt/saas-control-staging/shared/backups/phase2-fa137051b6675fbd09102c07942748ce68ea98b9-35505538638/`.
+The workflow was staging-only; production and Cloudflare were unchanged.
+Phase 03 synthetic browser creation was disabled for this Phase 02 run, and
+the final readback reports zero Phase 2 and Phase 3 synthetic records.
 
 ## Production promotion
 

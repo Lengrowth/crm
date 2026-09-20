@@ -5,7 +5,7 @@
 - Package: `C09` — Office work, people, payroll, quality, and support
 - Release type: Champion package / platform dependency implementation
 - Initial state: `in_development`
-- Candidate state: `corrected_locally_clean_install_verified_staging_candidate_pending`
+- Candidate state: `phase02_ready_for_independent_read_only_review`
 - Feature flag: synthetic onboarding execution remains server-controlled and off by default
 - Previous known-good control-plane candidate: `802f1bdb0f7642ea627b08235dfa3aa16e7b9eda` (staging readback)
 - ERP baseline: Frappe `edae775dd36b6c4ad7acab10230262bd74040765`; ERPNext `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`
@@ -22,25 +22,26 @@
 ## Gate status
 
 - Local implementation: PASS.
-- Local backend tests: PASS, 89 tests.
-- Staging deployment/readback: the historical dirty/partial-site failure is not a compatibility verdict. Clean disposable proof passed with the exact install order and resolved `Expense Claim Type` to `HR/hrms`; protected staging verification is required for the final candidate.
-- Production backup/promotion: BLOCKED until the final protected staging candidate passes. Production remains unchanged.
+- Local backend tests: PASS, 74 tests.
+- Staging deployment/readback: the historical dirty/partial-site failure is not a compatibility verdict. Clean disposable proof passed with the exact install order and resolved `Expense Claim Type` to `HR/hrms`; protected run `35505538638` passed the corrected candidate-bound staging gates.
+- Production backup/promotion: BLOCKED pending independent read-only review and explicit promotion authorization. Production remains unchanged.
 - Champion acceptance: NOT CLAIMED.
 
 Current read-only AWS/Cloudflare state: production remains on the prior
-control-plane release and its ERP site has no HRMS installation. Staging has a
-historical HRMS installation but its LenERP source commit is not the pinned
-candidate commit, so that state is not accepted as candidate-bound evidence.
+control-plane release and its ERP site has no HRMS installation. Staging now
+reports the exact pinned Frappe, ERPNext, HRMS, and `lenerp_core` identities
+from protected run `35505538638`; the prior unpinned LenERP checkout is
+historical and superseded.
 Both public Cloudflare hostnames returned HTTP 200; no DNS, tunnel, or edge
 mutation was made.
 
-The first protected workflow for corrected candidate
+The first protected workflow for the corrected candidate
 `cdae0535cb3af425b423f6858aaa779d4edf3b98` (`35483735652`) stopped before
 deployment because the staging runner was full and npm returned `ENOSPC`.
 No staging pointer or production resource was changed by that run. Twelve
 unreferenced historical control-plane release directories were removed only
 after validating that the active and previous rollback targets were preserved;
-the next candidate must be independently staged and reviewed.
+that historical candidate is superseded by the passing final candidate below.
 
 The subsequent historical candidate `3793b9870461828a8421272ac7ace6fd17297561`
 run `35484379236` captured the exact backup, deployed, and attempted to
@@ -68,8 +69,9 @@ patched; the exact pins remain unchanged.
    `phase2-clean-20260920t095000z.example.test` passed one-time installation
    and migration of Frappe, ERPNext, HRMS, and `lenerp_core`, with exact source
    readbacks and HRMS metadata before/after installation.
-4. Final candidate-bound staging result: to be recorded from the protected
-   workflow for the corrected PR head after the compatibility gate is removed.
+4. Final candidate-bound staging result: protected run `35505538638` / job
+   `106064600813` passed for release `fa137051b6675fbd09102c07942748ce68ea98b9`
+   (PR head `cffe8f9e5499f0845fce2dbceec1767c7a3e5ee4`).
 
 ## Recovery
 
@@ -77,10 +79,16 @@ Code rollback uses the immutable staging/production pointer workflow. Site schem
 and application recovery are separate: restore the verified ERP backup or run
 the documented app correction procedure. The prior Phase 02 staging attempt was
 rolled back from `/opt/saas-control-staging/shared/backups/phase2-20260919T214541Z/`;
-the corrected run has a fresh backup under
-`/opt/saas-control-staging/shared/backups/phase2-20260920T020224Z/`; the
-control-plane pointer remains unchanged until all gates pass. Roll back on
+the corrected final run has a fresh backup under
+`/opt/saas-control-staging/shared/backups/phase2-fa137051b6675fbd09102c07942748ce68ea98b9-35505538638/`;
+the staging pointer now records the passed candidate and production remains
+unchanged. Roll back on
 migration errors, authorization regressions, repeated worker failure, unhealthy
 services, or failed critical smoke tests.
+
+The final candidate-bound evidence artifact is
+[staging-browser-evidence-fa137051b6675fbd09102c07942748ce68ea98b9](https://github.com/Lengrowth/crm/actions/runs/35505538638/artifacts/10603289709).
+Phase 03 was not started by this correction; the Phase 02 browser run created
+no Phase 3 synthetic records.
 
 Full evidence is maintained in [Phase 02 implementation evidence](../../champion_showcase/10_PHASE_02_IMPLEMENTATION_EVIDENCE.md).
