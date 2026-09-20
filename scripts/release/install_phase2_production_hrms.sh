@@ -12,7 +12,8 @@ HRMS_DIR="$BENCH_DIR/apps/hrms"
 backup_dir="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["local_backup_dir"])' "$BACKUP_EVIDENCE_FILE")"
 sudo -n test -d "$backup_dir/erp"
 sudo -n test -s "$backup_dir/manifest.sha256"
-sudo -n bash -lc "cd '$backup_dir' && sha256sum -c manifest.sha256" >/dev/null
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+sudo -n bash "$SCRIPT_DIR/verify_backup_manifest.sh" "$backup_dir" >/dev/null
 
 rollback_site() {
   echo "Phase 02 ERP mutation failed; restoring the verified pre-mutation ERP backup" >&2
