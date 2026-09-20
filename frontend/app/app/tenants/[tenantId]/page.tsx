@@ -76,7 +76,7 @@ export default function TenantDetailPage() {
   if (loading) return <div className="space-y-6"><Skeleton className="h-28" /><Skeleton className="h-96" /></div>;
   if (!tenant) return <ErrorState title="ERP site unavailable" description={error ?? "The site record is unavailable."} onRetry={() => void load()} />;
   const attentionDomains = domains.filter((domain) => domain.manual_activation_required || !domain.is_active || domain.ssl_status === "unknown" || !["active", "verified", "ready"].includes(domain.status));
-  const identityStartUrl = tenant.erpnext_base_url ? `${tenant.erpnext_base_url.replace(/\/$/, "")}/api/method/lenerp_core.sso.direct_visit?next_path=%2Fapp` : null;
+  const identityStartUrl = tenant.erpnext_base_url ? `${tenant.erpnext_base_url.replace(/\/$/, "")}/lenerp-sso?next_path=%2Fapp` : null;
 
   return <div className="space-y-6">
     <PageHeader eyebrow="Customers / ERP site" title={tenant.tenant_slug} description={`${tenant.environment} · ${tenant.primary_domain ?? "Domain not configured"}`} actions={<><Link className="ui-button ui-button-secondary" href={`/app/organizations/${tenant.organization_id}/tenants`}>Company sites</Link><Link className="ui-button ui-button-ghost" href="/app/tenants">All ERP sites</Link></>} />

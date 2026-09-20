@@ -53,8 +53,6 @@ const openLink = controlPage.getByRole("link", { name: /^Open ERP for /i });
 if (await openLink.count() !== 1) throw new Error("ready tenant page did not expose exactly one Open ERP action");
 await controlPage.screenshot({ path: path.join(outputDir, "control-tenant-open-erp.png"), fullPage: true });
 await openLink.click();
-await controlPage.waitForTimeout(1000);
-console.error(`control-to-erp post-click URL: ${controlPage.url()}`);
 await controlPage.waitForURL(new RegExp(`^${erpBase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\/app`), { timeout: 60000 });
 evidence.control_to_erp = { final_url: new URL(controlPage.url()).pathname, no_second_password_prompt: true };
 await controlPage.screenshot({ path: path.join(outputDir, "control-to-erp.png"), fullPage: true });
@@ -62,7 +60,7 @@ await controlPage.screenshot({ path: path.join(outputDir, "control-to-erp.png"),
 const directContext = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1440, height: 1000 }, reducedMotion: "reduce" });
 await addIdentityCookie(directContext);
 const directPage = await directContext.newPage();
-await assertReady(directPage, `${erpBase}/api/method/lenerp_core.sso.direct_visit?next_path=%2Fapp`);
+await assertReady(directPage, `${erpBase}/lenerp-sso?next_path=%2Fapp`);
 if (!directPage.url().startsWith(`${erpBase}/app`)) throw new Error(`direct ERP visit did not land on ERP app: ${directPage.url()}`);
 evidence.direct_erp = { final_url: new URL(directPage.url()).pathname, no_second_password_prompt: true };
 await directPage.screenshot({ path: path.join(outputDir, "direct-erp.png"), fullPage: true });
