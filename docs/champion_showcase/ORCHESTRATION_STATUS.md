@@ -65,7 +65,7 @@ does not claim production SSO.
 
 ## Phase 03 — Unified identity and cross-navigation
 
-The current remediation candidate is CRM `b2b6debbdd2af0fee1e8a974b7988b979145b40b`
+The current remediation candidate is CRM `d4517eeb842e121cd133ca630f9e8b15c4b22f8c`
 with canonical LenERP commit `8d77cec7504d22f9c0a235034777e31fa07fc62` and
 bundle SHA-256 `D136208D613DEECE9A51F25A7A1A5B4C7C916D8E657043FFFC7BEEC03B90AAA7`.
 Local contracts pass, including browser-bound state, mapping-handle isolation,

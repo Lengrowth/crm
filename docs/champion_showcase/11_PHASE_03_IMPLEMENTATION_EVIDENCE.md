@@ -7,7 +7,7 @@
 ## Release identity
 
 - Control-plane branch: `codex/phase3-unified-identity`.
-- Control-plane candidate commit: `b2b6debbdd2af0fee1e8a974b7988b979145b40b`.
+- Control-plane candidate commit: `d4517eeb842e121cd133ca630f9e8b15c4b22f8c`.
 - Canonical `lenerp_core` branch: `codex/phase3-unified-identity`.
 - Canonical LenERP remediation commit: `8d77cec7504d22f9c0a235034777e31fa07fc62`.
 - Immutable remediation bundle: `ops/staging/lenerp_core-8d77cec7504d22f9c0a235034777e31fa07fc62.tar`.

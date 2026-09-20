@@ -5,7 +5,7 @@
 - Release type: Champion package / platform identity implementation
 - State: `local_remediation_complete_staging_rerun_required`
 - Control-plane branch: `codex/phase3-unified-identity`
-- Control-plane candidate commit: `b2b6debbdd2af0fee1e8a974b7988b979145b40b`
+- Control-plane candidate commit: `d4517eeb842e121cd133ca630f9e8b15c4b22f8c`
 - Canonical LenERP commit: `8d77cec7504d22f9c0a235034777e31fa07fc62`
 - Immutable LenERP bundle SHA-256: `D136208D613DEECE9A51F25A7A1A5B4C7C916D8E657043FFFC7BEEC03B90AAA7`
 - Migration: `20260921_0014_phase3_security_hardening` (after `20260920_0013_phase3_unified_identity`)

@@ -121,7 +121,7 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; `PLAT-P3` PASS; 
 
 ## Phase 03 identity handover
 
-- The remediation candidate is CRM `b2b6debbdd2af0fee1e8a974b7988b979145b40b` with LenERP `8d77cec7504d22f9c0a235034777e31fa07fc62`; migration `20260921_0014_phase3_security_hardening` follows `20260920_0013_phase3_unified_identity`.
+- The remediation candidate is CRM `d4517eeb842e121cd133ca630f9e8b15c4b22f8c` with LenERP `8d77cec7504d22f9c0a235034777e31fa07fc62`; migration `20260921_0014_phase3_security_hardening` follows `20260920_0013_phase3_unified_identity`.
 - Protected run `35542421306` exposed an unavailable Frappe advisory-lock API during the browser callback and completed cleanup. The callback now uses MariaDB `GET_LOCK`/`RELEASE_LOCK`; a fresh protected rerun must verify browser-bound state, mapping-handle isolation, durable rate limiting, accessibility, and authenticated break-glass recovery before independent review closes.
 - Rollback disables SSO entry points and restores independent logins without deleting identity mappings or audit history.
 
