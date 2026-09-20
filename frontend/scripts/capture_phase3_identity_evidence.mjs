@@ -113,13 +113,13 @@ await directPage.screenshot({ path: path.join(outputDir, "direct-erp.png"), full
 
 await directPage.waitForTimeout(1500);
 let returnLink = directPage.locator("[data-lenerp-control-plane]");
-if (await returnLink.count() === 0) {
+if (await returnLink.count() === 0 || !(await returnLink.first().isVisible().catch(() => false))) {
   const toggles = directPage.locator(".dropdown-toggle, [data-toggle='dropdown'], [aria-haspopup='true']");
-  for (let index = 0; index < Math.min(await toggles.count(), 8) && await returnLink.count() === 0; index += 1) {
+  for (let index = 0; index < Math.min(await toggles.count(), 8) && !(await returnLink.first().isVisible().catch(() => false)); index += 1) {
     await toggles.nth(index).click().catch(() => undefined);
   }
 }
-if (await returnLink.count() !== 1) throw new Error("ERP user navigation did not expose the LenERP Control Plane link");
+if (await returnLink.count() !== 1 || !(await returnLink.first().isVisible().catch(() => false))) throw new Error("ERP user navigation did not expose a visible LenERP Control Plane link");
 await Promise.all([directPage.waitForURL(new RegExp(`${controlBase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/app/tenants/${manifest.tenant_id}`), { timeout: 60000 }), returnLink.click()]);
 evidence.erp_to_control = { final_url: new URL(directPage.url()).pathname, exact_tenant_return: true };
 await directPage.screenshot({ path: path.join(outputDir, "erp-to-control.png"), fullPage: true });
