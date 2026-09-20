@@ -22,6 +22,7 @@ import json
 import os
 import sys
 import urllib.request
+import urllib.parse
 import zipfile
 
 release_id, run_id, repository, artifact_root = sys.argv[1:]
@@ -32,6 +33,18 @@ def get_json(url):
     request = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"})
     with urllib.request.urlopen(request, timeout=30) as response:
         return json.load(response)
+
+class GitHubRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, request, fp, code, msg, headers, newurl):
+        redirected = super().redirect_request(request, fp, code, msg, headers, newurl)
+        if redirected is not None:
+            old_host = urllib.parse.urlparse(request.full_url).hostname
+            new_host = urllib.parse.urlparse(newurl).hostname
+            if new_host in {"api.github.com", "github.com"} and old_host in {"api.github.com", "github.com"}:
+                redirected.add_unredirected_header("Authorization", f"Bearer {token}")
+            else:
+                redirected.headers.pop("Authorization", None)
+        return redirected
 
 run = get_json(f"{base}/actions/runs/{run_id}")
 if run.get("status") != "completed" or run.get("conclusion") != "success":
@@ -45,7 +58,8 @@ artifact = next((item for item in artifacts if item.get("name") == name and not 
 if artifact is None:
     raise SystemExit("the exact staging evidence artifact is unavailable or expired")
 request = urllib.request.Request(artifact["archive_download_url"], headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"})
-with urllib.request.urlopen(request, timeout=120) as response:
+opener = urllib.request.build_opener(GitHubRedirectHandler)
+with opener.open(request, timeout=120) as response:
     archive = response.read()
 archive_path = os.path.join(artifact_root, "evidence.zip")
 with open(archive_path, "wb") as handle:
