@@ -82,9 +82,10 @@ const attackerContext = await browser.newContext({ ignoreHTTPSErrors: true, view
 const attackerPage = await attackerContext.newPage();
 const transactionUrl = `${erpBase}/api/method/lenerp_core.sso.begin?next_path=%2Fapp%2Fasset-maintenance`;
 const transactionResponse = await attackerPage.goto(transactionUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
+const transactionPayload = JSON.parse(await attackerPage.locator("body").innerText());
 const transaction = {
   status: transactionResponse?.status() ?? 0,
-  body: JSON.parse(await attackerPage.locator("body").innerText()),
+  body: transactionPayload.message ?? transactionPayload,
 };
 if (transaction.status !== 200 || !transaction.body.authorization_url) throw new Error("ERP did not issue a browser-bound identity transaction");
 const victimContext = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1440, height: 1000 }, reducedMotion: "reduce" });
