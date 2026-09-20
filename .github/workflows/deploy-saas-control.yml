@@ -669,7 +669,7 @@ jobs:
           BROWSER_EXECUTABLE_PATH="$browser_path" node "$evidence_script"
 
       - name: Start isolated Phase 03 TLS callback proxy
-        if: ${{ inputs.phase3_identity_staging == 'on' }}
+        if: ${{ inputs.phase3_identity_staging == 'on' || (github.event_name == 'pull_request' && github.head_ref == 'codex/phase3-unified-identity') }}
         run: |
           identity_dir="$RUNNER_TEMP/phase3-identity"
           tls_dir="$RUNNER_TEMP/phase3-identity-tls"
@@ -691,7 +691,7 @@ jobs:
           kill -0 "$(cat "$tls_dir/proxy.pid")"
 
       - name: Prepare and configure synthetic Phase 03 identity lane
-        if: ${{ inputs.phase3_identity_staging == 'on' }}
+        if: ${{ inputs.phase3_identity_staging == 'on' || (github.event_name == 'pull_request' && github.head_ref == 'codex/phase3-unified-identity') }}
         run: |
           identity_dir="$RUNNER_TEMP/phase3-identity"
           tls_dir="$RUNNER_TEMP/phase3-identity-tls"
@@ -773,7 +773,7 @@ jobs:
             --user "$break_glass_user" --password-file "$RUNNER_TEMP/erp-role-password-${GITHUB_RUN_ID}" --phase sso_enabled
 
       - name: Capture Phase 03 identity browser and responsive evidence
-        if: ${{ inputs.phase3_identity_staging == 'on' }}
+        if: ${{ inputs.phase3_identity_staging == 'on' || (github.event_name == 'pull_request' && github.head_ref == 'codex/phase3-unified-identity') }}
         env:
           PHASE3_IDENTITY_MANIFEST: ${{ runner.temp }}/phase3-identity/manifest.json
           OUTPUT_DIR: ${{ github.workspace }}/staging-browser-evidence/phase3-identity
@@ -784,7 +784,7 @@ jobs:
           BROWSER_EXECUTABLE_PATH="$browser_path" node "$evidence_script"
 
       - name: Run Phase 03 identity API contract
-        if: ${{ inputs.phase3_identity_staging == 'on' }}
+        if: ${{ inputs.phase3_identity_staging == 'on' || (github.event_name == 'pull_request' && github.head_ref == 'codex/phase3-unified-identity') }}
         env:
           PHASE3_MANIFEST: ${{ runner.temp }}/phase3-identity/manifest.json
           PHASE3_CA: ${{ runner.temp }}/phase3-identity-tls/server.crt
@@ -799,7 +799,7 @@ jobs:
             --manifest "$PHASE3_MANIFEST" --ca-bundle "$PHASE3_CA" --evidence "$PHASE3_EVIDENCE"
 
       - name: Verify Phase 03 membership removal and mapping revocation
-        if: ${{ inputs.phase3_identity_staging == 'on' }}
+        if: ${{ inputs.phase3_identity_staging == 'on' || (github.event_name == 'pull_request' && github.head_ref == 'codex/phase3-unified-identity') }}
         env:
           PHASE3_MANIFEST: ${{ runner.temp }}/phase3-identity/manifest.json
           PHASE3_CA: ${{ runner.temp }}/phase3-identity-tls/server.crt
@@ -814,7 +814,7 @@ jobs:
             --manifest "$PHASE3_MANIFEST" --ca-bundle "$PHASE3_CA" --evidence "$PHASE3_EVIDENCE"
 
       - name: Roll back Phase 03 identity flag and verify independent login
-        if: ${{ inputs.phase3_identity_staging == 'on' }}
+        if: ${{ inputs.phase3_identity_staging == 'on' || (github.event_name == 'pull_request' && github.head_ref == 'codex/phase3-unified-identity') }}
         env:
           PHASE3_MANIFEST: ${{ runner.temp }}/phase3-identity/manifest.json
           PHASE3_CA: ${{ runner.temp }}/phase3-identity-tls/server.crt
@@ -851,7 +851,7 @@ jobs:
             --manifest "$PHASE3_MANIFEST" --ca-bundle "$PHASE3_CA" --evidence "$PHASE3_EVIDENCE"
 
       - name: Restore Phase 03 staging configuration and stop TLS proxy
-        if: ${{ always() && inputs.phase3_identity_staging == 'on' }}
+        if: ${{ always() && (inputs.phase3_identity_staging == 'on' || (github.event_name == 'pull_request' && github.head_ref == 'codex/phase3-unified-identity')) }}
         run: |
           identity_dir="$RUNNER_TEMP/phase3-identity"
           tls_dir="$RUNNER_TEMP/phase3-identity-tls"
