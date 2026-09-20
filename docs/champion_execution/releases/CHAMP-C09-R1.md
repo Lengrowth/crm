@@ -27,6 +27,13 @@
 - Production backup/promotion: BLOCKED until staging passes.
 - Champion acceptance: NOT CLAIMED.
 
+Current read-only AWS/Cloudflare state: production remains on the prior
+control-plane release and its ERP site has no HRMS installation. Staging has a
+historical HRMS installation but its LenERP source commit is not the pinned
+candidate commit, so that state is not accepted as candidate-bound evidence.
+Both public Cloudflare hostnames returned HTTP 200; no DNS, tunnel, or edge
+mutation was made.
+
 The first protected workflow for corrected candidate
 `cdae0535cb3af425b423f6858aaa779d4edf3b98` (`35483735652`) stopped before
 deployment because the staging runner was full and npm returned `ENOSPC`.

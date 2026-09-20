@@ -89,6 +89,18 @@ limited to Cloudflare IP ranges on 80/443 and the approved SSH `/32`; no raw
 staging-port ingress was added. The temporary inspection SSH rule for
 `212.58.102.127/32` was revoked after readback.
 
+Current external readback on 2026-09-20 confirms the production control-plane
+pointers remain `current -> 4a63264e1e8cb7c998c767262a6e1022647ff7b0` and
+`previous -> 27ede631c667c67f45d534108abeb975816ee83e`. The production ERP site
+reports only Frappe `15.119.1` and ERPNext `15.120.0`; HRMS is not installed.
+The staging ERP site currently reports Frappe `15.119.1`, ERPNext `15.120.0`,
+HRMS `15.64.1`, and `lenerp_core 0.2.0`, but its LenERP source readback is
+`d8cb884405d844c50ca8c568ac80572b149f67f3`, not the pinned candidate commit
+`a7e47208baf6583295f5f2632f4787262cd3f475`. This is historical/replayed
+staging state and is not accepted as clean-install or candidate-bound evidence.
+Cloudflare DNS and public HTTPS readbacks for `lenerp.lengrowth.com` and
+`lenerp-api.lengrowth.com/health` returned HTTP 200; no edge mutation was made.
+
 EC2 readback showed all staging and production control-plane/Frappe services
 active, loopback listeners present, Nginx serving production HTTPS routes, and
 staging pointers `current -> 802f1bdb0f7642ea627b08235dfa3aa16e7b9eda` and
