@@ -11,7 +11,8 @@ EXPECTED_HRMS_VERSION="${EXPECTED_HRMS_VERSION:-15.64.1}"
 EXPECTED_HRMS_COMMIT="${EXPECTED_HRMS_COMMIT:-e68a3deaa95ae5b2c3d743297d0a4ab505733fc1}"
 EXPECTED_CUSTOM_APP_VERSION="${EXPECTED_CUSTOM_APP_VERSION:-0.2.0}"
 OUTPUT_FILE="${OUTPUT_FILE:-}"
-export EXPECTED_HRMS_COMMIT EXPECTED_HRMS_VERSION BENCH_ROOT SITE OUTPUT_FILE
+BACKUP_DIR="${BACKUP_DIR:-}"
+export EXPECTED_HRMS_COMMIT EXPECTED_HRMS_VERSION BENCH_ROOT SITE OUTPUT_FILE BACKUP_DIR
 
 for unit in \
   frappe-staging-redis-cache.service \
@@ -42,6 +43,14 @@ for port in 14100 14101 28000; do
   wait_for_loopback_port "$port" || exit 1
 done
 echo "ERP staging ports passed"
+
+if [[ -n "$BACKUP_DIR" ]]; then
+  [[ -f "$BACKUP_DIR/SHA256SUMS" ]] || {
+    echo "candidate-bound staging backup manifest is missing: $BACKUP_DIR" >&2
+    exit 1
+  }
+  echo "ERP staging backup manifest passed ($BACKUP_DIR)"
+fi
 
 check_http() {
   local name="$1" url="$2" expected="$3" code
@@ -127,6 +136,7 @@ if commit != expected_commit:
     raise SystemExit("ERP staging HRMS commit readback is not the expected immutable revision")
 
 evidence = {
+    "backup_dir": os.environ.get("BACKUP_DIR", ""),
     "site": site,
     "migration": "bench --site migrate returned success before this readback",
     "installed_apps": apps,

@@ -362,6 +362,25 @@ jobs:
           sudo systemctl restart saas-control-staging-worker
           sudo -n -u frappe /usr/local/bin/bench --version
 
+      - name: Capture candidate-bound staging ERP backup
+        env:
+          CANDIDATE_SHA: ${{ steps.candidate.outputs.sha }}
+        run: |
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "invalid candidate identity" >&2; exit 1; }
+          backup_dir="/opt/saas-control-staging/shared/backups/phase2-${CANDIDATE_SHA}-${GITHUB_RUN_ID}"
+          sudo install -d -o frappe -g frappe -m 0750 "$backup_dir"
+          sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test backup --with-files --backup-path '$backup_dir'"
+          control_db=/opt/saas-control-staging/shared/data/control-plane-staging.db
+          if [[ -f "$control_db" ]]; then
+            sudo install -o frappe -g frappe -m 0640 "$control_db" "$backup_dir/control-plane-staging.db"
+          fi
+          backup_files="$(sudo find "$backup_dir" -maxdepth 1 -type f ! -name SHA256SUMS -print -quit)"
+          [[ -n "$backup_files" ]] || { echo "staging backup produced no files" >&2; exit 1; }
+          sudo find "$backup_dir" -maxdepth 1 -type f ! -name SHA256SUMS -print0 | sudo xargs -0 sha256sum | sudo tee "$backup_dir/SHA256SUMS" >/dev/null
+          sudo test -s "$backup_dir/SHA256SUMS"
+          echo "PHASE02_STAGING_BACKUP_DIR=$backup_dir" >> "$GITHUB_ENV"
+          echo "Candidate-bound staging backup captured: $backup_dir"
+
       - name: Build and deploy exact candidate to staging
         env:
           DEPLOY_TARGET: staging
@@ -411,6 +430,21 @@ jobs:
           test "$core_commit" = "a7e47208baf6583295f5f2632f4787262cd3f475"
           sudo rsync -a --delete --exclude='.git' "$exact_dir/" /opt/frappe-staging-bench/apps/lenerp_core/
           sudo chown -R frappe:frappe /opt/frappe-staging-bench/apps/lenerp_core
+          # The exact bundle is copied into the protected bench rather than
+          # fetched with bench get-app. Register it explicitly before asking
+          # Frappe to install it; otherwise a clean/recovered bench can have
+          # the source tree present while apps.txt still omits the app.
+          apps_file=/opt/frappe-staging-bench/sites/apps.txt
+          sudo -u frappe python3 - "$apps_file" <<'PY'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          lines = [line.strip() for line in path.read_text(encoding='utf-8').splitlines() if line.strip()]
+          if 'lenerp_core' not in lines:
+              path.write_text('\n'.join([*lines, 'lenerp_core']) + '\n', encoding='utf-8')
+          PY
+          sudo -u frappe grep -qx 'lenerp_core' "$apps_file"
           if ! sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test list-apps | grep -Eq '^lenerp_core[[:space:]]'"; then
             sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test install-app lenerp_core"
           fi
@@ -421,7 +455,7 @@ jobs:
       - name: Verify the dedicated ERP staging bench and queues
         env:
           OUTPUT_FILE: ${{ github.workspace }}/staging-browser-evidence/erp/phase02-runtime-readback.json
-        run: sudo --preserve-env=OUTPUT_FILE scripts/release/erp_staging_smoke.sh
+        run: sudo env OUTPUT_FILE="$OUTPUT_FILE" BACKUP_DIR="${PHASE02_STAGING_BACKUP_DIR:-}" scripts/release/erp_staging_smoke.sh
 
       - name: Run the persisted Champion synthetic ERP demonstration smoke
         env:
