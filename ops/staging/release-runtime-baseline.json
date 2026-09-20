@@ -23,7 +23,7 @@
     },
     "lenerp_core": {
       "version": "0.2.0",
-      "commit": "95b482abdeb284a138b73f056699c50290dc445f",
+      "commit": "3a7121974cb55ebcac120af6c07eaab53cfedb2c",
       "verification_status": "candidate_expected"
     }
   },
