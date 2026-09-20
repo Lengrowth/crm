@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 
 from sqlalchemy import delete
@@ -27,14 +28,36 @@ from app.models.domain import (
 from app.models.erpnext import ERPNextIntegrationMetadata, TenantProvisioningRecord
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--file", required=True)
-    args = parser.parse_args()
-    payload = json.loads(Path(args.file).read_text(encoding="utf-8"))
+STALE_PHASE2_ORGANIZATION_PATTERNS = (
+    re.compile(r"^Phase 2 Browser (Alpha|Beta)(?: Updated)? [a-z0-9-]+$", re.IGNORECASE),
+    re.compile(r"^Phase 2 Browser UI Company [a-z0-9-]+$", re.IGNORECASE),
+)
+
+
+def discover_stale_phase2_records() -> dict[str, list[str]]:
+    with SessionLocal() as session:
+        rows = session.query(Organization.id, Organization.name, Organization.status).all()
+        organization_ids = [
+            str(row.id)
+            for row in rows
+            if row.status in {"trial", "lead"}
+            and any(pattern.fullmatch(row.name or "") for pattern in STALE_PHASE2_ORGANIZATION_PATTERNS)
+        ]
+        tenant_ids = [
+            str(row[0])
+            for row in session.query(Tenant.id)
+            .filter(Tenant.organization_id.in_(organization_ids))
+            .all()
+        ] if organization_ids else []
+    return {"organization_ids": organization_ids, "tenant_ids": tenant_ids}
+
+
+def remove_records(payload: dict[str, object]) -> tuple[int, int]:
     organization_ids = [str(value) for value in payload.get("organization_ids", [])]
     tenant_ids = [str(value) for value in payload.get("tenant_ids", [])]
-    if not organization_ids or any(len(value) != 36 for value in [*organization_ids, *tenant_ids]):
+    if not organization_ids:
+        return 0, 0
+    if any(len(value) != 36 for value in [*organization_ids, *tenant_ids]):
         raise SystemExit("Phase 2 cleanup requires exact UUID identifiers for organizations and optional tenants")
 
     with SessionLocal() as session:
@@ -57,7 +80,24 @@ def main() -> int:
         session.execute(delete(OrganizationMembership).where(OrganizationMembership.organization_id.in_(organization_ids)))
         session.execute(delete(Organization).where(Organization.id.in_(organization_ids)))
         session.commit()
-    print(f"phase2 synthetic cleanup passed: organizations={len(organization_ids)} tenants={len(tenant_ids)}")
+    return len(organization_ids), len(tenant_ids)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--file")
+    source.add_argument("--discover-stale", action="store_true")
+    parser.add_argument("--output")
+    args = parser.parse_args()
+    if args.discover_stale:
+        payload = discover_stale_phase2_records()
+    else:
+        payload = json.loads(Path(args.file).read_text(encoding="utf-8"))
+    if args.output:
+        Path(args.output).write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    organizations, tenants = remove_records(payload)
+    print(f"phase2 synthetic cleanup passed: organizations={organizations} tenants={tenants}")
     return 0
 
 

@@ -601,6 +601,21 @@ jobs:
           sudo install -m 600 -o saas-staging -g saas-staging "$token_tmp" /run/saas-control-staging/smoke/non-admin-auth-token
           sudo rm -f -- "$token_tmp"
 
+      - name: Remove stale exact Phase 2 browser records before empty-state capture
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/staging-browser-evidence"
+          cleanup_tmp="/tmp/saas-control-phase2-pre-browser-cleanup-${GITHUB_RUN_ID}.json"
+          set -a
+          . /opt/saas-control-staging/shared/env/staging-backend.env
+          set +a
+          sudo -n -E -u saas-staging env PYTHONPATH=/opt/saas-control-staging/current/backend \
+            /opt/saas-control-staging/shared/backend-venv/bin/python \
+            /opt/saas-control-staging/current/scripts/release/cleanup_phase2_synthetic.py \
+            --discover-stale --output "$cleanup_tmp"
+          sudo install -m 644 -o "$(id -u)" -g "$(id -g)" "$cleanup_tmp" \
+            "$GITHUB_WORKSPACE/staging-browser-evidence/pre-browser-phase2-cleanup.json"
+          sudo rm -f -- "$cleanup_tmp"
+
       - name: Capture candidate-bound browser and accessibility evidence
         # Keep this capture step adjacent to the deployed release dependencies.
         env:
@@ -608,6 +623,7 @@ jobs:
           EXPECTED_RELEASE: ${{ steps.candidate.outputs.sha }}
           RUNTIME_RELEASE_URL: http://127.0.0.1:18001/runtime/release
           ROLLOUT_STAGE: ${{ inputs.rollout_stage || 'operator-validation' }}
+          RUN_PHASE3_BROWSER_EVIDENCE: "off"
           HEADLESS: "false"
           BASE_URL: http://127.0.0.1:13001
           HOST_HEADER: staging.example.test
