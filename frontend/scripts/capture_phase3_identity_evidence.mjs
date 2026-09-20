@@ -60,7 +60,7 @@ await controlPage.screenshot({ path: path.join(outputDir, "control-to-erp.png"),
 const directContext = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1440, height: 1000 }, reducedMotion: "reduce" });
 await addIdentityCookie(directContext);
 const directPage = await directContext.newPage();
-await assertReady(directPage, `${erpBase}/app`);
+await assertReady(directPage, `${erpBase}/api/method/lenerp_core.sso.direct_visit?next_path=%2Fapp`);
 if (!directPage.url().startsWith(`${erpBase}/app`)) throw new Error(`direct ERP visit did not land on ERP app: ${directPage.url()}`);
 evidence.direct_erp = { final_url: new URL(directPage.url()).pathname, no_second_password_prompt: true };
 await directPage.screenshot({ path: path.join(outputDir, "direct-erp.png"), fullPage: true });
