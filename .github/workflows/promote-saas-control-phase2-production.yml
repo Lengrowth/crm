@@ -1,0 +1,150 @@
+name: Promote Phase 02 candidate to production
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_id:
+        description: Exact immutable candidate SHA that passed Phase 02 staging
+        required: true
+        type: string
+      staging_run_id:
+        description: Successful protected staging workflow run for this candidate
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: saas-control-phase2-production-promotion
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    name: Promote exact Phase 02 candidate
+    runs-on:
+      - self-hosted
+      - linux
+      - saas-control
+    environment: production
+    steps:
+      - name: Check out release tooling
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Make Phase 02 release scripts executable
+        run: chmod +x scripts/release/*.sh scripts/deploy/*.sh
+
+      - name: Validate AWS production target and services
+        run: |
+          set -euo pipefail
+          test "$(aws sts get-caller-identity --query Account --output text)" = "288947333598"
+          target="$(aws ec2 describe-instances --region us-east-1 --instance-ids i-0f54fba441caa7154 --query 'Reservations[0].Instances[0].[InstanceId,PrivateIpAddress,PublicIpAddress,State.Name]' --output text)"
+          test "$target" = $'i-0f54fba441caa7154\t172.31.26.214\t100.62.163.246\trunning'
+          systemctl is-active --quiet saas-backend.service
+          systemctl is-active --quiet saas-frontend.service
+          systemctl is-active --quiet nginx.service
+          systemctl is-active --quiet saas-control-r2-backup.timer
+          test "$(sudo -n ss -ltn | awk '$4 ~ /127\\.0\\.0\\.(8001|3000):/ {print $4}' | wc -l)" -ge 0
+
+      - name: Materialize exact candidate after independent staging evidence verification
+        env:
+          RELEASE_ID: ${{ inputs.release_id }}
+          STAGING_RUN_ID: ${{ inputs.staging_run_id }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: ./scripts/release/materialize_phase2_production_candidate.sh
+
+      - name: Capture and verify fresh production application/site/off-host backup
+        env:
+          OUTPUT_FILE: ${{ github.workspace }}/phase2-production-backup.json
+        run: ./scripts/release/run_verified_production_backup.sh "$OUTPUT_FILE"
+
+      - name: Install and migrate exact HRMS, then verify production readbacks
+        env:
+          OUTPUT_FILE: ${{ github.workspace }}/phase2-production-erp-readback.json
+          BACKUP_EVIDENCE_FILE: ${{ github.workspace }}/phase2-production-backup.json
+        run: ./scripts/release/install_phase2_production_hrms.sh
+
+      - name: Promote exact Phase 02 candidate with atomic rollback and smoke
+        env:
+          RELEASE_ID: ${{ inputs.release_id }}
+          BACKUP_EVIDENCE_FILE: ${{ github.workspace }}/phase2-production-backup.json
+          PRODUCTION_PROMOTION_APPROVED: yes
+          PHASE3_MIGRATION_APPROVED: no
+          AUTH_TOKEN_FILE: /run/saas-control/smoke/auth-token
+          PRODUCTION_BASE_URL: https://lenerp.lengrowth.com
+          PRODUCTION_BACKEND_URL: https://lenerp-api.lengrowth.com
+          EXPECTED_RUNTIME_ENVIRONMENT: production
+          EXPECTED_BUILD_ENVIRONMENT: staging
+        run: |
+          set -euo pipefail
+          sudo install -d -o ubuntu -g ubuntu -m 700 /run/saas-control/smoke
+          set -a
+          . /opt/saas-control/shared/env/backend.env
+          set +a
+          PYTHONPATH=/opt/saas-control/current/backend \
+            /opt/saas-control/shared/backend-venv/bin/python \
+            scripts/release/production_smoke_auth.py prepare \
+            --email "phase2-production-smoke-${GITHUB_RUN_ID}@example.test" \
+            --organization "Phase 2 Production Smoke ${GITHUB_RUN_ID}" \
+            --token-file "$AUTH_TOKEN_FILE"
+          ./scripts/deploy/promote_saas_control_phase2.sh
+
+      - name: Run Phase 02 production authorization and tenant-isolation smoke
+        env:
+          PRODUCTION_BACKEND_URL: https://lenerp-api.lengrowth.com
+          TOKEN_FILE: /run/saas-control/smoke/auth-token
+          PHASE2_CLEANUP_MANIFEST: /run/saas-control/smoke/phase2-cleanup.json
+        run: |
+          set -euo pipefail
+          set -a
+          . /opt/saas-control/shared/env/backend.env
+          set +a
+          PYTHONPATH=/opt/saas-control/current/backend \
+            /opt/saas-control/shared/backend-venv/bin/python \
+            scripts/release/production_phase2_smoke.py \
+            --token-file "$TOKEN_FILE" \
+            --cleanup-manifest "$PHASE2_CLEANUP_MANIFEST"
+
+      - name: Capture exact production Phase 02 readback
+        if: always()
+        run: |
+          set -euo pipefail
+          chmod +x scripts/release/capture_production_readback.sh
+          sudo scripts/release/capture_production_readback.sh production-readback.json
+          sudo chown "$(id -u):$(id -g)" production-readback.json
+
+      - name: Remove disposable production smoke identity
+        if: always()
+        env:
+          SMOKE_EMAIL: phase2-production-smoke-${{ github.run_id }}@example.test
+          SMOKE_ORGANIZATION: Phase 2 Production Smoke ${{ github.run_id }}
+          TOKEN_FILE: /run/saas-control/smoke/auth-token
+          PHASE2_CLEANUP_MANIFEST: /run/saas-control/smoke/phase2-cleanup.json
+        run: |
+          set -euo pipefail
+          set -a
+          . /opt/saas-control/shared/env/backend.env
+          set +a
+          PYTHONPATH=/opt/saas-control/current/backend \
+            /opt/saas-control/shared/backend-venv/bin/python \
+            scripts/release/production_smoke_auth.py cleanup \
+            --email "$SMOKE_EMAIL" \
+            --organization "$SMOKE_ORGANIZATION" || true
+          rm -f -- "$TOKEN_FILE" "$PHASE2_CLEANUP_MANIFEST"
+
+      - name: Upload non-secret Phase 02 production evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase2-production-evidence-${{ inputs.release_id }}-${{ github.run_id }}
+          path: |
+            phase2-production-backup.json
+            phase2-production-erp-readback.json
+            production-readback.json
+          if-no-files-found: error
+          retention-days: 30
