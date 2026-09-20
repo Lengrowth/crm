@@ -99,9 +99,10 @@ if manifest.get("candidate_sha") != release_id:
     raise SystemExit("staging evidence candidate does not match release id")
 if manifest.get("workflow_run_id") != int(run_id):
     raise SystemExit("staging evidence run does not match requested staging run")
-if runtime.get("commit") != release_id or runtime.get("release_id") != release_id:
+bound_runtime = manifest.get("runtime_readback")
+if not isinstance(bound_runtime, dict) or bound_runtime.get("commit") != release_id or bound_runtime.get("release_id") != release_id:
     raise SystemExit("runtime readback is not bound to the exact candidate")
-if runtime.get("environment") != "staging" or not runtime.get("provider_verified"):
+if bound_runtime.get("environment") != "staging" or not runtime.get("provider_verified"):
     raise SystemExit("runtime readback is not a verified staging readback")
 if runtime.get("hrms_commit") != "e68a3deaa95ae5b2c3d743297d0a4ab505733fc1":
     raise SystemExit("staging HRMS commit is not the approved exact revision")
