@@ -258,7 +258,12 @@ def rollback_test(args: argparse.Namespace) -> None:
     context = ssl.create_default_context(cafile=args.ca_bundle)
     token = Path(manifest["platform_token_file"]).read_text(encoding="utf-8").strip()
     readiness_status, readiness = http_json(f"{manifest['control_base_url']}/api/sso/readiness/{manifest['tenant_id']}", token=token, context=context)
-    login_status, _ = http_json(f"{manifest['erp_base_url']}/login", context=context)
+    login_request = urllib.request.Request(f"{manifest['erp_base_url']}/login", headers={"Accept": "text/html"})
+    try:
+        with urllib.request.urlopen(login_request, context=context, timeout=20) as response:
+            login_status = response.status
+    except urllib.error.HTTPError as error:
+        login_status = error.code
     evidence = json.loads(Path(args.evidence).read_text(encoding="utf-8"))
     evidence["rollback"] = {"feature_off_readiness": readiness_status == 200 and readiness.get("ready") is False, "normal_erp_login_available": login_status == 200, "mappings_and_audit_preserved_until_cleanup": True}
     if not evidence["rollback"]["feature_off_readiness"] or not evidence["rollback"]["normal_erp_login_available"]:
