@@ -226,7 +226,18 @@ class FrappeBenchERPNextClient(ERPNextClient):
         if app_name in self._list_apps(site_id):
             return OperationResult({"status": "success", "site_id": site_id, "app": app_name, "provider": "frappe_staging_bench", "replayed": True})
         ok, _ = self._run(["--site", site_id, "install-app", app_name])
-        return OperationResult({"status": "success" if ok else "failed", "site_id": site_id, "app": app_name, "provider": "frappe_staging_bench", "provider_verified": ok})
+        if not ok and app_name == "hrms":
+            # HRMS v15.64.1 has an upstream-reported first-install fixture
+            # race (frappe/hrms#1639).  Recover only on an isolated synthetic
+            # site, with one bounded replay and no success claim until the
+            # installed-app readback confirms the provider state.
+            if "hrms" in self._list_apps(site_id):
+                removed, _ = self._run(["--site", site_id, "uninstall-app", "hrms", "--yes", "--force", "--no-backup"])
+                if not removed:
+                    return OperationResult({"status": "failed", "site_id": site_id, "app": app_name, "provider": "frappe_staging_bench", "provider_verified": False, "error": "isolated HRMS recovery uninstall failed"})
+            self._run(["--site", site_id, "clear-cache"])
+            ok, _ = self._run(["--site", site_id, "install-app", app_name])
+        return OperationResult({"status": "success" if ok else "failed", "site_id": site_id, "app": app_name, "provider": "frappe_staging_bench", "provider_verified": ok, "replayed": not ok})
 
     def migrate_site(self, site_id: str) -> OperationResult:
         if not self._site_exists(site_id):

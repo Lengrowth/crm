@@ -9,6 +9,7 @@ from app import models as _models  # noqa: F401
 from app.db.base import Base
 from app.db.seed import seed_reference_data
 from app.integrations.mock_erpnext import MockERPNextClient
+from app.integrations.frappe_bench import FrappeBenchERPNextClient
 from app.models.domain import Module
 from app.services.application_resolver import calculate_required_applications
 from app.services.module_entitlement_service import ModuleEntitlementService, ModuleEntitlementValidationError
@@ -84,3 +85,31 @@ def test_mock_provider_install_and_migration_are_replay_safe_and_version_checked
     inventory = client.get_site_inventory(site_id)
     assert inventory["installed_apps"]["hrms"] == "15.64.1"
     assert client.verify_site_configuration(site_id, [], required_app_versions={"hrms": "15.64.0"})["provider_verified"] is False
+
+
+def test_frappe_provider_replays_only_hrms_after_upstream_fixture_failure(monkeypatch):
+    client = object.__new__(FrappeBenchERPNextClient)
+    installed_reads = iter([set(), {"hrms"}, {"hrms"}])
+    calls: list[tuple[str, ...]] = []
+
+    monkeypatch.setattr(client, "_site_exists", lambda site_id: True)
+    monkeypatch.setattr(client, "_list_apps", lambda site_id: next(installed_reads))
+
+    results = iter([False, True, True, True])
+
+    def run(args, **kwargs):
+        calls.append(tuple(args))
+        return next(results), ""
+
+    monkeypatch.setattr(client, "_run", run)
+
+    result = client.install_app("phase4-synthetic.example.test", "hrms")
+
+    assert result["status"] == "success"
+    assert result["provider_verified"] is True
+    assert calls == [
+        ("--site", "phase4-synthetic.example.test", "install-app", "hrms"),
+        ("--site", "phase4-synthetic.example.test", "uninstall-app", "hrms", "--yes", "--force", "--no-backup"),
+        ("--site", "phase4-synthetic.example.test", "clear-cache"),
+        ("--site", "phase4-synthetic.example.test", "install-app", "hrms"),
+    ]

@@ -384,7 +384,21 @@ jobs:
           test "$(sudo -u frappe git -C "$hrms_dir" rev-parse HEAD)" = "$hrms_commit"
           sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench setup requirements hrms"
           if ! sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test list-apps | grep -Eq '^hrms[[:space:]]'"; then
+            # HRMS v15.64.1 has an upstream-reported first-install fixture
+            # race (frappe/hrms#1639).  Retry exactly once after removing a
+            # partial site registration; never continue without a successful
+            # provider readback on the exact pinned app.
+            set +e
             sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test install-app hrms"
+            first_install_status=$?
+            set -e
+            if [[ "$first_install_status" -ne 0 ]]; then
+              if sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test list-apps | grep -Eq '^hrms[[:space:]]'"; then
+                sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test uninstall-app hrms --yes --force --no-backup"
+              fi
+              sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test clear-cache"
+              sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test install-app hrms"
+            fi
           fi
           sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test migrate"
           sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench build --app hrms"
@@ -405,7 +419,9 @@ jobs:
           sudo systemctl restart frappe-staging-web.service frappe-staging-worker-short.service frappe-staging-schedule.service
 
       - name: Verify the dedicated ERP staging bench and queues
-        run: sudo scripts/release/erp_staging_smoke.sh
+        env:
+          OUTPUT_FILE: ${{ github.workspace }}/staging-browser-evidence/erp/phase02-runtime-readback.json
+        run: sudo --preserve-env=OUTPUT_FILE scripts/release/erp_staging_smoke.sh
 
       - name: Run the persisted Champion synthetic ERP demonstration smoke
         env:

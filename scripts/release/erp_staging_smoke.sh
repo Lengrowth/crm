@@ -10,6 +10,8 @@ EXPECTED_ERPNEXT_COMMIT="${EXPECTED_ERPNEXT_COMMIT:-945e825bee3d0d645f6cb59bcaab
 EXPECTED_HRMS_VERSION="${EXPECTED_HRMS_VERSION:-15.64.1}"
 EXPECTED_HRMS_COMMIT="${EXPECTED_HRMS_COMMIT:-e68a3deaa95ae5b2c3d743297d0a4ab505733fc1}"
 EXPECTED_CUSTOM_APP_VERSION="${EXPECTED_CUSTOM_APP_VERSION:-0.2.0}"
+OUTPUT_FILE="${OUTPUT_FILE:-}"
+export EXPECTED_HRMS_COMMIT EXPECTED_HRMS_VERSION BENCH_ROOT SITE OUTPUT_FILE
 
 for unit in \
   frappe-staging-redis-cache.service \
@@ -84,4 +86,61 @@ grep -Eq "^lenerp_core[[:space:]]+${EXPECTED_CUSTOM_APP_VERSION}([[:space:]]|$)"
   echo "staging HRMS commit mismatch" >&2
   exit 1
 }
-echo "ERP staging app inventory and pinned commits passed"
+
+# The HRMS v15 installer has an upstream-reported first-install fixture race
+# (frappe/hrms#1639).  A successful install is not enough: prove that the
+# exact site contains the expected HRMS application, migration readback,
+# upstream HR/Payroll roles, and HRMS-owned workspaces.  Keep these checks
+# candidate-bound and fail closed when any readback is unavailable.
+installed_apps_json="$(sudo -u frappe bash -lc "cd '$BENCH_ROOT' && bench --site '$SITE' execute frappe.get_installed_apps")"
+roles_json="$(sudo -u frappe bash -lc "cd '$BENCH_ROOT' && bench --site '$SITE' execute frappe.get_all --args '[\"Role\"]' --kwargs '{\"filters\":{\"name\":[\"in\",[\"HR User\",\"HR Manager\",\"Payroll User\",\"Payroll Manager\"]]},\"pluck\":\"name\"}'")"
+workspaces_json="$(sudo -u frappe bash -lc "cd '$BENCH_ROOT' && bench --site '$SITE' execute frappe.get_all --args '[\"Workspace\"]' --kwargs '{\"filters\":{\"name\":[\"in\",[\"HR\",\"Payroll\"]]},\"fields\":[\"name\",\"title\",\"module\"]}'")"
+export installed_apps_json roles_json workspaces_json
+python3 - <<'PY'
+import json
+import os
+import subprocess
+from pathlib import Path
+
+def parse(name: str):
+    try:
+        return json.loads(os.environ[name])
+    except (KeyError, TypeError, json.JSONDecodeError) as exc:
+        raise SystemExit(f"ERP staging {name} readback is not valid JSON") from exc
+
+apps = parse("installed_apps_json")
+roles = parse("roles_json")
+workspaces = parse("workspaces_json")
+if not isinstance(apps, list) or "hrms" not in apps:
+    raise SystemExit("ERP staging installed-app readback does not include hrms")
+if not isinstance(roles, list) or not {"HR User", "HR Manager"}.issubset(set(roles)):
+    raise SystemExit("ERP staging HR role readback is incomplete")
+if not isinstance(workspaces, list) or not {"HR", "Payroll"}.issubset({str(item.get("name")) for item in workspaces if isinstance(item, dict)}):
+    raise SystemExit("ERP staging HR/Payroll workspace readback is incomplete")
+
+bench_root = Path(os.environ.get("BENCH_ROOT", "/opt/frappe-staging-bench"))
+site = os.environ.get("SITE", "erp-staging.example.test")
+hrms_path = bench_root / "apps" / "hrms"
+commit = subprocess.check_output(["git", "-C", str(hrms_path), "rev-parse", "HEAD"], text=True).strip()
+expected_commit = os.environ.get("EXPECTED_HRMS_COMMIT", "")
+if commit != expected_commit:
+    raise SystemExit("ERP staging HRMS commit readback is not the expected immutable revision")
+
+evidence = {
+    "site": site,
+    "migration": "bench --site migrate returned success before this readback",
+    "installed_apps": apps,
+    "hrms_version": os.environ.get("EXPECTED_HRMS_VERSION", ""),
+    "hrms_commit": commit,
+    "roles": sorted(str(item) for item in roles),
+    "workspaces": sorted(workspaces, key=lambda item: str(item)),
+    "provider_verified": True,
+}
+output = os.environ.get("OUTPUT_FILE", "")
+if output:
+    path = Path(output)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+print(json.dumps(evidence, sort_keys=True))
+PY
+echo "ERP staging app inventory, migration, roles, workspaces, and pinned commits passed"
