@@ -29,6 +29,20 @@ async function accessibility(page) {
   return { violations: result.violations.map((item) => ({ id: item.id, impact: item.impact, nodes: item.nodes.length })) };
 }
 
+function safeUrl(raw) {
+  const parsed = new URL(raw);
+  return `${parsed.origin}${parsed.pathname}`;
+}
+
+function safeText(raw) {
+  return raw
+    .replace(/(?:code|state|token|secret|password|cookie|authorization)[^<\s]*/gi, "[REDACTED]")
+    .replace(/[A-Za-z0-9_-]{24,}/g, "[REDACTED]")
+    .replace(/[\w.+-]+@[\w.-]+/g, "[REDACTED_EMAIL]")
+    .replace(/\s+/g, " ")
+    .slice(0, 1200);
+}
+
 async function assertReady(page, url) {
   const response = await page.goto(url, { waitUntil: "networkidle", timeout: 60000 });
   if (!response || response.status() >= 400) {
@@ -42,8 +56,8 @@ async function assertReady(page, url) {
           .replace(/\s+/g, " ")
           .slice(0, 800)
       : "";
-    console.error(`identity route failure detail: ${preview}`);
-    throw new Error(`identity browser route failed: ${url} (${response?.status()})`);
+    console.error(`identity route failure detail: ${safeText(preview)}`);
+    throw new Error(`identity browser route failed: ${safeUrl(url)} (${response?.status()})`);
   }
   await page.locator("body").waitFor({ state: "attached", timeout: 10000 });
 }
@@ -67,13 +81,18 @@ if (await openLink.count() !== 1) throw new Error("ready tenant page did not exp
 await controlPage.screenshot({ path: path.join(outputDir, "control-tenant-open-erp.png"), fullPage: true });
 controlPage.on("response", async (response) => {
   if (response.url().includes("/app") || response.url().includes("sso") || response.url().includes("callback")) {
-    console.error(`identity response ${response.status()} ${response.url()} location=${response.headers().location ?? ""}`);
+    console.error(`identity response ${response.status()} ${safeUrl(response.url())} location=${safeUrl(response.headers().location ?? response.url())}`);
+    if (response.status() >= 400) console.error(`identity response detail ${response.status()}: ${safeText(await response.text().catch(() => ""))}`);
   }
 });
 await openLink.click();
 await controlPage.waitForTimeout(1000);
-console.error(`identity post-click URL ${controlPage.url()}`);
-await controlPage.waitForURL(new RegExp(`^${erpBase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\/app`), { timeout: 60000 });
+console.error(`identity post-click URL ${safeUrl(controlPage.url())}`);
+try {
+  await controlPage.waitForURL(new RegExp(`^${erpBase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\/app`), { timeout: 60000 });
+} catch {
+  throw new Error(`control-to-erp callback did not land on ERP app: ${safeUrl(controlPage.url())}`);
+}
 evidence.control_to_erp = { final_url: new URL(controlPage.url()).pathname, no_second_password_prompt: true };
 await controlPage.screenshot({ path: path.join(outputDir, "control-to-erp.png"), fullPage: true });
 
