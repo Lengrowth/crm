@@ -184,3 +184,20 @@ These are operator readbacks of the isolated ERP lane. They do not yet claim
 that the corrected control-plane commit has passed its protected staging
 workflow; the candidate hash, staging run, production backup/promotion, and
 final Phase 02 verdict remain pending until that exact workflow completes.
+
+## Protected candidate attempt and runner recovery
+
+The first protected correction workflow for commit `cdae0535cb3af425b423f6858aaa779d4edf3b98`
+was run as GitHub Actions `35483735652` (job `106006113638`). It failed during
+the candidate-bound validation suite before candidate deployment because npm
+reported `ENOSPC`; staging readback showed the runner root filesystem at
+39 GB, 100% used, with approximately 370 MB free. The workflow therefore did
+not switch the control-plane staging pointer, create a staging-pass marker, or
+mutate production. This candidate is not staging-approved.
+
+Read-only host inspection found 18 GB of old, unreferenced immutable control
+plane release directories under `/opt/saas-control/releases`. The active and
+previous rollback targets were verified and retained. Twelve explicitly named
+older directories were removed after path and pointer validation, leaving
+approximately 8.9 GB free. The next correction commit is a new immutable
+candidate and must repeat the complete protected staging gate.

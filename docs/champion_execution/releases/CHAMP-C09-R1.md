@@ -5,7 +5,7 @@
 - Package: `C09` — Office work, people, payroll, quality, and support
 - Release type: Champion package / platform dependency implementation
 - Initial state: `in_development`
-- Candidate state: `corrected_candidate_pending_staging`
+- Candidate state: `corrected_candidate_pending_staging_after_runner_capacity_failure`
 - Feature flag: synthetic onboarding execution remains server-controlled and off by default
 - Previous known-good control-plane candidate: `802f1bdb0f7642ea627b08235dfa3aa16e7b9eda` (staging readback)
 - ERP baseline: Frappe `edae775dd36b6c4ad7acab10230262bd74040765`; ERPNext `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`
@@ -26,6 +26,14 @@
 - Staging deployment/readback: PENDING protected run for the corrected candidate. The workflow now uses the exact official HRMS `v15.64.1` revision and one bounded uninstall/clear-cache/reinstall replay for the upstream fixture failure documented in [HRMS issue #1639](https://github.com/frappe/hrms/issues/1639), followed by migration and candidate-bound installed-app/version/commit/role/workspace readback.
 - Production backup/promotion: BLOCKED until staging passes.
 - Champion acceptance: NOT CLAIMED.
+
+The first protected workflow for corrected candidate
+`cdae0535cb3af425b423f6858aaa779d4edf3b98` (`35483735652`) stopped before
+deployment because the staging runner was full and npm returned `ENOSPC`.
+No staging pointer or production resource was changed by that run. Twelve
+unreferenced historical control-plane release directories were removed only
+after validating that the active and previous rollback targets were preserved;
+the next candidate must be independently staged and reviewed.
 
 ## Recovery
 
