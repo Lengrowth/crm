@@ -1,14 +1,20 @@
 from __future__ import annotations
 
 from pathlib import Path
+import tarfile
 
 
 ROOT = Path(__file__).parents[2]
-ERP_ROOT = ROOT.parent / "lenerp_core"
+ERP_ARCHIVE = ROOT / "ops" / "staging" / f"lenerp_core-{(ROOT / 'ops' / 'staging' / 'lenerp_core' / 'SOURCE_COMMIT.txt').read_text(encoding='utf-8').strip()}.tar"
+
+
+def erp_source(path: str) -> str:
+    with tarfile.open(ERP_ARCHIVE) as archive:
+        return archive.extractfile(f"lenerp_core/{path}").read().decode("utf-8")
 
 
 def test_erp_callback_is_browser_bound_and_consumed_under_a_lock() -> None:
-    source = (ERP_ROOT / "lenerp_core" / "sso.py").read_text(encoding="utf-8")
+    source = erp_source("sso.py")
     assert "_STATE_COOKIE" in source
     assert "browser_binding" in source
     assert "secrets.compare_digest" in source
@@ -30,7 +36,7 @@ def test_mapping_schema_and_service_use_an_opaque_exchange_handle() -> None:
 
 
 def test_jit_provisioning_has_duplicate_and_role_update_race_guards() -> None:
-    source = (ERP_ROOT / "lenerp_core" / "sso.py").read_text(encoding="utf-8")
+    source = erp_source("sso.py")
     assert "DuplicateEntryError" in source
     assert "FOR UPDATE" in source
 
