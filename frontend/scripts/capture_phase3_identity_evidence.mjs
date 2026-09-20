@@ -31,7 +31,18 @@ async function accessibility(page) {
 
 async function assertReady(page, url) {
   const response = await page.goto(url, { waitUntil: "networkidle", timeout: 60000 });
-  if (!response || response.status() >= 400) throw new Error(`identity browser route failed: ${url} (${response?.status()})`);
+  if (!response || response.status() >= 400) {
+    const preview = response
+      ? (await response.text().catch(() => ""))
+          .replace(/(?:code|state|token|secret|password|cookie|authorization)[^<\s]*/gi, "[REDACTED]")
+          .replace(/[A-Za-z0-9_-]{24,}/g, "[REDACTED]")
+          .replace(/[\w.+-]+@[\w.-]+/g, "[REDACTED_EMAIL]")
+          .replace(/\s+/g, " ")
+          .slice(0, 800)
+      : "";
+    console.error(`identity route failure detail: ${preview}`);
+    throw new Error(`identity browser route failed: ${url} (${response?.status()})`);
+  }
   await page.locator("body").waitFor({ state: "attached", timeout: 10000 });
 }
 
