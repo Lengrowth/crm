@@ -169,7 +169,14 @@ def break_glass_test(args: argparse.Namespace) -> None:
                 app_status = response.status
         except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError):
             pass
-    result = {"fresh_session": login_status == 200, "protected_identity_route": logged_user_status == 200 and logged_user == args.user, "protected_app_route": app_status == 200}
+    result = {
+        "fresh_session": login_status == 200,
+        "protected_identity_route": logged_user_status == 200 and logged_user == args.user,
+        "protected_app_route": app_status == 200,
+        "login_status": login_status,
+        "logged_user_status": logged_user_status,
+        "app_status": app_status,
+    }
     Path(args.evidence).parent.mkdir(parents=True, exist_ok=True)
     evidence = json.loads(Path(args.evidence).read_text(encoding="utf-8")) if Path(args.evidence).exists() else {}
     evidence.setdefault("break_glass", {})[args.phase] = result
