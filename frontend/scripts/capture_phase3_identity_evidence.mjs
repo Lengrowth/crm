@@ -34,6 +34,8 @@ async function assertReady(page, url) {
   if (!response || response.status() >= 400) {
     const preview = response
       ? (await response.text().catch(() => ""))
+          .replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, " ")
+          .replace(/<[^>]+>/g, " ")
           .replace(/(?:code|state|token|secret|password|cookie|authorization)[^<\s]*/gi, "[REDACTED]")
           .replace(/[A-Za-z0-9_-]{24,}/g, "[REDACTED]")
           .replace(/[\w.+-]+@[\w.-]+/g, "[REDACTED_EMAIL]")
