@@ -34,6 +34,9 @@ class TenantRead(IdentifiedModel):
     erpnext_site_name: Optional[str] = None
     erpnext_base_url: Optional[str] = None
     provisioning_status: str
+    erp_role_profile_version: Optional[str] = None
+    erp_role_profile_status: str = "pending"
+    sso_rollout_enabled: bool = False
 
 
 class PlanRead(IdentifiedModel):

@@ -1,0 +1,263 @@
+"""Isolated LenERP relying-party bridge for the Phase 03 synthetic rollout.
+
+This is a temporary authorization-code broker boundary. It never receives or
+stores a control-plane password, control-plane cookie, Frappe cookie, or
+reusable bearer token. A maintained OIDC client/provider should replace this
+module once the provider contract and callback infrastructure are approved.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import secrets
+from base64 import urlsafe_b64encode
+from urllib.parse import urlencode, urlsplit
+
+import frappe
+import requests
+
+
+MANAGED_ROLES = {
+    "Champion Administrator",
+    "Champion Dispatcher",
+    "Champion Sales User",
+    "Champion Accounting User",
+    "Champion Inventory Manager",
+    "Champion Field Technician",
+    "Champion Platform Operator",
+}
+DEFAULT_ROLE_PROFILES = {"champion-v1": ["Champion Sales User"]}
+
+
+def _conf(name: str, default: str | None = None) -> str | None:
+    value = frappe.conf.get(name)
+    return str(value) if value is not None else default
+
+
+def enabled() -> bool:
+    return str(_conf("lenerp_sso_enabled", "0")).lower() in {"1", "true", "yes", "on"}
+
+
+def _control_plane_url() -> str:
+    value = (_conf("lenerp_control_plane_url") or "").rstrip("/")
+    return _validated_control_plane_url(value)
+
+
+def _validated_control_plane_url(value: str) -> str:
+    parsed = urlsplit(value)
+    if not parsed.hostname or (parsed.scheme != "https" and parsed.hostname not in {"localhost", "127.0.0.1"}):
+        frappe.throw("Central sign-in is not configured for this ERP site.")
+    return value
+
+
+def _control_plane_api_url() -> str:
+    value = (_conf("lenerp_control_plane_api_url", _control_plane_url()) or "").rstrip("/")
+    return _validated_control_plane_url(value)
+
+
+def _client_id() -> str:
+    return _conf("lenerp_sso_client_id", "lenerp-erp") or "lenerp-erp"
+
+
+def _audience() -> str:
+    return _conf("lenerp_sso_audience", _client_id()) or _client_id()
+
+
+def _cache_key(state: str) -> str:
+    return f"lenerp-sso:{hashlib.sha256(state.encode('utf-8')).hexdigest()}"
+
+
+def _safe_path(path: str) -> str:
+    candidate = path or "/app"
+    parsed = urlsplit(candidate)
+    if parsed.scheme or parsed.netloc or parsed.query or parsed.fragment or "\\" in candidate:
+        frappe.throw("The requested ERP destination is not allowed.")
+    if not candidate.startswith("/") or candidate.startswith("//") or ".." in candidate.split("/"):
+        frappe.throw("The requested ERP destination is not allowed.")
+    return candidate
+
+
+def _start_transaction(next_path: str = "/app") -> str:
+    if not enabled():
+        frappe.throw("Central ERP sign-in is not enabled for this site.")
+    tenant_id = _conf("lenerp_control_plane_tenant_id")
+    if not tenant_id:
+        frappe.throw("Central sign-in is not configured for this ERP site.")
+    state = secrets.token_urlsafe(32)
+    verifier = secrets.token_urlsafe(48)
+    challenge = urlsafe_b64encode(hashlib.sha256(verifier.encode("ascii")).digest()).rstrip(b"=").decode("ascii")
+    callback = frappe.utils.get_url("/api/method/lenerp_core.sso.callback")
+    transaction = {
+        "state": state,
+        "code_verifier": verifier,
+        "tenant_id": tenant_id,
+        "callback": callback,
+        "requested_path": _safe_path(next_path),
+    }
+    frappe.cache().set_value(_cache_key(state), json.dumps(transaction), expires_in=300)
+    query = urlencode(
+        {
+            "tenant_id": tenant_id,
+            "client_id": _client_id(),
+            "audience": _audience(),
+            "redirect_uri": callback,
+            "state": state,
+            "code_challenge": challenge,
+            "code_challenge_method": "S256",
+            "requested_path": transaction["requested_path"],
+        }
+    )
+    return f"{_control_plane_url()}/sso/authorize?{query}"
+
+
+@frappe.whitelist(allow_guest=True)
+def begin(next_path: str = "/app") -> dict[str, str]:
+    return {"authorization_url": _start_transaction(next_path)}
+
+
+def _redirect_to(url: str) -> None:
+    frappe.local.response["type"] = "redirect"
+    frappe.local.response["location"] = url
+    frappe.local.response["http_status_code"] = 302
+
+
+def direct_visit(next_path: str = "/app") -> None:
+    _redirect_to(_start_transaction(next_path))
+
+
+def _read_transaction(state: str) -> dict[str, str]:
+    raw = frappe.cache().get_value(_cache_key(state))
+    if not raw:
+        frappe.throw("This sign-in link is expired. Start again from LenERP.")
+    transaction = json.loads(raw) if isinstance(raw, str) else raw
+    if not isinstance(transaction, dict) or transaction.get("state") != state:
+        frappe.throw("This sign-in request is invalid. Start again from LenERP.")
+    return transaction
+
+
+def _role_profile(version: str) -> list[str]:
+    configured = _conf("lenerp_sso_role_profiles")
+    if configured:
+        try:
+            profiles = json.loads(configured) if isinstance(configured, str) else configured
+            roles = profiles.get(version, [])
+            if isinstance(roles, list) and all(isinstance(role, str) for role in roles):
+                return sorted(set(roles) & MANAGED_ROLES)
+        except (TypeError, ValueError, json.JSONDecodeError):
+            frappe.throw("The configured ERP role profile is invalid.")
+    return DEFAULT_ROLE_PROFILES.get(version, [])
+
+
+def _break_glass_user() -> str:
+    return _conf("lenerp_break_glass_user", "Administrator") or "Administrator"
+
+
+def _provision_user(email: str, full_name: str, role_profile_version: str) -> tuple[str, bool]:
+    if email.lower() == _break_glass_user().lower():
+        frappe.throw("The break-glass account is not managed by central sign-in.")
+    existing_name = frappe.db.exists("User", {"email": email})
+    created = not bool(existing_name)
+    if created:
+        user = frappe.get_doc({"doctype": "User", "email": email, "first_name": full_name, "enabled": 1, "user_type": "System User", "send_welcome_email": 0})
+        user.insert(ignore_permissions=True)
+    else:
+        user = frappe.get_doc("User", existing_name)
+        if not user.enabled:
+            frappe.throw("The ERP user is inactive.")
+        user.first_name = full_name or user.first_name
+    roles = _role_profile(role_profile_version)
+    if not roles:
+        frappe.throw("The approved ERP role profile is not available.")
+    user.set("roles", [{"role": role} for role in [*sorted({row.role for row in user.roles if row.role not in MANAGED_ROLES}), *roles]])
+    user.save(ignore_permissions=True)
+    return user.name, created
+
+
+@frappe.whitelist(allow_guest=True)
+def callback(code: str | None = None, state: str | None = None) -> None:
+    if not enabled() or not code or not state:
+        frappe.throw("The central sign-in response is incomplete. Start again safely.")
+    transaction = _read_transaction(state)
+    try:
+        response = requests.post(
+            f"{_control_plane_api_url()}/sso/token",
+            json={
+                "code": code,
+                "client_id": _client_id(),
+                "audience": _audience(),
+                "redirect_uri": transaction["callback"],
+                "code_verifier": transaction["code_verifier"],
+                "client_secret": _conf("lenerp_sso_exchange_secret"),
+            },
+            timeout=10,
+        )
+    except requests.RequestException:
+        frappe.cache().delete_value(_cache_key(state))
+        frappe.throw("The control plane is temporarily unavailable. Retry safely.")
+    if response.status_code != 200:
+        frappe.cache().delete_value(_cache_key(state))
+        frappe.throw("Central sign-in could not be completed. Retry safely or contact an administrator.")
+    try:
+        token = response.json()
+    except (TypeError, ValueError):
+        frappe.cache().delete_value(_cache_key(state))
+        frappe.throw("Central sign-in returned an invalid response. Retry safely.")
+    if not isinstance(token, dict):
+        frappe.cache().delete_value(_cache_key(state))
+        frappe.throw("Central sign-in returned an invalid response. Retry safely.")
+    expected_issuer = _control_plane_url()
+    required_fields = ("email", "control_plane_user_id", "organization_id", "role_profile_version")
+    if (
+        token.get("issuer") != expected_issuer
+        or token.get("audience") != _audience()
+        or token.get("client_id") != _client_id()
+        or token.get("tenant_id") != transaction["tenant_id"]
+        or any(not isinstance(token.get(field), str) or not token[field] for field in required_fields)
+    ):
+        frappe.cache().delete_value(_cache_key(state))
+        frappe.throw("Central sign-in returned an invalid tenant or issuer.")
+    user_name, created = _provision_user(token["email"], token.get("full_name", ""), token["role_profile_version"])
+    try:
+        mapping = requests.post(
+            f"{_control_plane_api_url()}/sso/mappings",
+            json={
+                "client_id": _client_id(),
+                "client_secret": _conf("lenerp_sso_exchange_secret"),
+                "control_plane_user_id": token["control_plane_user_id"],
+                "organization_id": token["organization_id"],
+                "tenant_id": token["tenant_id"],
+                "erp_site": frappe.local.site,
+                "erp_user": user_name,
+                "role_profile_version": token["role_profile_version"],
+            },
+            timeout=10,
+        )
+        mapping.raise_for_status()
+    except requests.RequestException:
+        if created:
+            frappe.db.set_value("User", user_name, "enabled", 0, update_modified=False)
+        frappe.throw("Central sign-in could not save the identity mapping. Retry safely.")
+    frappe.cache().delete_value(_cache_key(state))
+    frappe.local.flags.lenerp_sso_authenticated = True
+    frappe.local.login_manager.login_as(user_name)
+    _redirect_to(frappe.utils.get_url(transaction["requested_path"]))
+
+
+def extend_bootinfo(bootinfo: dict[str, object]) -> None:
+    if not enabled() or frappe.session.user == "Guest":
+        return
+    tenant_id = _conf("lenerp_control_plane_tenant_id")
+    organization_id = _conf("lenerp_control_plane_organization_id")
+    if tenant_id and organization_id:
+        bootinfo["lenerp_control_plane_return_url"] = f"{_control_plane_url()}/app/tenants/{tenant_id}?organization_id={organization_id}"
+        bootinfo["lenerp_control_plane_label"] = "LenERP Control Plane"
+
+
+def on_login(login_manager: object) -> None:
+    if not enabled() or frappe.session.user in {"Guest", _break_glass_user()}:
+        return
+    if getattr(frappe.local.flags, "lenerp_sso_authenticated", False):
+        return
+    frappe.local.login_manager.logout()
+    frappe.throw("Use LenERP Control Plane sign-in for this ERP site.")

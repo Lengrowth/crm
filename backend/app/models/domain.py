@@ -155,6 +155,71 @@ class Tenant(Base, UUIDMixin, TimestampMixin):
     provisioning_status: Mapped[str] = mapped_column(
         String(32), nullable=False, default="pending"
     )
+    erp_role_profile_version: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    erp_role_profile_status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
+    sso_rollout_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+
+class SSOAuthorizationRequest(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "sso_authorization_requests"
+    __table_args__ = (
+        UniqueConstraint("state_hash", name="uq_sso_authorization_state_hash"),
+        Index("ix_sso_authorization_tenant_created", "tenant_id", "created_at"),
+    )
+
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), nullable=False, index=True)
+    user_id: Mapped[Optional[str]] = mapped_column(ForeignKey("saas_users.id"), nullable=True, index=True)
+    state_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    code_challenge: Mapped[str] = mapped_column(String(128), nullable=False)
+    code_challenge_method: Mapped[str] = mapped_column(String(16), nullable=False)
+    client_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    audience: Mapped[str] = mapped_column(String(255), nullable=False)
+    redirect_uri: Mapped[str] = mapped_column(String(500), nullable=False)
+    requested_path: Mapped[str] = mapped_column(String(500), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="started")
+    denial_reason: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class SSOAuthorizationCode(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "sso_authorization_codes"
+    __table_args__ = (
+        UniqueConstraint("code_hash", name="uq_sso_authorization_code_hash"),
+        Index("ix_sso_authorization_code_request", "request_id"),
+    )
+
+    request_id: Mapped[str] = mapped_column(ForeignKey("sso_authorization_requests.id"), nullable=False, index=True)
+    code_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    user_id: Mapped[str] = mapped_column(ForeignKey("saas_users.id"), nullable=False, index=True)
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), nullable=False, index=True)
+    client_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    audience: Mapped[str] = mapped_column(String(255), nullable=False)
+    redirect_uri: Mapped[str] = mapped_column(String(500), nullable=False)
+    code_challenge: Mapped[str] = mapped_column(String(128), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    consumed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class ERPIdentityMapping(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "erp_identity_mappings"
+    __table_args__ = (
+        UniqueConstraint("user_id", "organization_id", "tenant_id", name="uq_erp_identity_mapping_scope"),
+        UniqueConstraint("tenant_id", "erp_user", name="uq_erp_identity_mapping_erp_user"),
+        Index("ix_erp_identity_mapping_tenant_status", "tenant_id", "mapping_status"),
+    )
+
+    user_id: Mapped[str] = mapped_column(ForeignKey("saas_users.id"), nullable=False, index=True)
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), nullable=False, index=True)
+    erp_site: Mapped[str] = mapped_column(String(255), nullable=False)
+    erp_user: Mapped[str] = mapped_column(String(255), nullable=False)
+    role_profile_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    mapping_status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class Plan(Base, UUIDMixin, TimestampMixin):

@@ -60,6 +60,14 @@
 
 # PLAT-P4 Decision, Blocker, and Risk Register
 
+# Phase 03 Unified Identity register
+
+| ID | Type | Status | Owner | Required action |
+|---|---|---|---|---|
+| P3-ID-D01 | Decision | Recorded | Release owner / security owner | Use the temporary isolated authorization-code broker only behind `phase3_unified_identity`; replace it with a maintained OAuth/OIDC provider before production authority. |
+| P3-ID-R01 | Risk | Open pending staging | Release owner | Run exactly one immutable protected staging candidate with synthetic identities, both navigation directions, denial/replay/role/membership/removal cases, accessibility/responsive evidence, cleanup, and rollback readback. |
+| P3-ID-B01 | Blocker | Open | Release owner / acceptance authority | No production SSO or Champion acceptance until the protected staging artifact and independent read-only review pass. |
+
 | ID | Type | Status | Owner | Required action |
 |---|---|---|---|---|
 | P4-D01 | Decision | Resolved | Release owner / delivery owner | Public onboarding is request-only; only an exact approved request version may be converted, and execution is separately authorized. Billing, DNS mutation, first-login delivery, and real provider execution remain outside this phase. |

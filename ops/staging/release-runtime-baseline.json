@@ -2,7 +2,7 @@
   "schema_version": 1,
   "baseline_kind": "staging-candidate-build",
   "environment": "staging",
-  "database_revision": "20260918_0011",
+  "database_revision": "20260920_0013",
   "upstream_frappe_commit": "edae775dd36b6c4ad7acab10230262bd74040765",
   "upstream_erpnext_commit": "945e825bee3d0d645f6cb59bcaab90fcbfb98ce3",
   "runtime_apps": {
@@ -23,7 +23,7 @@
     },
     "lenerp_core": {
       "version": "0.2.0",
-      "commit": "a7e47208baf6583295f5f2632f4787262cd3f475",
+      "commit": "2eb71db1c633e0d97382ef8e8b92002909d6cbb0",
       "verification_status": "candidate_expected"
     }
   },

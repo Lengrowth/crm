@@ -13,4 +13,4 @@ dependencies = []
 include = ["lenerp_core*"]
 
 [tool.setuptools.package-data]
-lenerp_core = ["**/*.json"]
+lenerp_core = ["**/*.html", "**/*.json", "**/*.js"]

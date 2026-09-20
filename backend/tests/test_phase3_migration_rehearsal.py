@@ -64,5 +64,5 @@ def test_phase3_upgrade_preserves_legacy_assignment_and_reupgrade_is_safe():
         run_alembic(db_url, "upgrade", "head")
         connection = sqlite3.connect(db_path)
         assert connection.execute("select count(*) from organization_modules where organization_id = ?", (organization_id,)).fetchone()[0] == 1
-        assert connection.execute("select version_num from alembic_version").fetchone()[0] == "20260920_0012"
+        assert connection.execute("select version_num from alembic_version").fetchone()[0] == "20260920_0013"
         connection.close()

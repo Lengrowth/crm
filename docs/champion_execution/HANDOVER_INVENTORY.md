@@ -119,6 +119,13 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; `PLAT-P3` PASS; 
 - Evidence artifact `staging-browser-evidence-9674a6a1b4adf9447af759458763b25721672272`, digest `sha256:bd808a20f5f9743e122dc064113160dbf60ad8bd073638b9dd132bf4c191a8ef`.
 - Production, Cloudflare, and upstream Frappe/ERPNext/HRMS sources remain unchanged.
 
+## Phase 03 identity handover
+
+- Local implementation is isolated on `codex/phase3-unified-identity`; the canonical LenERP source is `2eb71db1c633e0d97382ef8e8b92002909d6cbb0` with bundle SHA-256 `265440B0D548C69D29A48C87896A2C8989BFE9485718E52413E19AE3C73F5290`.
+- Additive migration `20260920_0013_phase3_unified_identity` adds broker requests/codes, identity mappings, and tenant role-profile/rollout state.
+- The Phase 03 server flag is off by default. Protected staging evidence, production activation, and Champion acceptance are still open.
+- Rollback disables SSO entry points and restores independent logins without deleting identity mappings or audit history.
+
 - Phase 2 implementation is isolated on branch `codex/plat-p2` from verified
   remote `main` `edb3f463ed50e1009a13e8e96b95b563ddc6f6b9`.
 - The release adds reusable operator primitives and bounded protected read

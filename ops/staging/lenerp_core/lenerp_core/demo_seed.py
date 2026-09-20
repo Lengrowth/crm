@@ -26,7 +26,14 @@ DEMO_DEFAULT_CURRENCY = "USD"
 DEMO_DEFAULT_COUNTRY = "United States"
 DEMO_DEFAULT_STATE = "Indiana"
 DEMO_DEFAULT_CITY = "Indianapolis"
+DEMO_CUSTOMER = "DEMO-CHAMPION-CUSTOMER-01"
+DEMO_SUPPLIER = "DEMO-CHAMPION-SUPPLIER-01"
+DEMO_ITEM_PUMP = "DEMO-CHAMPION-ITEM-PUMP"
+DEMO_ITEM_RIG = "DEMO-CHAMPION-ITEM-RIG"
+DEMO_PAYMENT = "DEMO-CHAMPION-PAYMENT-001"
+DEMO_PURCHASE_RECEIPT = "DEMO-CHAMPION-PURCHASE-RECEIPT-001"
 DEMO_WELL_IDS = ("WELL-NR-01", "WELL-PC-02", "WELL-RM-03")
+DEMO_JOB_IDS = ("DEMO-JOB-001", "DEMO-JOB-002", "DEMO-JOB-003", "DEMO-JOB-004")
 DEMO_SELLING_PRICE_LIST = "DEMO-CHAMPION-SELLING"
 DEMO_BUYING_PRICE_LIST = "DEMO-CHAMPION-BUYING"
 
@@ -38,6 +45,8 @@ def _exists(doctype: str, name: str) -> bool:
 def _insert(doctype: str, name: str, values: dict[str, Any]) -> str:
     if doctype == "LenERP Well Site" and values.get("well_id"):
         name = frappe.db.get_value(doctype, {"well_id": values["well_id"]}, "name") or name
+    if doctype == "LenERP Drilling Job" and values.get("job_id"):
+        name = frappe.db.get_value(doctype, {"job_id": values["job_id"]}, "name") or name
     if _exists(doctype, name):
         # Reconcile scalar fields so rerunning the seed upgrades an earlier
         # synthetic snapshot without touching unrelated records. Child-table
@@ -93,6 +102,8 @@ def _ensure_party_defaults() -> None:
             "All Supplier Groups",
             {"supplier_group_name": "All Supplier Groups", "is_group": 1},
         )
+    _insert("Party Type", "Customer", {"party_type": "Customer", "account_type": "Receivable"})
+    _insert("Party Type", "Supplier", {"party_type": "Supplier", "account_type": "Payable"})
     if not _exists("UOM", "Nos"):
         _insert("UOM", "Nos", {"uom_name": "Nos", "must_be_whole_number": 0})
     if not _exists("Item Group", "All Item Groups"):
@@ -153,6 +164,30 @@ def _company() -> str:
             "is_group": 0,
         },
     )
+    # ERPNext requires a company round-off cost center when a submitted
+    # invoice produces a precision-loss GL entry. Create/reuse the synthetic
+    # cost center after the company exists, then reconcile the company field.
+    frappe.db.set_value(
+        "Company",
+        company,
+        "round_off_cost_center",
+        _ensure_cost_center(company),
+        update_modified=False,
+    )
+    receivable = frappe.db.get_value(
+        "Account",
+        {"company": company, "account_type": "Receivable", "is_group": 0},
+        "name",
+    )
+    payable = frappe.db.get_value(
+        "Account",
+        {"company": company, "account_type": "Payable", "is_group": 0},
+        "name",
+    )
+    if not receivable or not payable:
+        raise RuntimeError(f"Synthetic company {company} is missing Receivable or Payable leaf accounts")
+    frappe.db.set_value("Company", company, "default_receivable_account", receivable, update_modified=False)
+    frappe.db.set_value("Company", company, "default_payable_account", payable, update_modified=False)
     _insert(
         "Address",
         "DEMO-CHAMPION-COMPANY-ADDRESS",
@@ -276,6 +311,7 @@ def _core_records(company: str) -> dict[str, list[str]]:
             "LenERP Drilling Job",
             name,
             {
+                "job_id": name,
                 "customer": customer,
                 "well_site": well,
                 "job_type": job_type,
@@ -306,6 +342,13 @@ def _core_records(company: str) -> dict[str, list[str]]:
 
 
 def _ensure_warehouse(company: str) -> str:
+    existing = frappe.db.get_value(
+        "Warehouse",
+        {"warehouse_name": "DEMO-CHAMPION-Yard Warehouse", "company": company},
+        "name",
+    )
+    if existing:
+        return existing
     return _insert(
         "Warehouse",
         "DEMO-CHAMPION-YARD-WAREHOUSE",
@@ -418,16 +461,22 @@ def _commercial_records(company: str, customer: str, warehouse: str) -> dict[str
         invoice_doc.submit()
     from erpnext.accounts.doctype.payment_entry.payment_entry import get_payment_entry
 
-    payment = "DEMO-CHAMPION-PAYMENT-001"
+    payment = frappe.db.get_value(
+        "Payment Entry",
+        {"reference_no": DEMO_PAYMENT, "company": company},
+        "name",
+    ) or DEMO_PAYMENT
     if not _exists("Payment Entry", payment):
         payment_doc = get_payment_entry("Sales Invoice", invoice)
-        payment_doc.name = payment
+        payment_doc.name = DEMO_PAYMENT
+        payment_doc.reference_no = DEMO_PAYMENT
         payment_doc.posting_date = today()
         payment_doc.insert(ignore_permissions=True)
         payment_doc.submit()
+        payment = payment_doc.name
     receipt = _insert(
         "Purchase Receipt",
-        "DEMO-CHAMPION-PURCHASE-RECEIPT-001",
+        DEMO_PURCHASE_RECEIPT,
         {
             "supplier": supplier,
             "company": company,
@@ -437,6 +486,7 @@ def _commercial_records(company: str, customer: str, warehouse: str) -> dict[str
             "buying_price_list": DEMO_BUYING_PRICE_LIST,
             "price_list_currency": currency,
             "plc_conversion_rate": 1,
+            "remarks": "Synthetic demonstration purchase receipt.",
             "items": [{"item_code": item, "qty": 5, "rate": 250, "warehouse": warehouse, "description": "Synthetic pump receipt"}],
         },
     )
@@ -458,15 +508,15 @@ def _commercial_records(company: str, customer: str, warehouse: str) -> dict[str
 
 
 def _inventory_records(company: str, item: str, fixed_asset_item: str, warehouse: str, supplier: str) -> dict[str, list[str]]:
+    cost_center = _ensure_cost_center(company)
     stock_entry = _insert(
         "Stock Entry",
         "DEMO-CHAMPION-STOCK-ISSUE-001",
-        {"stock_entry_type": "Material Issue", "company": company, "posting_date": today(), "items": [{"item_code": item, "qty": 1, "s_warehouse": warehouse, "description": "Synthetic pump issued to drilling crew"}]},
+        {"stock_entry_type": "Material Issue", "company": company, "posting_date": today(), "items": [{"item_code": item, "qty": 1, "s_warehouse": warehouse, "cost_center": cost_center, "description": "Synthetic pump issued to drilling crew"}]},
     )
     stock_entry_doc = frappe.get_doc("Stock Entry", stock_entry)
     if stock_entry_doc.docstatus == 0:
         stock_entry_doc.submit()
-    cost_center = _ensure_cost_center(company)
     location = _insert(
         "Location",
         "DEMO-CHAMPION-INDIANAPOLIS",
@@ -528,6 +578,9 @@ def _delete_names(doctype: str, names: Iterable[str]) -> int:
     deleted = 0
     for name in names:
         if _exists(doctype, name):
+            doc = frappe.get_doc(doctype, name)
+            if doc.docstatus == 1:
+                doc.cancel()
             frappe.delete_doc(doctype, name, ignore_permissions=True, force=True)
             deleted += 1
     return deleted
@@ -568,7 +621,91 @@ def reset() -> dict[str, int]:
     )
     deleted: dict[str, int] = {}
     for doctype, pattern in targets:
-        if doctype == "LenERP Well Site":
+        if doctype == "Quotation":
+            names = [
+                row.name
+                for row in frappe.get_all(
+                    doctype,
+                    filters={"party_name": ["like", "DEMO-%"], "company": DEMO_COMPANY},
+                    fields=["name"],
+                )
+            ]
+        elif doctype == "Sales Invoice":
+            names = [
+                row.name
+                for row in frappe.get_all(
+                    doctype,
+                    filters={
+                        "remarks": "Synthetic demonstration invoice; accounting settings remain provisional.",
+                        "company": DEMO_COMPANY,
+                    },
+                    fields=["name"],
+                )
+            ]
+        elif doctype == "Payment Entry":
+            names = [
+                row.name
+                for row in frappe.get_all(
+                    doctype,
+                    filters={"reference_no": DEMO_PAYMENT, "company": DEMO_COMPANY},
+                    fields=["name"],
+                )
+            ]
+            names.extend(
+                row.name
+                for row in frappe.get_all(
+                    doctype,
+                    filters={"name": DEMO_PAYMENT, "company": DEMO_COMPANY},
+                    fields=["name"],
+                )
+                if row.name not in names
+            )
+        elif doctype == "Purchase Receipt":
+            names = [
+                row.name
+                for row in frappe.get_all(
+                    doctype,
+                    filters={"remarks": "Synthetic demonstration purchase receipt.", "company": DEMO_COMPANY},
+                    fields=["name"],
+                )
+            ]
+            names.extend(
+                row.name
+                for row in frappe.get_all(
+                    doctype,
+                    filters={"name": DEMO_PURCHASE_RECEIPT, "company": DEMO_COMPANY},
+                    fields=["name"],
+                )
+                if row.name not in names
+            )
+        elif doctype == "Stock Entry":
+            names = [
+                row.name
+                for row in frappe.get_all(
+                    doctype,
+                    filters={"stock_entry_type": "Material Issue", "company": DEMO_COMPANY},
+                    fields=["name"],
+                )
+            ]
+        elif doctype == "Asset":
+            names = [
+                row.name
+                for row in frappe.get_all(
+                    doctype,
+                    filters={"item_code": DEMO_ITEM_RIG, "company": DEMO_COMPANY},
+                    fields=["name"],
+                )
+            ]
+        elif doctype == "Asset Maintenance":
+            names = [
+                row.name
+                for row in frappe.get_all(
+                    doctype,
+                    filters={"company": DEMO_COMPANY},
+                    fields=["name"],
+                )
+            ]
+        elif doctype == "LenERP Well Site":
             names = [
                 row.name
                 for row in frappe.get_all(
@@ -577,6 +714,24 @@ def reset() -> dict[str, int]:
                     fields=["name"],
                 )
             ]
+        elif doctype == "LenERP Drilling Job":
+            names = [
+                row.name
+                for row in frappe.get_all(
+                    doctype,
+                    filters={"job_id": ["in", DEMO_JOB_IDS]},
+                    fields=["name"],
+                )
+            ]
+            names.extend(
+                row.name
+                for row in frappe.get_all(
+                    doctype,
+                    filters={"name": ["like", "JOB-%"], "customer": ["like", "DEMO-%"]},
+                    fields=["name"],
+                )
+                if row.name not in names
+            )
         elif doctype == "Cost Center":
             names = [
                 row.name
@@ -608,16 +763,22 @@ def status() -> dict[str, Any]:
         ("Lead", {"name": ["like", "DEMO-%"]}),
         ("Opportunity", {"name": ["like", "DEMO-%"]}),
         ("LenERP Well Site", {"well_id": ["in", DEMO_WELL_IDS]}),
-        ("LenERP Drilling Job", {"name": ["like", "DEMO-%"]}),
+        ("LenERP Drilling Job", {"job_id": ["in", DEMO_JOB_IDS]}),
         ("Supplier", {"name": ["like", "DEMO-%"]}),
         ("Item", {"name": ["like", "DEMO-%"]}),
         ("Warehouse", {"name": ["like", "DEMO-%"]}),
-        ("Quotation", {"name": ["like", "DEMO-%"]}),
-        ("Sales Invoice", {"name": ["like", "DEMO-%"]}),
-        ("Payment Entry", {"name": ["like", "DEMO-%"]}),
-        ("Purchase Receipt", {"name": ["like", "DEMO-%"]}),
-        ("Stock Entry", {"name": ["like", "DEMO-%"]}),
-        ("Asset", {"name": ["like", "DEMO-%"]}),
-        ("Asset Maintenance", {"name": ["like", "DEMO-%"]}),
+        ("Quotation", {"party_name": ["like", "DEMO-%"], "company": DEMO_COMPANY}),
+        (
+            "Sales Invoice",
+            {
+                "remarks": "Synthetic demonstration invoice; accounting settings remain provisional.",
+                "company": DEMO_COMPANY,
+            },
+        ),
+        ("Payment Entry", {"reference_no": DEMO_PAYMENT, "company": DEMO_COMPANY}),
+        ("Purchase Receipt", {"remarks": "Synthetic demonstration purchase receipt.", "company": DEMO_COMPANY}),
+        ("Stock Entry", {"stock_entry_type": "Material Issue", "company": DEMO_COMPANY}),
+        ("Asset", {"item_code": DEMO_ITEM_RIG, "company": DEMO_COMPANY}),
+        ("Asset Maintenance", {"company": DEMO_COMPANY}),
     )
     return {doctype: len(frappe.get_all(doctype, filters=filters, fields=["name"], limit_page_length=10000)) for doctype, filters in doctypes}

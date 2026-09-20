@@ -7,6 +7,9 @@ import type { OrganizationRecord } from "@/features/organizations/types";
 import type { ModuleAudit, ModuleBundle, ModuleEffective, ModulePreview, ModuleSummary } from "@/features/modules/types";
 import type { OperatorOnboardingRead, ProvisioningEventRead, ProvisioningJobDetailRead, PublicOnboardingRead, PublicOnboardingResult } from "@/features/onboarding/types";
 
+export type SSOAuthorizationResponse = { code: string; state: string; redirect_uri: string; expires_in: number; tenant_id: string; organization_id: string };
+export type SSOReadiness = { tenant_id: string; organization_id: string; organization_name: string; tenant_slug: string; environment: string; destination: string | null; enabled: boolean; ready: boolean; explanation: string };
+
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) { super(message); this.name = "ApiError"; }
 }
@@ -53,6 +56,8 @@ export function createOrganizationTenant(organizationId: string, payload: Record
 export function fetchTenants(limit?: number) { return requestJson<TenantRecord[]>(`/tenants${limit ? `?limit=${limit}` : ""}`); }
 export function createTenant(payload: Record<string, unknown>) { return requestJson<TenantRecord>("/tenants", { method: "POST", body: JSON.stringify(payload) }); }
 export function fetchTenant(tenantId: string) { return requestJson<TenantRecord>(`/tenants/${tenantId}`); }
+export function fetchSsoReadiness(tenantId: string) { return requestJson<SSOReadiness>(`/sso/readiness/${tenantId}`); }
+export function authorizeSso(payload: Record<string, unknown>) { return requestJson<SSOAuthorizationResponse>("/sso/authorize", { method: "POST", body: JSON.stringify(payload) }); }
 export function updateTenant(tenantId: string, payload: Record<string, unknown>) { return requestJson<TenantRecord>(`/tenants/${tenantId}`, { method: "PATCH", body: JSON.stringify(payload) }); }
 export function suspendTenant(tenantId: string, reason?: string) { return requestJson<TenantRecord>(`/tenants/${tenantId}/suspend`, { method: "POST", body: JSON.stringify({ reason }) }); }
 export function reactivateTenant(tenantId: string, reason?: string) { return requestJson<TenantRecord>(`/tenants/${tenantId}/reactivate`, { method: "POST", body: JSON.stringify({ reason }) }); }

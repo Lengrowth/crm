@@ -25,6 +25,9 @@ export interface TenantRecord {
   erpnext_site_name: string | null;
   erpnext_base_url: string | null;
   provisioning_status: "pending" | "queued" | "running" | "ready" | "failed";
+  erp_role_profile_version?: string | null;
+  erp_role_profile_status?: string;
+  sso_rollout_enabled?: boolean;
   created_at: string;
   updated_at: string;
 }
