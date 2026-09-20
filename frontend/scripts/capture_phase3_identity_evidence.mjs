@@ -53,6 +53,8 @@ const openLink = controlPage.getByRole("link", { name: /^Open ERP for /i });
 if (await openLink.count() !== 1) throw new Error("ready tenant page did not expose exactly one Open ERP action");
 await controlPage.screenshot({ path: path.join(outputDir, "control-tenant-open-erp.png"), fullPage: true });
 await openLink.click();
+await controlPage.waitForTimeout(1000);
+console.error(`control-to-erp post-click URL: ${controlPage.url()}`);
 await controlPage.waitForURL(new RegExp(`^${erpBase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\/app`), { timeout: 60000 });
 evidence.control_to_erp = { final_url: new URL(controlPage.url()).pathname, no_second_password_prompt: true };
 await controlPage.screenshot({ path: path.join(outputDir, "control-to-erp.png"), fullPage: true });
