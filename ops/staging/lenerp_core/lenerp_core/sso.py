@@ -39,6 +39,10 @@ def enabled() -> bool:
     return str(_conf("lenerp_sso_enabled", "0")).lower() in {"1", "true", "yes", "on"}
 
 
+def _jit_enabled() -> bool:
+    return str(_conf("lenerp_sso_jit_enabled", "0")).lower() in {"1", "true", "yes", "on"}
+
+
 def _control_plane_url() -> str:
     value = (_conf("lenerp_control_plane_url") or "").rstrip("/")
     return _validated_control_plane_url(value)
@@ -159,6 +163,8 @@ def _provision_user(email: str, full_name: str, role_profile_version: str) -> tu
     existing_name = frappe.db.exists("User", {"email": email})
     created = not bool(existing_name)
     if created:
+        if not _jit_enabled():
+            frappe.throw("Just-in-time ERP user provisioning is not enabled for this site.")
         user = frappe.get_doc({"doctype": "User", "email": email, "first_name": full_name, "enabled": 1, "user_type": "System User", "send_welcome_email": 0})
         user.insert(ignore_permissions=True)
     else:

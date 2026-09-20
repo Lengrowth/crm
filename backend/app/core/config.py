@@ -61,7 +61,6 @@ class Settings(BaseSettings):
     sso_exchange_secret: Optional[str] = None
     sso_code_ttl_seconds: int = 120
     sso_callback_path: str = "/api/method/lenerp_core.sso.callback"
-    sso_jit_provisioning_enabled: bool = False
 
     # Resend (marketing email) configuration
     resend_api_key: Optional[str] = None

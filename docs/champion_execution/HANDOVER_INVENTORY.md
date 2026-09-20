@@ -121,7 +121,7 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; `PLAT-P3` PASS; 
 
 ## Phase 03 identity handover
 
-- Local implementation is isolated on `codex/phase3-unified-identity`; the canonical LenERP source is `2eb71db1c633e0d97382ef8e8b92002909d6cbb0` with bundle SHA-256 `265440B0D548C69D29A48C87896A2C8989BFE9485718E52413E19AE3C73F5290`.
+- Local implementation is isolated on `codex/phase3-unified-identity`; the canonical LenERP source is `b9fb94a6426e119452ba7d69252e4fc58b98c5c1` with bundle SHA-256 `7F63D970EB4560F6ABFE4B013F7D530F4FEB125115E63EC6C5F6F4CC6851C5C7`.
 - Additive migration `20260920_0013_phase3_unified_identity` adds broker requests/codes, identity mappings, and tenant role-profile/rollout state.
 - The Phase 03 server flag is off by default. Protected staging evidence, production activation, and Champion acceptance are still open.
 - Rollback disables SSO entry points and restores independent logins without deleting identity mappings or audit history.

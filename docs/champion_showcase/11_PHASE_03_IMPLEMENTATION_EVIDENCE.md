@@ -7,11 +7,11 @@
 ## Release identity
 
 - Control-plane branch: `codex/phase3-unified-identity`.
-- Control-plane implementation commit: `6220253ec0750455a5e6e9c76ef0690406c3809d`.
+- Control-plane implementation commit: `6fcca9105c4ab811b0124beba5040b7adbb30aee`.
 - Canonical `lenerp_core` branch: `codex/phase3-unified-identity`.
-- Canonical LenERP implementation commit: `2eb71db1c633e0d97382ef8e8b92002909d6cbb0`.
-- Immutable bundle: `ops/staging/lenerp_core-2eb71db1c633e0d97382ef8e8b92002909d6cbb0.tar`.
-- Bundle SHA-256: `265440B0D548C69D29A48C87896A2C8989BFE9485718E52413E19AE3C73F5290`.
+- Canonical LenERP implementation commit: `b9fb94a6426e119452ba7d69252e4fc58b98c5c1`.
+- Immutable bundle: `ops/staging/lenerp_core-b9fb94a6426e119452ba7d69252e4fc58b98c5c1.tar`.
+- Bundle SHA-256: `7F63D970EB4560F6ABFE4B013F7D530F4FEB125115E63EC6C5F6F4CC6851C5C7`.
 - Control-plane dependency manifest and installed source marker point to that exact commit.
 - Migration: `20260920_0013_phase3_unified_identity`, additive and downgrade-tested.
 
@@ -27,10 +27,22 @@ control-plane cookie, Frappe cookie, or reusable bearer token crosses the
 boundary. The replacement gate is a maintained OAuth/OIDC provider/client with
 the same exact tenant and role-policy contract.
 
+JIT provisioning is explicit: the ERP site must set `lenerp_sso_jit_enabled=1`
+for a new Frappe user to be created; otherwise only an existing approved ERP
+user may be reconciled.
+
 Persistent identity mappings record control-plane user, organization, tenant,
 ERP site, ERP user, role-profile version, status, and timestamps. Audit rows
 record authorization, exchange, denial, replay, role reconciliation, and
 revocation events without codes, verifiers, cookies, or secrets.
+
+Membership removal denies every subsequent authorization, token exchange, and
+mapping reconciliation, and marks the persistent mapping revoked at the next
+control-plane boundary. Existing ERP cookies are host-scoped and are not
+silently converted or shared; an already-issued Frappe session remains subject
+to its normal Frappe expiry/operator logout policy. Immediate cross-host session
+revocation is intentionally outside this temporary broker and is a replacement
+gate for a maintained OIDC provider with back-channel logout support.
 
 ## UX implementation
 

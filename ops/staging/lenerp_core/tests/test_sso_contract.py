@@ -22,6 +22,7 @@ def test_erp_identity_boundary_is_code_based_and_secret_safe():
     assert "cookies" not in SSO.lower()
     assert "_safe_path" in SSO
     assert "lenerp_break_glass_user" in SSO
+    assert "lenerp_sso_jit_enabled" in SSO
     assert "lenerp-sso:" in SSO
 
 

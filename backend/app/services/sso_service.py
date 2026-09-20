@@ -306,7 +306,16 @@ class SSOService:
         try:
             self._validate_membership(session, user, tenant)
         except SSOBrokerError:
-            self._revoke_mappings(session, user.id, tenant.id)
+            revoked = self._revoke_mappings(session, user.id, tenant.id)
+            self._audit(
+                session,
+                action="sso_mapping_revoked",
+                user_id=user.id,
+                organization_id=tenant.organization_id,
+                tenant_id=tenant.id,
+                entity_id=tenant.id,
+                metadata={"count": revoked, "reason": "membership_or_readiness_denied"},
+            )
             session.commit()
             raise
         if tenant.erp_role_profile_version != payload.role_profile_version:

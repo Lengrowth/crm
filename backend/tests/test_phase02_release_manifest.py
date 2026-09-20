@@ -49,4 +49,4 @@ def test_candidate_manifest_records_verified_hrms_and_exact_runtime_baseline(tmp
     assert hrms["verification_status"] == "verified"
     assert hrms["compatibility_status"] == "verified"
     assert manifest["runtime_baseline"] == "ops/staging/release-runtime-baseline.json"
-    assert manifest["installed_apps"]["lenerp_core"]["commit"] == "2eb71db1c633e0d97382ef8e8b92002909d6cbb0"
+    assert manifest["installed_apps"]["lenerp_core"]["commit"] == "b9fb94a6426e119452ba7d69252e4fc58b98c5c1"

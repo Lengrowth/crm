@@ -159,3 +159,19 @@ def test_platform_admin_without_membership_sees_disabled_readiness_and_site_mapp
     mapping_payload = SSOIdentityMappingRequest(client_id=settings.sso_client_id, client_secret=settings.sso_exchange_secret, control_plane_user_id=token.control_plane_user_id, organization_id=organization.id, tenant_id=tenant.id, erp_site="another-site.example", erp_user="champion@example.test", role_profile_version=token.role_profile_version)
     with pytest.raises(SSOBrokerError, match="site identity"):
         sso_service.record_mapping(session, mapping_payload)
+
+
+def test_membership_removal_revokes_existing_mapping_during_next_exchange_boundary():
+    session, user, organization, tenant = ready_fixture()
+    verifier, payload = request_payload(tenant)
+    authorization = sso_service.authorize(session, user, payload)
+    token = sso_service.exchange(session, SSOTokenRequest(code=authorization.code, client_id=payload.client_id, audience=payload.audience, redirect_uri=payload.redirect_uri, code_verifier=verifier, client_secret=settings.sso_exchange_secret))
+    mapping_payload = SSOIdentityMappingRequest(client_id=settings.sso_client_id, client_secret=settings.sso_exchange_secret, control_plane_user_id=token.control_plane_user_id, organization_id=organization.id, tenant_id=tenant.id, erp_site=tenant.erpnext_site_name, erp_user="champion@example.test", role_profile_version=token.role_profile_version)
+    mapping = sso_service.record_mapping(session, mapping_payload)
+    membership = session.execute(select(OrganizationMembership).where(OrganizationMembership.user_id == user.id, OrganizationMembership.organization_id == tenant.organization_id)).scalar_one()
+    session.delete(membership)
+    session.commit()
+    with pytest.raises(SSOBrokerError):
+        sso_service.record_mapping(session, mapping_payload)
+    stored = session.execute(select(ERPIdentityMapping).where(ERPIdentityMapping.id == mapping.mapping_id)).scalar_one()
+    assert stored.mapping_status == "revoked"
