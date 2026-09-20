@@ -768,7 +768,7 @@ jobs:
           set -a
           . /opt/saas-control-staging/shared/env/staging-backend.env
           set +a
-          PYTHONPATH=/opt/saas-control-staging/current/backend \
+          sudo -n -E env PYTHONPATH=/opt/saas-control-staging/current/backend \
             /opt/saas-control-staging/shared/backend-venv/bin/python \
             scripts/release/phase3_identity_staging.py api-tests \
             --manifest "$PHASE3_MANIFEST" --ca-bundle "$PHASE3_CA" --evidence "$PHASE3_EVIDENCE"
