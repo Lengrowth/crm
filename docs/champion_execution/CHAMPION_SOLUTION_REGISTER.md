@@ -26,7 +26,7 @@ The register is the initial decomposition. Add a new package only when a require
 |---|---|---|---|
 | C01 | `CHAMP-C01-R1` | `in_development` | Configurable branding boundary implemented; approved Champion values and staging evidence remain pending |
 | C02 | `CHAMP-C02-R1` | `in_development` | Synthetic role profiles and negative-permission boundary implemented; approved user/approval matrix remains pending |
-| C03 | `CHAMP-C03-R1` | `phase03_identity_remediation_ready_staging_rerun_required` | Unified identity and cross-navigation now include browser-bound state, exchange-handle mapping, authenticated break-glass rollback checks, durable SSO throttling, and accessibility fixes; protected staging evidence must be rerun before acceptance |
+| C03 | `CHAMP-C03-R1` | `phase03_identity_remediation_complete_protected_rerun_required` | Unified identity and cross-navigation include browser-bound state, exchange-handle mapping, authenticated break-glass rollback checks, durable SSO throttling, and accessibility fixes; protected staging evidence must be rerun before acceptance |
 | C04 | `CHAMP-C04-R1` | `in_development` | Persisted Well Site schema, links, coordinates, validation, and permissions implemented; approved identifiers/rules remain pending |
 | C05 | `CHAMP-C05-R1` | `in_development` | Persisted job workflow, assignment, lifecycle states, completion validation, and print format implemented; approved process remains pending |
 | C06 | `CHAMP-C06-R1` | `in_development` | Standard ERPNext inventory/buying/assets seed path implemented; approved stock and maintenance rules remain pending |
@@ -94,6 +94,9 @@ Copy this section for each implementation/release of a package.
 
 ## Final Champion pre-kickoff remediation evidence
 
-The next protected staging candidate binds the CRM source, the immutable LenERP Core app `a7e47208baf6583295f5f2632f4787262cd3f475`, and the remediation documentation snapshot. The protected artifact must execute the candidate-bound build, expanded C08 dashboard evidence, ERP accessibility review, full customer-facing language audit, synthetic role/readback checks, and cleanup. Champion acceptance, real-data migration, and production activation remain pending.
+The current Phase 03 remediation candidate is recorded in
+`champion_showcase/11_PHASE_03_IMPLEMENTATION_EVIDENCE.md`; its exact protected
+staging rerun remains the acceptance gate. Champion acceptance, real-data
+migration, and production activation remain pending.
 
 Detailed hashes, artifact digest, and review disposition are recorded in [FINAL_REMEDIATION_EVIDENCE.md](FINAL_REMEDIATION_EVIDENCE.md).
