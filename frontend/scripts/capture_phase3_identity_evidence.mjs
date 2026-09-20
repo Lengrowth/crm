@@ -80,10 +80,12 @@ const evidence = {
 // The victim must be denied before any Frappe session is created.
 const attackerContext = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1440, height: 1000 }, reducedMotion: "reduce" });
 const attackerPage = await attackerContext.newPage();
-const transaction = await attackerPage.evaluate(async (url) => {
-  const response = await fetch(url, { credentials: "include" });
-  return { status: response.status, body: await response.json() };
-}, `${erpBase}/api/method/lenerp_core.sso.begin?next_path=%2Fapp%2Fasset-maintenance`);
+const transactionUrl = `${erpBase}/api/method/lenerp_core.sso.begin?next_path=%2Fapp%2Fasset-maintenance`;
+const transactionResponse = await attackerPage.goto(transactionUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
+const transaction = {
+  status: transactionResponse?.status() ?? 0,
+  body: JSON.parse(await attackerPage.locator("body").innerText()),
+};
 if (transaction.status !== 200 || !transaction.body.authorization_url) throw new Error("ERP did not issue a browser-bound identity transaction");
 const victimContext = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1440, height: 1000 }, reducedMotion: "reduce" });
 await addIdentityCookie(victimContext);
