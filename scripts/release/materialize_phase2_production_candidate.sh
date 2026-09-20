@@ -17,24 +17,48 @@ case "$ARTIFACT_ROOT" in */phase2-staging-evidence-*) ;; *) echo "unsafe artifac
 
 rm -rf -- "$ARTIFACT_ROOT"
 mkdir -p -- "$ARTIFACT_ROOT"
-export GH_TOKEN="$GITHUB_TOKEN"
-
-run_json="$(gh run view "$STAGING_RUN_ID" --repo "$GITHUB_REPOSITORY" --json status,conclusion,workflowName,event -q '.')"
-RUN_JSON="$run_json" python3 - "$RELEASE_ID" "$STAGING_RUN_ID" <<'PY'
+GITHUB_TOKEN="$GITHUB_TOKEN" python3 - "$RELEASE_ID" "$STAGING_RUN_ID" "$GITHUB_REPOSITORY" "$ARTIFACT_ROOT" <<'PY'
 import json
 import os
 import sys
+import urllib.request
+import zipfile
 
-release_id, run_id = sys.argv[1:]
-run = json.loads(os.environ["RUN_JSON"])
+release_id, run_id, repository, artifact_root = sys.argv[1:]
+token = os.environ["GITHUB_TOKEN"]
+base = f"https://api.github.com/repos/{repository}"
+
+def get_json(url):
+    request = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"})
+    with urllib.request.urlopen(request, timeout=30) as response:
+        return json.load(response)
+
+run = get_json(f"{base}/actions/runs/{run_id}")
 if run.get("status") != "completed" or run.get("conclusion") != "success":
     raise SystemExit(f"staging run {run_id} is not a successful completed run")
-if run.get("workflowName") != "Build and deploy SaaS control plane to staging":
+if (run.get("name") or run.get("workflowName")) != "Build and deploy SaaS control plane to staging":
     raise SystemExit("staging run is not the protected staging workflow")
-PY
 
-gh run download "$STAGING_RUN_ID" --repo "$GITHUB_REPOSITORY" \
-  --name "staging-browser-evidence-$RELEASE_ID" --dir "$ARTIFACT_ROOT"
+artifacts = get_json(f"{base}/actions/runs/{run_id}/artifacts").get("artifacts", [])
+name = f"staging-browser-evidence-{release_id}"
+artifact = next((item for item in artifacts if item.get("name") == name and not item.get("expired")), None)
+if artifact is None:
+    raise SystemExit("the exact staging evidence artifact is unavailable or expired")
+request = urllib.request.Request(artifact["archive_download_url"], headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"})
+with urllib.request.urlopen(request, timeout=120) as response:
+    archive = response.read()
+archive_path = os.path.join(artifact_root, "evidence.zip")
+with open(archive_path, "wb") as handle:
+    handle.write(archive)
+with zipfile.ZipFile(archive_path) as archive_file:
+    root = os.path.realpath(artifact_root)
+    for member in archive_file.infolist():
+        target = os.path.realpath(os.path.join(artifact_root, member.filename))
+        if target != root and not target.startswith(root + os.sep):
+            raise SystemExit("staging evidence archive contains an unsafe path")
+    archive_file.extractall(artifact_root)
+os.unlink(archive_path)
+PY
 
 manifest="$(find "$ARTIFACT_ROOT" -type f -name candidate-bound-evidence-manifest.json -print -quit)"
 runtime="$(find "$ARTIFACT_ROOT" -type f -path '*/erp/phase02-runtime-readback.json' -print -quit)"
