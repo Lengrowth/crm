@@ -91,7 +91,11 @@ if (transaction.status !== 200 || !transaction.body.authorization_url) throw new
 const victimContext = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1440, height: 1000 }, reducedMotion: "reduce" });
 await addIdentityCookie(victimContext);
 const victimPage = await victimContext.newPage();
-await victimPage.goto(transaction.body.authorization_url, { waitUntil: "domcontentloaded", timeout: 60000 });
+// Keep the victim on a neutral control-plane page. Navigating to the live
+// authorize page would let its React effect submit this same state before the
+// explicit request below, turning the isolation check into a duplicate-code
+// race instead of a single controlled authorization attempt.
+await victimPage.goto(`${controlBase}/contact`, { waitUntil: "domcontentloaded", timeout: 60000 });
 const authorization = await victimPage.evaluate(async ({ authorizationUrl, bearer }) => {
   const query = new URL(authorizationUrl).searchParams;
   const response = await fetch("/api/sso/authorize", {
