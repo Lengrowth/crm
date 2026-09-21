@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - codex/phase3-unified-identity
   pull_request:
     branches:
       - main
@@ -57,6 +58,7 @@ concurrency:
 jobs:
   staging:
     name: Build one immutable candidate and deploy staging
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on:
       - self-hosted
       - linux
@@ -69,7 +71,7 @@ jobs:
       - name: Check out exact source commit
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.candidate_ref || github.sha }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.candidate_ref || github.sha }}
           fetch-depth: 0
 
       - name: Resolve immutable candidate commit
@@ -81,15 +83,47 @@ jobs:
 
       - name: Verify candidate ancestry from authoritative main
         if: ${{ github.event_name != 'pull_request' }}
+        env:
+          CANDIDATE_REF: ${{ github.event.inputs.candidate_ref || '' }}
+          CANDIDATE_SHA: ${{ steps.candidate.outputs.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+          PHASE3_ENABLED: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.phase3_identity_staging == 'on') || (github.event_name == 'push' && github.ref == 'refs/heads/codex/phase3-unified-identity' && github.repository == 'Lengrowth/crm') }}
+          REF_NAME: ${{ github.ref_name }}
+          REPOSITORY: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
+          [[ "$REPOSITORY" == "Lengrowth/crm" ]] || { echo "Candidate validation is restricted to the canonical repository" >&2; exit 1; }
           git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ inputs.candidate_ref }}" ]]; then
-            git merge-base --is-ancestor refs/remotes/origin/main "${{ steps.candidate.outputs.sha }}" || {
-              echo "Manually supplied staging candidate does not descend from authoritative main" >&2
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ "$PHASE3_ENABLED" == "true" ]]; then
+              [[ "$CANDIDATE_REF" =~ ^[0-9a-f]{40}$ ]] || { echo "workflow_dispatch Phase 03 requires an exact 40-character commit ref" >&2; exit 1; }
+            fi
+            if [[ -n "$CANDIDATE_REF" ]]; then
+              [[ "$CANDIDATE_REF" =~ ^[0-9a-f]{40}$ ]] || { echo "Manually supplied candidate_ref must be an exact 40-character commit" >&2; exit 1; }
+              test "$CANDIDATE_SHA" = "$CANDIDATE_REF"
+              git merge-base --is-ancestor refs/remotes/origin/main "$CANDIDATE_SHA" || {
+                echo "Manually supplied staging candidate does not descend from authoritative main" >&2
+                exit 1
+              }
+              pr_count="$(gh api "repos/$REPOSITORY/commits/$CANDIDATE_SHA/pulls" --jq '[.[] | select(.state == "open" and .base.ref == "main" and .head.sha == "'"$CANDIDATE_SHA"'" and .head.repo.full_name == "'"$REPOSITORY"'")] | length')"
+              test "$pr_count" = "1" || { echo "Candidate is not the exact head of one open same-repository PR to main" >&2; exit 1; }
+            else
+              git merge-base --is-ancestor "$CANDIDATE_SHA" refs/remotes/origin/main || {
+                echo "Default dispatch candidate is not an ancestor of authoritative main" >&2
+                exit 1
+              }
+            fi
+          elif [[ "$EVENT_NAME" == "push" && "$REF_NAME" == "codex/phase3-unified-identity" ]]; then
+            [[ "$CANDIDATE_SHA" == "$GITHUB_SHA" ]] || { echo "Feature-branch candidate is not the exact pushed commit" >&2; exit 1; }
+            git merge-base --is-ancestor refs/remotes/origin/main "$CANDIDATE_SHA" || {
+              echo "Phase 03 candidate does not descend from authoritative main" >&2
               exit 1
             }
+            pr_count="$(gh api "repos/$REPOSITORY/commits/$CANDIDATE_SHA/pulls" --jq '[.[] | select(.state == "open" and .base.ref == "main" and .head.ref == "codex/phase3-unified-identity" and .head.sha == "'"$CANDIDATE_SHA"'" and .head.repo.full_name == "'"$REPOSITORY"'")] | length')"
+            test "$pr_count" = "1" || { echo "Feature-branch candidate is not the exact head of one open same-repository PR to main" >&2; exit 1; }
           else
-            git merge-base --is-ancestor "${{ steps.candidate.outputs.sha }}" refs/remotes/origin/main || {
+            git merge-base --is-ancestor "$CANDIDATE_SHA" refs/remotes/origin/main || {
               echo "Candidate is not an ancestor of authoritative main" >&2
               exit 1
             }
@@ -396,6 +430,15 @@ jobs:
           echo "PHASE02_STAGING_BACKUP_DIR=$backup_dir" >> "$GITHUB_ENV"
           echo "Candidate-bound staging backup captured: $backup_dir"
 
+      - name: Reuse the already-forward staging schema for bootstrap validation
+        if: ${{ (github.event_name == 'pull_request' && github.head_ref == 'codex/phase3-workflow-bootstrap') || (github.event_name == 'workflow_dispatch' && github.ref_name == 'codex/phase3-workflow-bootstrap') }}
+        run: |
+          # Earlier isolated Phase 03 rehearsals advanced only the disposable
+          # staging schema. The bootstrap contains no application migrations,
+          # so do not ask its older Alembic graph to downgrade or reinterpret
+          # that schema. The final Phase 03 candidate runs migrations normally.
+          echo "RUN_DB_MIGRATION=false" >> "$GITHUB_ENV"
+
       - name: Build and deploy exact candidate to staging
         env:
           DEPLOY_TARGET: staging
@@ -463,7 +506,7 @@ jobs:
       - name: Verify the dedicated ERP staging bench and queues
         env:
           OUTPUT_FILE: ${{ github.workspace }}/staging-browser-evidence/erp/phase02-runtime-readback.json
-           EXPECTED_CUSTOM_APP_COMMIT: 8d77cec7504d22f9c0a235034777e31fa07fc62
+          EXPECTED_CUSTOM_APP_COMMIT: 8d77cec7504d22f9c0a235034777e31fa07fc62
         run: sudo env OUTPUT_FILE="$OUTPUT_FILE" BACKUP_DIR="${PHASE02_STAGING_BACKUP_DIR:-}" EXPECTED_CUSTOM_APP_COMMIT="$EXPECTED_CUSTOM_APP_COMMIT" scripts/release/erp_staging_smoke.sh
 
       - name: Run the persisted Champion synthetic ERP demonstration smoke
@@ -669,7 +712,7 @@ jobs:
           BROWSER_EXECUTABLE_PATH="$browser_path" node "$evidence_script"
 
       - name: Start isolated Phase 03 TLS callback proxy
-        if: ${{ inputs.phase3_identity_staging == 'on' || (github.event_name == 'pull_request' && github.head_ref == 'codex/phase3-unified-identity') }}
+        if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.phase3_identity_staging == 'on') || (github.event_name == 'push' && github.ref == 'refs/heads/codex/phase3-unified-identity' && github.repository == 'Lengrowth/crm') }}
         run: |
           identity_dir="$RUNNER_TEMP/phase3-identity"
           tls_dir="$RUNNER_TEMP/phase3-identity-tls"
@@ -691,7 +734,7 @@ jobs:
           kill -0 "$(cat "$tls_dir/proxy.pid")"
 
       - name: Prepare and configure synthetic Phase 03 identity lane
-        if: ${{ inputs.phase3_identity_staging == 'on' || (github.event_name == 'pull_request' && github.head_ref == 'codex/phase3-unified-identity') }}
+        if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.phase3_identity_staging == 'on') || (github.event_name == 'push' && github.ref == 'refs/heads/codex/phase3-unified-identity' && github.repository == 'Lengrowth/crm') }}
         run: |
           identity_dir="$RUNNER_TEMP/phase3-identity"
           tls_dir="$RUNNER_TEMP/phase3-identity-tls"
@@ -773,7 +816,7 @@ jobs:
             --user "$break_glass_user" --password-file "$RUNNER_TEMP/erp-role-password-${GITHUB_RUN_ID}" --phase sso_enabled
 
       - name: Capture Phase 03 identity browser and responsive evidence
-        if: ${{ inputs.phase3_identity_staging == 'on' || (github.event_name == 'pull_request' && github.head_ref == 'codex/phase3-unified-identity') }}
+        if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.phase3_identity_staging == 'on') || (github.event_name == 'push' && github.ref == 'refs/heads/codex/phase3-unified-identity' && github.repository == 'Lengrowth/crm') }}
         env:
           PHASE3_IDENTITY_MANIFEST: ${{ runner.temp }}/phase3-identity/manifest.json
           OUTPUT_DIR: ${{ github.workspace }}/staging-browser-evidence/phase3-identity
@@ -784,7 +827,7 @@ jobs:
           BROWSER_EXECUTABLE_PATH="$browser_path" node "$evidence_script"
 
       - name: Run Phase 03 identity API contract
-        if: ${{ inputs.phase3_identity_staging == 'on' || (github.event_name == 'pull_request' && github.head_ref == 'codex/phase3-unified-identity') }}
+        if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.phase3_identity_staging == 'on') || (github.event_name == 'push' && github.ref == 'refs/heads/codex/phase3-unified-identity' && github.repository == 'Lengrowth/crm') }}
         env:
           PHASE3_MANIFEST: ${{ runner.temp }}/phase3-identity/manifest.json
           PHASE3_CA: ${{ runner.temp }}/phase3-identity-tls/server.crt
@@ -799,7 +842,7 @@ jobs:
             --manifest "$PHASE3_MANIFEST" --ca-bundle "$PHASE3_CA" --evidence "$PHASE3_EVIDENCE"
 
       - name: Verify Phase 03 membership removal and mapping revocation
-        if: ${{ inputs.phase3_identity_staging == 'on' || (github.event_name == 'pull_request' && github.head_ref == 'codex/phase3-unified-identity') }}
+        if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.phase3_identity_staging == 'on') || (github.event_name == 'push' && github.ref == 'refs/heads/codex/phase3-unified-identity' && github.repository == 'Lengrowth/crm') }}
         env:
           PHASE3_MANIFEST: ${{ runner.temp }}/phase3-identity/manifest.json
           PHASE3_CA: ${{ runner.temp }}/phase3-identity-tls/server.crt
@@ -814,7 +857,7 @@ jobs:
             --manifest "$PHASE3_MANIFEST" --ca-bundle "$PHASE3_CA" --evidence "$PHASE3_EVIDENCE"
 
       - name: Roll back Phase 03 identity flag and verify independent login
-        if: ${{ inputs.phase3_identity_staging == 'on' || (github.event_name == 'pull_request' && github.head_ref == 'codex/phase3-unified-identity') }}
+        if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.phase3_identity_staging == 'on') || (github.event_name == 'push' && github.ref == 'refs/heads/codex/phase3-unified-identity' && github.repository == 'Lengrowth/crm') }}
         env:
           PHASE3_MANIFEST: ${{ runner.temp }}/phase3-identity/manifest.json
           PHASE3_CA: ${{ runner.temp }}/phase3-identity-tls/server.crt
@@ -851,7 +894,7 @@ jobs:
             --manifest "$PHASE3_MANIFEST" --ca-bundle "$PHASE3_CA" --evidence "$PHASE3_EVIDENCE"
 
       - name: Restore Phase 03 staging configuration and stop TLS proxy
-        if: ${{ always() && (inputs.phase3_identity_staging == 'on' || (github.event_name == 'pull_request' && github.head_ref == 'codex/phase3-unified-identity')) }}
+        if: ${{ always() && ((github.event_name == 'workflow_dispatch' && github.event.inputs.phase3_identity_staging == 'on') || (github.event_name == 'push' && github.ref == 'refs/heads/codex/phase3-unified-identity' && github.repository == 'Lengrowth/crm')) }}
         run: |
           identity_dir="$RUNNER_TEMP/phase3-identity"
           tls_dir="$RUNNER_TEMP/phase3-identity-tls"
