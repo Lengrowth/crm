@@ -335,6 +335,7 @@ def rollback_test(args: argparse.Namespace) -> None:
         login_status = error.code
     evidence = json.loads(Path(args.evidence).read_text(encoding="utf-8"))
     evidence["rollback"] = {"feature_off_readiness": readiness_status == 200 and readiness.get("ready") is False, "normal_erp_login_available": login_status == 200, "mappings_and_audit_preserved_until_cleanup": True}
+    print(f"Phase 03 rollback readiness response: status={readiness_status} body={json.dumps(readiness, sort_keys=True)}")
     if not evidence["rollback"]["feature_off_readiness"] or not evidence["rollback"]["normal_erp_login_available"]:
         raise SystemExit(f"Phase 03 rollback checks failed: {evidence['rollback']}")
     Path(args.evidence).write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
