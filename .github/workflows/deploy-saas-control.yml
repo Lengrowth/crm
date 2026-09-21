@@ -431,7 +431,7 @@ jobs:
           echo "Candidate-bound staging backup captured: $backup_dir"
 
       - name: Reuse the already-forward staging schema for bootstrap validation
-        if: ${{ github.event_name == 'pull_request' && github.head_ref == 'codex/phase3-workflow-bootstrap' }}
+        if: ${{ (github.event_name == 'pull_request' && github.head_ref == 'codex/phase3-workflow-bootstrap') || (github.event_name == 'workflow_dispatch' && github.ref_name == 'codex/phase3-workflow-bootstrap') }}
         run: |
           # Earlier isolated Phase 03 rehearsals advanced only the disposable
           # staging schema. The bootstrap contains no application migrations,
