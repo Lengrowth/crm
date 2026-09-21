@@ -838,10 +838,8 @@ jobs:
           PY
           sudo -n -u frappe bash -lc 'cd /opt/frappe-staging-bench && /usr/local/bin/bench --site erp-staging.example.test clear-cache'
           sudo systemctl restart frappe-staging-web.service
-          sudo systemctl stop saas-control-staging-backend
-          sudo systemctl start saas-control-staging-backend
-          sudo systemctl is-active --quiet saas-control-staging-backend
-          sleep 5
+          sudo systemctl restart saas-control-staging-backend
+          sleep 3
           sudo -n -E env PYTHONPATH=/opt/saas-control-staging/current/backend \
             /opt/saas-control-staging/shared/backend-venv/bin/python \
             scripts/release/phase3_identity_staging.py break-glass-test \
@@ -910,8 +908,10 @@ jobs:
               output.append(line)
           path.write_text('\n'.join(output) + '\n', encoding='utf-8')
           PY
-          sudo systemctl restart saas-control-staging-backend
-          sleep 3
+          sudo systemctl stop saas-control-staging-backend
+          sudo systemctl start saas-control-staging-backend
+          sudo systemctl is-active --quiet saas-control-staging-backend
+          sleep 5
           set -a
           . /opt/saas-control-staging/shared/env/staging-backend.env
           set +a
