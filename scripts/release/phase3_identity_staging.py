@@ -66,6 +66,7 @@ def prepare(args: argparse.Namespace) -> None:
     champion_email = f"phase3-identity-{suffix}@example.test"
     other_email = f"phase3-other-{suffix}@example.test"
     platform_email = f"phase3-platform-{suffix}@example.test"
+    rollback_email = f"phase3-rollback-{suffix}@example.test"
     with SessionLocal() as session:
         champion_org = Organization(name=f"Phase 03 Identity Champion {suffix}", status="trial")
         other_org = Organization(name=f"Phase 03 Identity Other {suffix}", status="trial")
@@ -74,8 +75,10 @@ def prepare(args: argparse.Namespace) -> None:
         champion, champion_token = make_user(session, champion_email, "Phase 03 Champion Synthetic", platform_admin=False)
         other, other_token = make_user(session, other_email, "Phase 03 Other Organization Synthetic", platform_admin=False)
         platform, platform_token = make_user(session, platform_email, "Phase 03 Platform Admin Synthetic", platform_admin=True)
+        rollback_user, rollback_token = make_user(session, rollback_email, "Phase 03 Rollback Observer Synthetic", platform_admin=False)
         session.add(OrganizationMembership(organization_id=champion_org.id, user_id=champion.id, role="owner"))
         session.add(OrganizationMembership(organization_id=other_org.id, user_id=other.id, role="owner"))
+        session.add(OrganizationMembership(organization_id=champion_org.id, user_id=rollback_user.id, role="viewer"))
         tenant = Tenant(
             organization_id=champion_org.id,
             tenant_slug=f"phase3-identity-{suffix}",
@@ -101,17 +104,20 @@ def prepare(args: argparse.Namespace) -> None:
             "champion_user_id": champion.id,
             "other_user_id": other.id,
             "platform_user_id": platform.id,
+            "rollback_user_id": rollback_user.id,
             "champion_email": champion.email,
             "other_email": other.email,
             "platform_email": platform.email,
             "champion_token_file": token_file(Path(args.output_dir) / "champion.token"),
             "other_token_file": token_file(Path(args.output_dir) / "other.token"),
             "platform_token_file": token_file(Path(args.output_dir) / "platform.token"),
+            "rollback_token_file": token_file(Path(args.output_dir) / "rollback.token"),
             "exchange_secret_file": args.exchange_secret_file,
         }
     write_token(Path(manifest["champion_token_file"]), champion_token)
     write_token(Path(manifest["other_token_file"]), other_token)
     write_token(Path(manifest["platform_token_file"]), platform_token)
+    write_token(Path(manifest["rollback_token_file"]), rollback_token)
     Path(args.manifest).write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"prepared Phase 03 identity tenant {manifest['tenant_id']}")
 
@@ -274,7 +280,7 @@ def api_tests(args: argparse.Namespace) -> None:
 
 def cleanup(args: argparse.Namespace) -> None:
     manifest = read_manifest(args.manifest)
-    ids = [manifest["champion_user_id"], manifest["other_user_id"], manifest["platform_user_id"]]
+    ids = [manifest["champion_user_id"], manifest["other_user_id"], manifest["platform_user_id"], manifest["rollback_user_id"]]
     with SessionLocal() as session:
         tenant_id = manifest["tenant_id"]
         organization_id = manifest["organization_id"]
@@ -289,7 +295,7 @@ def cleanup(args: argparse.Namespace) -> None:
         session.execute(delete(Organization).where(Organization.id == manifest["other_organization_id"]))
         session.execute(delete(SaaSUser).where(SaaSUser.id.in_(ids)))
         session.commit()
-    for key in ("champion_token_file", "other_token_file", "platform_token_file"):
+    for key in ("champion_token_file", "other_token_file", "platform_token_file", "rollback_token_file"):
         Path(manifest[key]).unlink(missing_ok=True)
     Path(args.manifest).unlink(missing_ok=True)
     print("Phase 03 identity synthetic records cleaned")
@@ -325,7 +331,7 @@ def post_tests(args: argparse.Namespace) -> None:
 def rollback_test(args: argparse.Namespace) -> None:
     manifest = read_manifest(args.manifest)
     context = ssl.create_default_context(cafile=args.ca_bundle)
-    token = Path(manifest["platform_token_file"]).read_text(encoding="utf-8").strip()
+    token = Path(manifest["rollback_token_file"]).read_text(encoding="utf-8").strip()
     readiness_status, readiness = http_json(f"{manifest['control_base_url']}/api/sso/readiness/{manifest['tenant_id']}", token=token, context=context)
     login_request = urllib.request.Request(f"{manifest['erp_base_url']}/login", headers={"Accept": "text/html"})
     try:
