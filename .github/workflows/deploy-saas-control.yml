@@ -96,15 +96,24 @@ jobs:
           [[ "$REPOSITORY" == "Lengrowth/crm" ]] || { echo "Candidate validation is restricted to the canonical repository" >&2; exit 1; }
           git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
-            [[ "$PHASE3_ENABLED" == "true" ]] || { echo "Only the explicit staging lane may use workflow_dispatch candidate refs" >&2; exit 1; }
-            [[ "$CANDIDATE_REF" =~ ^[0-9a-f]{40}$ ]] || { echo "workflow_dispatch Phase 03 requires an exact 40-character commit ref" >&2; exit 1; }
-            test "$CANDIDATE_SHA" = "$CANDIDATE_REF"
-            git merge-base --is-ancestor refs/remotes/origin/main "$CANDIDATE_SHA" || {
-              echo "Manually supplied staging candidate does not descend from authoritative main" >&2
-              exit 1
-            }
-            pr_count="$(gh api "repos/$REPOSITORY/commits/$CANDIDATE_SHA/pulls" --jq '[.[] | select(.state == "open" and .base.ref == "main" and .head.sha == "'"$CANDIDATE_SHA"'" and .head.repo.full_name == "'"$REPOSITORY"'")] | length')"
-            test "$pr_count" = "1" || { echo "Candidate is not the exact head of one open same-repository PR to main" >&2; exit 1; }
+            if [[ "$PHASE3_ENABLED" == "true" ]]; then
+              [[ "$CANDIDATE_REF" =~ ^[0-9a-f]{40}$ ]] || { echo "workflow_dispatch Phase 03 requires an exact 40-character commit ref" >&2; exit 1; }
+            fi
+            if [[ -n "$CANDIDATE_REF" ]]; then
+              [[ "$CANDIDATE_REF" =~ ^[0-9a-f]{40}$ ]] || { echo "Manually supplied candidate_ref must be an exact 40-character commit" >&2; exit 1; }
+              test "$CANDIDATE_SHA" = "$CANDIDATE_REF"
+              git merge-base --is-ancestor refs/remotes/origin/main "$CANDIDATE_SHA" || {
+                echo "Manually supplied staging candidate does not descend from authoritative main" >&2
+                exit 1
+              }
+              pr_count="$(gh api "repos/$REPOSITORY/commits/$CANDIDATE_SHA/pulls" --jq '[.[] | select(.state == "open" and .base.ref == "main" and .head.sha == "'"$CANDIDATE_SHA"'" and .head.repo.full_name == "'"$REPOSITORY"'")] | length')"
+              test "$pr_count" = "1" || { echo "Candidate is not the exact head of one open same-repository PR to main" >&2; exit 1; }
+            else
+              git merge-base --is-ancestor "$CANDIDATE_SHA" refs/remotes/origin/main || {
+                echo "Default dispatch candidate is not an ancestor of authoritative main" >&2
+                exit 1
+              }
+            fi
           elif [[ "$EVENT_NAME" == "push" && "$REF_NAME" == "codex/phase3-unified-identity" ]]; then
             [[ "$CANDIDATE_SHA" == "$GITHUB_SHA" ]] || { echo "Feature-branch candidate is not the exact pushed commit" >&2; exit 1; }
             git merge-base --is-ancestor refs/remotes/origin/main "$CANDIDATE_SHA" || {
