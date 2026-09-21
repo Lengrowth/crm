@@ -76,15 +76,23 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; `PLAT-P3` PASS; 
 
 ## Phase 02 HRMS dependency baseline
 
-- HRMS is pinned for the Frappe/ERPNext v15 baseline at upstream tag
-  `v15.64.1`, commit `e68a3deaa95ae5b2c3d743297d0a4ab505733fc1`, licensed
-  under GNU GPL v3. The authoritative dependency record is
-  `ops/staging/application-dependencies.json`.
+- HRMS source identity is recorded at upstream tag `v15.64.1`, commit
+  `e68a3deaa95ae5b2c3d743297d0a4ab505733fc1`, licensed under GNU GPL v3. The
+  exact pin is verified by the disposable clean-install evidence in
+  `ops/staging/evidence/phase2-clean-disposable-install.json`; the authoritative
+  dependency record is `ops/staging/application-dependencies.json`.
 - The resolver derives platform applications separately from effective module
-  metadata and includes HRMS only for HR/Payroll. Exact app/version readback,
-  migration, role/workspace verification, retry, and truthful hidden/
-  needs-attention states are implemented locally; staging and production gates
-  remain open until exact-candidate evidence is recorded.
+  metadata and includes HRMS only for HR/Payroll. Exact app/version/commit
+  readback, migration, role/workspace verification, and truthful hidden/
+  needs-attention states are implemented locally; the provider and release
+  preflight now require the verified compatibility/readback record.
+- Final protected Phase 02 run [35506309957](https://github.com/Lengrowth/crm/actions/runs/35506309957)
+  / job `106066811682` passed for merge candidate
+  `9674a6a1b4adf9447af759458763b25721672272`, with reviewed head
+  `796ea2e0cd7aae0bd2b19bc88e6750b93f1a5642`. Artifact
+  `staging-browser-evidence-9674a6a1b4adf9447af759458763b25721672272` has
+  digest `sha256:bd808a20f5f9743e122dc064113160dbf60ad8bd073638b9dd132bf4c191a8ef`;
+  production and Cloudflare remain unchanged and Phase 03 is permitted.
 
 - The local PLAT-P4 implementation is on `codex/plat-p4` from authoritative
   `lengrowth/main` `2a697a831d04a41aaabb3e6f2413f53ce4e749c6`; the candidate is
@@ -103,6 +111,19 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; `PLAT-P3` PASS; 
   reconciled.
 
 ## Phase 2 baseline
+
+## Phase 02 HRMS closure
+
+- Final verdict: `PASS`; Phase 03 is permitted, but no production promotion was executed.
+- Protected run `35506309957`, job `106066811682`, reviewed head `796ea2e0…`, merge candidate `9674a6a1b4adf9447af759458763b25721672272`.
+- Evidence artifact `staging-browser-evidence-9674a6a1b4adf9447af759458763b25721672272`, digest `sha256:bd808a20f5f9743e122dc064113160dbf60ad8bd073638b9dd132bf4c191a8ef`.
+- Production, Cloudflare, and upstream Frappe/ERPNext/HRMS sources remain unchanged.
+
+## Phase 03 identity handover
+
+- The remediation candidate is CRM `d4517eeb842e121cd133ca630f9e8b15c4b22f8c` with LenERP `8d77cec7504d22f9c0a235034777e31fa07fc62`; migration `20260921_0014_phase3_security_hardening` follows `20260920_0013_phase3_unified_identity`.
+- Protected run `35542421306` exposed an unavailable Frappe advisory-lock API during the browser callback and completed cleanup. The callback now uses MariaDB `GET_LOCK`/`RELEASE_LOCK`; a fresh protected rerun must verify browser-bound state, mapping-handle isolation, durable rate limiting, accessibility, and authenticated break-glass recovery before independent review closes.
+- Rollback disables SSO entry points and restores independent logins without deleting identity mappings or audit history.
 
 - Phase 2 implementation is isolated on branch `codex/plat-p2` from verified
   remote `main` `edb3f463ed50e1009a13e8e96b95b563ddc6f6b9`.

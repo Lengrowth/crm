@@ -1,6 +1,6 @@
 # Champion Pre-Kickoff Module Showcase — Orchestration Status
 
-Last updated: 2026-09-20 (Asia/Tbilisi)
+Last updated: 2026-09-21 (Asia/Tbilisi)
 
 ## Program state
 
@@ -8,31 +8,85 @@ Last updated: 2026-09-20 (Asia/Tbilisi)
 | --- | --- | --- |
 | 00 | Complete | PASS |
 | 01 | Complete; staging gate deferred by prior record | PASS WITH DEFERRED STAGING GATE |
-| 02 | Correction cycle 1 authorized after independent review | FAIL — CORRECTIONS REQUIRED |
-| 03–08 | Not started; blocked on Phase 02 PASS | Pending |
+| 02 | Closed; exact protected candidate and browser evidence verified | PASS — Phase 03 permitted; production unchanged |
+| 03 | Protected staging PASS recorded; final documentation-refresh SHA-bound rerun pending | READY FOR INDEPENDENT READ-ONLY RE-REVIEW after final rerun |
 
 ## Phase 02 — HRMS and dependency-aware provisioning
 
-- Implementation candidate reported by the prior implementation: `97d5f63`.
-- Reported staging candidate in implementation evidence: `c032a37f78240bba1b8b8593bd3bd439e66a3fb6`; reconciliation is an explicit review gate.
-- Initial reviewer: fresh `gpt-5.6-luna` (high reasoning), read-only; verdict: **FAIL — CORRECTIONS REQUIRED**.
-- Review findings: staging HRMS install/migration failed; reported staging candidate `c032a37f78240bba1b8b8593bd3bd439e66a3fb6` differs materially from reported implementation commit `97d5f63`; broad v15 metadata constraints did not establish compatibility; successful candidate-bound runtime readbacks and production gate evidence are absent; runtime HRMS identity must be bound explicitly.
-- Exact pins independently observed by review: Frappe 15.119.1 (`edae775dd36b6c4ad7acab10230262bd74040765`), ERPNext 15.120.0 (`945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`), HRMS v15.64.1 (`e68a3deaa95ae5b2c3d743297d0a4ab505733fc1`).
-- Correction agent: `gpt-5.6-luna` (high reasoning), write/deployment capable; scope strictly Phase 02; correction cycle 1 in progress.
-- First protected correction workflow: GitHub Actions run `35483735652` / job `106006113638` reached candidate-bound validation but failed before candidate deployment because the staging runner filesystem was full (`/dev/root` 39 GB, 100% used; npm reported `ENOSPC`). No candidate switch, ERP mutation, or production mutation occurred in that run.
-- Capacity remediation: read-only inspection identified 18 GB of unreferenced historical directories under `/opt/saas-control/releases`; the active and previous rollback targets (`4a63264e1e8cb7c998c767262a6e1022647ff7b0` and `27ede631c667c67f45d534108abeb975816ee83e`) were preserved, and twelve older unreferenced directories were removed with explicit target validation. The host now has 8.9 GB free (78% used). This is recorded as deployment-infrastructure remediation, not a phase implementation result.
-- Reported prior staging result: HRMS v15.64.1 installation failed due to missing Expense Claim Type on the pinned Frappe 15.119.1 / ERPNext 15.120.0 baseline; staging was reportedly restored from backup; production reportedly unchanged.
-- Compatibility decision: retain official HRMS `v15.64.1` commit `e68a3deaa95ae5b2c3d743297d0a4ab505733fc1` with a single bounded uninstall/clear-cache/reinstall replay for the upstream fixture failure documented in [HRMS issue #1639](https://github.com/frappe/hrms/issues/1639). No upstream fixture or source is patched; exact version and commit verification remain fail-closed.
-- Staging access validation: AWS account `288947333598`, region `us-east-1`, EC2 `i-0f54fba441caa7154`, SG `sg-0387e9287e4817700`; temporary SSH `/32` `212.58.102.127/32` was added only for this correction and will be revoked after evidence capture. Internal ERP/control-plane ports remain loopback-only.
-- Fresh staging backup: `/opt/saas-control-staging/shared/backups/phase2-20260920T020224Z/`; database/config/public/private/control-plane artifacts created and SHA-256 manifest retained before HRMS mutation.
-- Staging compatibility replay: exact HRMS revision installed and migrated after the bounded replay path; direct readbacks showed Frappe `15.119.1`, ERPNext `15.120.0`, HRMS `15.64.1`, HRMS commit `e68a3de...`, HR roles `HR User`/`HR Manager`, HR workspaces `HR`/`Payroll`, and `Expense Claim Type` DocType. Candidate-bound control-plane staging and production promotion are not yet complete.
-- Deployment/rollback state: staging ERP services were restarted after HRMS asset build; loopback ERP root returned `200`; production was not changed. Protected staging workflow must still deploy the corrected candidate and capture candidate-bound evidence before promotion.
-- Correction commits: `cdae0535cb3af425b423f6858aaa779d4edf3b98` (HRMS recovery/readbacks), `e8757881735bd4a2d7ba2ebec3fdd22a94a66981` (recorded protected-run ENOSPC and capacity remediation), `3793b9870461828a8421272ac7ace6fd17297561` (candidate-bound backup, lenerp_core bench registration, backup-bound ERP readback).
-- Current immutable correction candidate: `3793b9870461828a8421272ac7ace6fd17297561`.
-- Protected workflow `35484021724` validated/deployed and installed/migrated exact HRMS but exposed the existing bench-registration defect: lenerp_core source was present but absent from `sites/apps.txt`; production stayed unchanged. Current candidate-bound validation workflow: `35484379236`, job `106007919123`.
-- Unresolved decisions: completion/result of workflow `35484379236`, candidate-bound staging evidence, production backup/promotion/readback, temporary SSH /32 revocation, and final Phase 02 gate.
-- Workflow `35484379236` captured and verified backup `/opt/saas-control-staging/shared/backups/phase2-67eb84e2dc304fa6dbab538fc9ad2d3bb932a84b-35484379236`, deployed the exact candidate, installed/migrated HRMS and `lenerp_core`, and passed HTTP/service checks. It failed at HRMS commit readback because the smoke script ran Git as the runner user against the `frappe`-owned checkout (`dubious ownership`). No production mutation occurred; the readback is corrected in the next immutable candidate.
+The prior conclusion that no compatible official HRMS v15 baseline existed was
+unsupported. Issue #1639 records a failed site resolving the fixture through
+`frappe.core`; it does not prove that HRMS lacks the DocType. The exact pins
+remain unchanged:
+
+- Frappe `15.119.1` / `edae775dd36b6c4ad7acab10230262bd74040765`.
+- ERPNext `15.120.0` / `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`.
+- HRMS `15.64.1` / `e68a3deaa95ae5b2c3d743297d0a4ab505733fc1`.
+- `lenerp_core` `0.2.0` / artifact source marker `a7e47208baf6583295f5f2632f4787262cd3f475`.
+
+Evidence is deliberately separated into four states:
+
+1. Historical dirty/partial-site failure: `35484379236` exposed a Git
+   ownership/readback defect and the earlier replay exposed stale metadata;
+   neither is compatibility evidence.
+2. Successful protected run: `35484693593` / job `106008810882` completed the
+   pinned staging path for candidate `27f4907578f09e1f540c90e7e6d8fd30fd9aaeb5`.
+3. New clean disposable proof: `ops/staging/evidence/phase2-clean-disposable-install.json`
+   records one-time installation and migration in the order Frappe, ERPNext,
+   HRMS, `lenerp_core`; before HRMS the DocType and HR Module Def were absent,
+   and afterward `Expense Claim Type` was `module=HR` with
+   `Module Def.app_name=hrms`.
+4. Final candidate-bound staging result: protected run
+   `35505538638` / job `106064600813` passed for candidate-bound release
+   `fa137051b6675fbd09102c07942748ce68ea98b9`; the PR head was
+   `cffe8f9e5499f0845fce2dbceec1767c7a3e5ee4`.
+
+The final real-staging backup/control-plane snapshot is
+`/opt/saas-control-staging/shared/backups/phase2-fa137051b6675fbd09102c07942748ce68ea98b9-35505538638/`
+with SHA-256 manifest. Staging now points to the immutable release
+`fa137051b6675fbd09102c07942748ce68ea98b9`; production was not targeted or changed.
+
+The corrected implementation requires exact installed-app/version/commit
+readback, migration, roles, workspaces, queues, HTTP, synthetic ERP checks,
+replay/idempotency, authorization, rollback evidence, and the immutable
+`lenerp_core/SOURCE_COMMIT.txt` marker. Cloudflare was not changed because no
+new verified edge defect appeared.
+
+Phase 02 closure readback: protected staging run `35506309957` / job
+`106066811682` passed for the reviewed PR head
+`796ea2e0cd7aae0bd2b19bc88e6750b93f1a5642` and immutable merge candidate
+`9674a6a1b4adf9447af759458763b25721672272`. The exact evidence artifact is
+`staging-browser-evidence-9674a6a1b4adf9447af759458763b25721672272`, artifact
+ID `10603752341`, digest
+`sha256:bd808a20f5f9743e122dc064113160dbf60ad8bd073638b9dd132bf4c191a8ef`.
+Production and Cloudflare remain unchanged. Phase 02 is PASS. The prior Phase 03
+protected staging run is retained as historical evidence; the remediation candidate
+requires a fresh protected rerun before independent review can close. This record
+does not claim production SSO.
+
+## Phase 03 — Unified identity and cross-navigation
+
+The remediation candidate passed the protected staging lane at CRM
+`f9589276076e6514c9054447a026f9758ef64a71` with canonical LenERP commit
+`8d77cec7504d22f9c0a235034777e31fa07fc62` and bundle SHA-256
+`D136208D613DEECE9A51F25A7A1A5B4C7C916D8E657043FFFC7BEEC03B90AAA7`.
+
+The zero-job run `35544065745` was caused by invalid PR-workflow YAML plus
+default-branch event filtering that left the PR-branch push with no eligible
+job. The minimal bootstrap PR #83 was merged normally at
+`854460e8c1a94fcbf844b18878023ab87d665f09` and preserved the required job
+name and default-off Phase 03 lane.
+
+Protected run `35580080046` / job `106270676103` passed the required check and
+uploaded artifact ID `10630670710`,
+`staging-browser-evidence-f9589276076e6514c9054447a026f9758ef64a71`, digest
+`sha256:8dadcefb707df1fb481e7a1980d3aa533c28a099837e814a3f4de1197be4f412`.
+Browser SSO, bidirectional navigation, API denial/replay/PKCE/state/tenant/
+membership/role checks, revocation, break-glass before/after rollback, and
+cleanup passed. Production SSO, production, Cloudflare, and AWS SSH access
+remain unchanged. A documentation-only refresh requires one final protected
+rerun; PR #82 remains open and unmerged, and Phase 04 has not started.
 
 ## Worktree preservation
 
-- Preserved unrelated pre-existing modifications: `CLAUDE.md`, `frontend/tsconfig.tsbuildinfo`.
+- Preserved unrelated pre-existing modifications: `CLAUDE.md`,
+  `frontend/tsconfig.tsbuildinfo`.

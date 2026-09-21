@@ -68,6 +68,14 @@ def test_dashboard_api_states_persisted_source_and_real_data_boundary():
     assert "source\": \"persisted ERPNext records\"" in api
     assert "real_data_authorized\": False" in api
     assert "frappe.get_all" in api
+    for output in (
+        "inventory_exceptions",
+        "asset_status",
+        "maintenance_status",
+        "well_history",
+        "alerts",
+    ):
+        assert f'\"{output}\"' in api
 
 
 def test_persisted_doctypes_have_python_modules():

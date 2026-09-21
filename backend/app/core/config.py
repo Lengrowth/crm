@@ -54,6 +54,14 @@ class Settings(BaseSettings):
     rate_limit_window_seconds: int = 60
     rate_limit_exempt_paths: str = "/health,/docs,/openapi.json,/redoc"
 
+    # Phase 03 uses a deliberately isolated authorization-code broker until a
+    # maintained OIDC provider can replace it. The flag is off by default.
+    sso_client_id: str = "lenerp-erp"
+    sso_audience: str = "lenerp-erp"
+    sso_exchange_secret: Optional[str] = None
+    sso_code_ttl_seconds: int = 120
+    sso_callback_path: str = "/api/method/lenerp_core.sso.callback"
+
     # Resend (marketing email) configuration
     resend_api_key: Optional[str] = None
     resend_api_url: str = "https://api.resend.com/emails"

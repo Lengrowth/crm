@@ -15,6 +15,7 @@ from app.api.modules import router as modules_router
 from app.api.onboarding import router as onboarding_router
 from app.api.organizations import router as organizations_router
 from app.api.provisioning import router as provisioning_router
+from app.api.sso import router as sso_router
 from app.api.tenants import router as tenants_router
 
 api_router = APIRouter()
@@ -34,3 +35,4 @@ api_router.include_router(contact_router)
 api_router.include_router(marketing_router)
 api_router.include_router(modules_router)
 api_router.include_router(onboarding_router)
+api_router.include_router(sso_router)

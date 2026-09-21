@@ -1,2 +1,4 @@
 include README.md
 include lenerp_core/modules.txt
+recursive-include lenerp_core *.js
+recursive-include lenerp_core *.html

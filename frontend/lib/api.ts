@@ -7,13 +7,16 @@ import type { OrganizationRecord } from "@/features/organizations/types";
 import type { ModuleAudit, ModuleBundle, ModuleEffective, ModulePreview, ModuleSummary } from "@/features/modules/types";
 import type { OperatorOnboardingRead, ProvisioningEventRead, ProvisioningJobDetailRead, PublicOnboardingRead, PublicOnboardingResult } from "@/features/onboarding/types";
 
+export type SSOAuthorizationResponse = { code: string; state: string; redirect_uri: string; expires_in: number; tenant_id: string; organization_id: string };
+export type SSOReadiness = { tenant_id: string; organization_id: string; organization_name: string; tenant_slug: string; environment: string; destination: string | null; enabled: boolean; ready: boolean; explanation: string };
+
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) { super(message); this.name = "ApiError"; }
 }
 
 function safeMessage(status: number, detail: unknown): string {
   if (status === 401) return "Your session has expired. Sign in again to continue.";
-  if (status === 403) return "You do not have permission to perform this action.";
+  if (status === 403) return "This action is not authorized. Return to the relevant workspace or contact your administrator.";
   if (status === 404) return "The requested record was not found.";
   if (status >= 500) return "The service is temporarily unavailable. Try again shortly.";
   if (typeof detail === "string" && detail.length > 0 && detail.length < 240 && !(/[\r\n]|traceback|exception|secret|token|password/i.test(detail))) return detail;
@@ -53,6 +56,8 @@ export function createOrganizationTenant(organizationId: string, payload: Record
 export function fetchTenants(limit?: number) { return requestJson<TenantRecord[]>(`/tenants${limit ? `?limit=${limit}` : ""}`); }
 export function createTenant(payload: Record<string, unknown>) { return requestJson<TenantRecord>("/tenants", { method: "POST", body: JSON.stringify(payload) }); }
 export function fetchTenant(tenantId: string) { return requestJson<TenantRecord>(`/tenants/${tenantId}`); }
+export function fetchSsoReadiness(tenantId: string) { return requestJson<SSOReadiness>(`/sso/readiness/${tenantId}`); }
+export function authorizeSso(payload: Record<string, unknown>) { return requestJson<SSOAuthorizationResponse>("/sso/authorize", { method: "POST", body: JSON.stringify(payload) }); }
 export function updateTenant(tenantId: string, payload: Record<string, unknown>) { return requestJson<TenantRecord>(`/tenants/${tenantId}`, { method: "PATCH", body: JSON.stringify(payload) }); }
 export function suspendTenant(tenantId: string, reason?: string) { return requestJson<TenantRecord>(`/tenants/${tenantId}/suspend`, { method: "POST", body: JSON.stringify({ reason }) }); }
 export function reactivateTenant(tenantId: string, reason?: string) { return requestJson<TenantRecord>(`/tenants/${tenantId}/reactivate`, { method: "POST", body: JSON.stringify({ reason }) }); }

@@ -3,9 +3,10 @@
 ## Candidate-bound record
 
 This file is shipped inside the CRM candidate source and is copied into the
-protected evidence artifact by the workflow. The artifact manifest is the
-authority for the exact CRM candidate SHA, workflow run, artifact name, and
-documentation hash. The pinned LenERP Core app for the protected candidate is
+protected evidence artifact by the workflow. The final Phase 02 artifact
+manifest is the authority for the exact candidate-bound release
+`fa137051b6675fbd09102c07942748ce68ea98b9`, workflow run `35505538638`,
+artifact name, and documentation hash. The pinned LenERP Core app is
 `a7e47208baf6583295f5f2632f4787262cd3f475`.
 
 ## Protected checks
@@ -16,11 +17,47 @@ documentation hash. The pinned LenERP Core app for the protected candidate is
 - ERP accessibility contract: viewport metadata is present, browser zoom is allowed, and login logos have accessible alternatives.
 - C08 dashboard evidence: persisted jobs, wells, invoices, inventory exceptions, asset status, maintenance status/tasks, well history, and operational alerts are required in the browser evidence.
 - Role and synthetic evidence: protected role boundaries, print, export, responsive captures, and cleanup artifacts are present.
-- Cleanup: Phase 2 exact-record manifest contains 3 organizations and 3 tenants; Phase 3 exact-record manifest contains 1 organization and 1 tenant; role and disposable identities were removed by the workflow.
-- Test accounting: the complete Core checkout runs `python -m pytest -q` → 8 passed; CRM’s targeted release-contract subset runs `python -m pytest -q scripts/release/test_erp_demo_contract.py scripts/release/test_verify_phase4_evidence.py` → 7 passed. Candidate-bound CI supplies the CRM 56 backend and 12 frontend results.
+- Cleanup: Phase 2 pre-capture cleanup removed 3 stale synthetic organizations and 3 tenants; the final Phase 2 manifest removed 3 organizations and 3 tenants. No Phase 3 synthetic records were created; role and disposable identities were removed by the workflow.
+- Test accounting: local validation passed the complete backend suite (74 tests), frontend suite (12 tests), release package tests (9 tests), and focused contract/manifest checks (5 tests). Candidate-bound run `35505538638` passed the staging validation suite and uploaded the evidence artifact.
 
 ## Disposition
 
-`CHAMPION PRE-KICKOFF SYNTHETIC DEMO REMEDIATION: READY FOR INDEPENDENT REVIEW`
+`PHASE 02 HRMS AND DEPENDENCY REMEDIATION: READY FOR INDEPENDENT REVIEW`
 
 This is a remediation-readiness verdict only. It does not award independent PASS, Champion acceptance, real-data authorization, production activation, or Phase 6 approval.
+
+## Phase 03 bootstrap and protected staging record
+
+The zero-job run `35544065745` was not valid protected evidence. Its PR workflow
+contained invalid YAML (an extra leading space before the
+`EXPECTED_CUSTOM_APP_COMMIT` mapping), and the registered default-branch copy
+only selected `push` events for `main`; therefore the PR-branch push had no
+eligible job. Action-aware validation also rejected the PR workflow before any
+job could start. The failure was not solely a default-branch registration issue.
+
+The minimal safe bootstrap was merged normally through [PR #83](https://github.com/Lengrowth/crm/pull/83)
+at `854460e8c1a94fcbf844b18878023ab87d665f09`. It preserved the required job
+name `Build one immutable candidate and deploy staging`, keeps the Phase 03
+lane default-off, validates same-repository immutable candidate refs, and
+retains staging-only permissions and cleanup.
+
+The first complete protected push run for PR #82 was run `35580080046`, job
+`106270676103`, against control-plane commit
+`f9589276076e6514c9054447a026f9758ef64a71`; it passed the required check and
+uploaded artifact ID `10630670710`, named
+`staging-browser-evidence-f9589276076e6514c9054447a026f9758ef64a71`, digest
+`sha256:8dadcefb707df1fb481e7a1980d3aa533c28a099837e814a3f4de1197be4f412`.
+The candidate-bound manifest records canonical LenERP commit
+`8d77cec7504d22f9c0a235034777e31fa07fc62` and bundle SHA-256
+`D136208D613DEECE9A51F25A7A1A5B4C7C916D8E657043FFFC7BEEC03B90AAA7`.
+
+The protected lane passed CRM/frontend/release/LenERP validation, browser SSO
+and bidirectional navigation, replay/PKCE/state/redirect/tenant/membership/
+role denial checks, membership revocation, break-glass before enablement and
+after rollback, and deterministic rollback readiness. Cleanup removed identity
+records, role principals, browser records, temporary files/configuration and
+synthetic ERP records; the ERP read-only reset ended with zero synthetic
+`LenERP Well Site` and `LenERP Drilling Job` records. Production SSO,
+production infrastructure, Cloudflare, and temporary AWS SSH access were not
+changed. A documentation-only refresh follows; its push-triggered protected
+run is the final SHA-bound gate.

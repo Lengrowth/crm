@@ -19,6 +19,8 @@ class ApplicationPin:
     commit: str
     source: str
     license: str = ""
+    compatibility_status: str = "verified"
+    compatibility_reason: str = ""
 
 
 @dataclass(frozen=True)
@@ -51,13 +53,17 @@ class ApplicationResolution:
     def platform_applications(self) -> tuple[str, ...]:
         return tuple(item.pin.name for item in self.ordered if item.pin.source == "platform")
 
+    @property
+    def unverified_applications(self) -> tuple[str, ...]:
+        return tuple(item.pin.name for item in self.ordered if item.pin.compatibility_status != "verified")
+
 
 # These values are the reviewed Frappe v15 staging baseline.  HRMS is pinned
 # to an immutable upstream tag/commit; it is not a floating branch dependency.
 PLATFORM_APPLICATION_PINS: tuple[ApplicationPin, ...] = (
     ApplicationPin("frappe", "15.119.1", "edae775dd36b6c4ad7acab10230262bd74040765", "platform"),
     ApplicationPin("erpnext", "15.120.0", "945e825bee3d0d645f6cb59bcaab90fcbfb98ce3", "platform"),
-    ApplicationPin("lenerp_core", "0.2.0", "a7e47208baf6583295f5f2632f4787262cd3f475", "platform"),
+    ApplicationPin("lenerp_core", "0.2.0", "8d77cec7504d22f9c0a235034777e31fa07fc62", "platform"),
 )
 
 MODULE_APPLICATION_PINS: dict[str, ApplicationPin] = {
@@ -67,6 +73,8 @@ MODULE_APPLICATION_PINS: dict[str, ApplicationPin] = {
         "e68a3deaa95ae5b2c3d743297d0a4ab505733fc1",
         "module",
         "GNU General Public License (v3)",
+        "verified",
+        "Verified by the clean disposable Frappe/ERPNext/HRMS/lenerp_core install recorded in ops/staging/evidence/phase2-clean-disposable-install.json.",
     ),
 }
 
@@ -127,6 +135,7 @@ def calculate_required_applications(modules: Iterable[Any], *, include_platform:
 def compare_installed_applications(
     installed_apps: dict[str, str] | list[str] | tuple[str, ...],
     resolution: ApplicationResolution,
+    installed_commits: dict[str, str] | None = None,
 ) -> tuple[list[str], list[str]]:
     """Return missing and incompatible app names from a provider readback."""
 
@@ -136,10 +145,13 @@ def compare_installed_applications(
         installed = {str(name): "" for name in installed_apps}
     missing: list[str] = []
     incompatible: list[str] = []
+    commits = {str(name): str(commit or "") for name, commit in (installed_commits or {}).items()}
     for requirement in resolution.ordered:
         actual = installed.get(requirement.pin.name)
         if actual is None:
             missing.append(requirement.pin.name)
         elif requirement.pin.version and actual != requirement.pin.version:
             incompatible.append(f"{requirement.pin.name} (expected {requirement.pin.version}, read {actual or 'unknown'})")
+        elif requirement.pin.commit and commits.get(requirement.pin.name) != requirement.pin.commit:
+            incompatible.append(f"{requirement.pin.name} commit (expected {requirement.pin.commit}, read {commits.get(requirement.pin.name) or 'unknown'})")
     return sorted(missing), sorted(incompatible)

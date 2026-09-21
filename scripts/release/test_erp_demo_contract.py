@@ -25,15 +25,16 @@ def test_staging_smoke_defaults_to_the_synthetic_demo_app_version():
 
 def test_staging_workflow_verifies_the_installed_custom_app_candidate():
     workflow = (ROOT / ".github" / "workflows" / "deploy-saas-control.yml").read_text(encoding="utf-8")
-    baseline = (ROOT / "ops" / "production" / "release-runtime-baseline.json").read_text(encoding="utf-8")
+    baseline = (ROOT / "ops" / "staging" / "release-runtime-baseline.json").read_text(encoding="utf-8")
     bundle_commit = (ROOT / "ops" / "staging" / "lenerp_core" / "SOURCE_COMMIT.txt").read_text(encoding="utf-8").strip()
     assert 'CUSTOM_APP_VERSION: "0.2.0"' in workflow
     assert 'CUSTOM_APP_COMMIT="$core_commit"' in workflow
-    assert bundle_commit == "a7e47208baf6583295f5f2632f4787262cd3f475"
+    assert 'SOURCE_COMMIT.txt' in workflow
+    assert bundle_commit == "8d77cec7504d22f9c0a235034777e31fa07fc62"
     assert "lenerp_core-${core_commit}.tar" in workflow
     assert 'staging.joinpath("lenerp_core.archive.sha256")' in workflow
     assert '"version": "0.2.0"' in baseline
-    assert '"commit": "a7e47208baf6583295f5f2632f4787262cd3f475"' in baseline
+    assert '"commit": "8d77cec7504d22f9c0a235034777e31fa07fc62"' in baseline
     assert "erp_staging_smoke.sh" in workflow
     assert "erp_demo_smoke.sh" in workflow
     assert "erp_role_smoke.sh" in workflow
@@ -47,8 +48,8 @@ def test_staging_workflow_verifies_the_installed_custom_app_candidate():
     assert '"runtime_readback": runtime_readback' in workflow
     assert '"documentation": {' in workflow
     assert 'documentation_target = evidence_dir / "documentation"' in workflow
-    archive = ROOT / "ops" / "staging" / "lenerp_core-a7e47208baf6583295f5f2632f4787262cd3f475.tar"
-    with tarfile.open(archive) as handle:
+    archive = ROOT / "ops" / "staging" / "lenerp_core-8d77cec7504d22f9c0a235034777e31fa07fc62.tar"
+    with tarfile.open(archive, mode="r:*") as handle:
         assert "lenerp_core/public/js/accessibility.js" in handle.getnames()
 
 

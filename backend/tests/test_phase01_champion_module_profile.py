@@ -238,5 +238,6 @@ def test_provider_and_worker_keep_hrms_modules_pending_without_hrms_readback():
         assert "hrms" in (by_module["hr"].failure_reason or "")
         assert by_module["payroll"].verification_state == "pending"
         assert all(row.verification_state != "verified" for row in statuses if session.get(_models.Module, row.module_id).code in {"hr", "payroll"})
+        assert tenant.status != "ready"
     finally:
         settings.feature_flags = original_flags

@@ -113,32 +113,65 @@ def _ensure_print_format() -> None:
 
 def _ensure_standard_permissions() -> None:
     """Grant least-privilege demo roles access to standard ERPNext records."""
-    matrix = {
-        "Champion Administrator": {"read": 1, "write": 1, "create": 1, "delete": 1, "print": 1, "export": 1, "share": 1},
-        "Champion Dispatcher": {"read": 1, "write": 1, "create": 1, "print": 1, "export": 1},
-        "Champion Sales User": {"read": 1, "write": 1, "create": 1, "print": 1, "export": 1},
-        "Champion Accounting User": {"read": 1, "write": 1, "create": 1, "submit": 1, "print": 1, "export": 1},
-        "Champion Inventory Manager": {"read": 1, "write": 1, "create": 1, "submit": 1, "print": 1, "export": 1},
-        "Champion Field Technician": {"read": 1, "write": 1, "print": 1},
-    }
     doctypes = (
         "Customer", "Contact", "Address", "Lead", "Opportunity", "Quotation",
         "Sales Invoice", "Payment Entry", "Item", "Supplier", "Warehouse", "Asset",
         "Purchase Receipt", "Stock Entry", "Asset Maintenance", "Asset Maintenance Team",
     )
-    for role, permissions in matrix.items():
+    permissions = {
+        "read": 1,
+        "write": 1,
+        "create": 1,
+        "submit": 1,
+        "delete": 0,
+        "cancel": 0,
+        "print": 1,
+        "export": 1,
+        "share": 0,
+    }
+    allowed_doctypes = {
+        "Champion Administrator": set(doctypes),
+        "Champion Dispatcher": {"Customer", "Contact"},
+        "Champion Sales User": {"Customer", "Contact", "Lead", "Opportunity", "Quotation", "Sales Invoice"},
+        "Champion Accounting User": {"Customer", "Contact", "Sales Invoice", "Payment Entry"},
+        "Champion Inventory Manager": {"Item", "Supplier", "Warehouse", "Purchase Receipt", "Stock Entry", "Asset"},
+        "Champion Field Technician": {"Asset", "Asset Maintenance"},
+    }
+    for role, role_doctypes in allowed_doctypes.items():
         for parent in doctypes:
-            if not frappe.db.exists("DocType", parent) or frappe.db.exists("Custom DocPerm", {"parent": parent, "role": role, "permlevel": 0}):
+            if not frappe.db.exists("DocType", parent):
                 continue
-            frappe.get_doc({
-                "doctype": "Custom DocPerm",
-                "parent": parent,
-                "parenttype": "DocType",
-                "parentfield": "permissions",
-                "role": role,
-                "permlevel": 0,
-                **permissions,
-            }).insert(ignore_permissions=True)
+            existing = frappe.db.get_value(
+                "Custom DocPerm",
+                {"parent": parent, "role": role, "permlevel": 0},
+                "name",
+            )
+            if parent not in role_doctypes:
+                if existing:
+                    frappe.db.set_value(
+                        "Custom DocPerm",
+                        existing,
+                        {field: 0 for field in permissions},
+                        update_modified=False,
+                    )
+                continue
+            if existing:
+                frappe.db.set_value(
+                    "Custom DocPerm",
+                    existing,
+                    permissions,
+                    update_modified=False,
+                )
+            else:
+                frappe.get_doc({
+                    "doctype": "Custom DocPerm",
+                    "parent": parent,
+                    "parenttype": "DocType",
+                    "parentfield": "permissions",
+                    "role": role,
+                    "permlevel": 0,
+                    **permissions,
+                }).insert(ignore_permissions=True)
 
 
 def after_install() -> None:

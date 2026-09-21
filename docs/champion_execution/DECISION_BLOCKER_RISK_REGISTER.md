@@ -51,7 +51,22 @@
 | P3-B01 | Blocker | Resolved | Release owner / GitHub administrator | Protected production approvals were recorded on promotion and rollout runs; PLAT-P3 final verdict is recorded as PASS in `releases/PLAT-P3.md`. |
   | P3-R05 | Accepted limitation | Open by design | Delivery owner / Champion acceptance authority | C03 remains `defined`: Champion role/module decisions, chart of accounts, field mappings, branding/domain, and ERP verification require future approved inputs. No Champion data was imported. |
 
+# Phase 02 HRMS closure register
+
+| ID | Type | Status | Owner | Required action |
+|---|---|---|---|---|
+| P2-HRMS-PASS | Gate | Resolved | Release owner | Protected staging run `35506309957` / job `106066811682` passed for merge candidate `9674a6a1b4adf9447af759458763b25721672272`; production promotion was not executed and Phase 03 is permitted. |
+| P2-HRMS-ARTIFACT | Evidence | Recorded | Release owner | Retain artifact `staging-browser-evidence-9674a6a1b4adf9447af759458763b25721672272`, digest `sha256:bd808a20f5f9743e122dc064113160dbf60ad8bd073638b9dd132bf4c191a8ef`, as the exact read-only review input. |
+
 # PLAT-P4 Decision, Blocker, and Risk Register
+
+# Phase 03 Unified Identity register
+
+| ID | Type | Status | Owner | Required action |
+|---|---|---|---|---|
+| P3-ID-D01 | Decision | Recorded | Release owner / security owner | Use the temporary isolated authorization-code broker only behind `phase3_unified_identity`; replace it with a maintained OAuth/OIDC provider before production authority. |
+| P3-ID-R01 | Risk | Open — current candidate protected staging rerun required | Release owner | Candidate `d4517eeb842e121cd133ca630f9e8b15c4b22f8c` / LenERP `8d77cec7504d22f9c0a235034777e31fa07fc62` is locally remediated; run the immutable protected staging candidate with browser-bound state, exchange-handle mapping isolation, denial/replay/role/membership/removal cases, durable rate-limit evidence, accessibility/responsive evidence, authenticated break-glass checks before/during/after rollback, cleanup, and rollback readback. |
+| P3-ID-B01 | Blocker | Open | Release owner / acceptance authority | No production SSO or Champion acceptance until the protected staging artifact and independent read-only review pass. |
 
 | ID | Type | Status | Owner | Required action |
 |---|---|---|---|---|

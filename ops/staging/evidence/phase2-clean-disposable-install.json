@@ -1,0 +1,54 @@
+{
+  "evidence_kind": "phase2-clean-disposable-install",
+  "status": "passed",
+  "captured_at": "2026-09-20T10:15:00Z",
+  "bench_root": "/opt/frappe-phase2-clean-20260920T095000Z",
+  "site": "phase2-clean-20260920t095000z.example.test",
+  "site_is_disposable": true,
+  "historical_staging_site_reused": false,
+  "install_order": [
+    "frappe",
+    "erpnext",
+    "hrms",
+    "lenerp_core"
+  ],
+  "installed_apps": {
+    "frappe": "15.119.1",
+    "erpnext": "15.120.0",
+    "hrms": "15.64.1",
+    "lenerp_core": "0.2.0"
+  },
+  "source_commits": {
+    "frappe": "edae775dd36b6c4ad7acab10230262bd74040765",
+    "erpnext": "945e825bee3d0d645f6cb59bcaab90fcbfb98ce3",
+    "hrms": "e68a3deaa95ae5b2c3d743297d0a4ab505733fc1",
+    "lenerp_core": "a7e47208baf6583295f5f2632f4787262cd3f475"
+  },
+  "before_hrms": {
+    "expense_claim_type_doctype": null,
+    "hr_module_def": null
+  },
+  "after_hrms": {
+    "expense_claim_type_doctype": {
+      "name": "Expense Claim Type",
+      "module": "HR",
+      "custom": 0
+    },
+    "hr_module_def": {
+      "name": "HR",
+      "module_name": "HR",
+      "app_name": "hrms"
+    }
+  },
+  "migration": "bench --site migrate returned success",
+  "fixture_resolution": "Expense Claim Type resolves to HR/hrms, not Core/frappe",
+  "artifact": {
+    "path": "ops/staging/lenerp_core-a7e47208baf6583295f5f2632f4787262cd3f475.tar",
+    "sha256": "C62038908A835BAF7C5F3FB418DF561D8E5246AA00156F21D88EAC53153571AC"
+  },
+  "notes": [
+    "Frappe is initialized by bench new-site as the site platform before the explicit ERPNext, HRMS, and lenerp_core installs.",
+    "The site was not used as staging or production traffic and contains no business data.",
+    "No fixture was skipped, patched, uninstalled, or reinstalled during this proof."
+  ]
+}

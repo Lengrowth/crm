@@ -226,18 +226,37 @@ class FrappeBenchERPNextClient(ERPNextClient):
         if app_name in self._list_apps(site_id):
             return OperationResult({"status": "success", "site_id": site_id, "app": app_name, "provider": "frappe_staging_bench", "replayed": True})
         ok, _ = self._run(["--site", site_id, "install-app", app_name])
-        if not ok and app_name == "hrms":
-            # HRMS v15.64.1 has an upstream-reported first-install fixture
-            # race (frappe/hrms#1639).  Recover only on an isolated synthetic
-            # site, with one bounded replay and no success claim until the
-            # installed-app readback confirms the provider state.
-            if "hrms" in self._list_apps(site_id):
-                removed, _ = self._run(["--site", site_id, "uninstall-app", "hrms", "--yes", "--force", "--no-backup"])
-                if not removed:
-                    return OperationResult({"status": "failed", "site_id": site_id, "app": app_name, "provider": "frappe_staging_bench", "provider_verified": False, "error": "isolated HRMS recovery uninstall failed"})
-            self._run(["--site", site_id, "clear-cache"])
-            ok, _ = self._run(["--site", site_id, "install-app", app_name])
-        return OperationResult({"status": "success" if ok else "failed", "site_id": site_id, "app": app_name, "provider": "frappe_staging_bench", "provider_verified": ok, "replayed": not ok})
+        return OperationResult({"status": "success" if ok else "failed", "site_id": site_id, "app": app_name, "provider": "frappe_staging_bench", "provider_verified": ok, "error": None if ok else "provider install failed; exact runtime readback is unavailable"})
+
+    def _run_git(self, path: Path, args: list[str]) -> tuple[bool, str]:
+        command = ["git", "-C", str(path), *args]
+        if self.run_as_user and getpass.getuser() != self.run_as_user:
+            command = ["sudo", "-n", "-u", self.run_as_user, *command]
+        try:
+            result = subprocess.run(command, capture_output=True, text=True, timeout=self.command_timeout_seconds, check=False)
+        except (OSError, subprocess.SubprocessError):
+            return False, ""
+        return result.returncode == 0, result.stdout.strip()
+
+    def _app_commits(self) -> dict[str, str]:
+        commits: dict[str, str] = {}
+        for app_name in ("frappe", "erpnext", "hrms", "lenerp_core"):
+            app_path = self.bench_root / "apps" / app_name
+            source_marker = app_path / "SOURCE_COMMIT.txt"
+            if source_marker.is_file():
+                try:
+                    output = source_marker.read_text(encoding="utf-8").strip()
+                except OSError:
+                    output = ""
+                if re.fullmatch(r"[0-9a-f]{40}", output):
+                    commits[app_name] = output
+                continue
+            if not (app_path / ".git").exists():
+                continue
+            ok, output = self._run_git(app_path, ["rev-parse", "HEAD"])
+            if ok and re.fullmatch(r"[0-9a-f]{40}", output):
+                commits[app_name] = output
+        return commits
 
     def migrate_site(self, site_id: str) -> OperationResult:
         if not self._site_exists(site_id):
@@ -275,6 +294,7 @@ class FrappeBenchERPNextClient(ERPNextClient):
             "files_path": str(site_path),
             "queue_namespace": f"{site_id}:short,default",
             "installed_apps": apps,
+            "installed_app_commits": self._app_commits(),
             "configuration": {
                 "modules": self._config_value(config, "lenerp_phase4_modules", []),
                 "roles": self._config_value(config, "lenerp_phase4_roles", []),
@@ -283,7 +303,7 @@ class FrappeBenchERPNextClient(ERPNextClient):
             },
         }
 
-    def verify_site_configuration(self, site_id: str, requested_modules: list[str], required_apps: Optional[dict[str, str]] = None, required_roles: Optional[list[str]] = None, required_workspaces: Optional[list[str]] = None, required_app_versions: Optional[dict[str, str]] = None) -> OperationResult:
+    def verify_site_configuration(self, site_id: str, requested_modules: list[str], required_apps: Optional[dict[str, str]] = None, required_roles: Optional[list[str]] = None, required_workspaces: Optional[list[str]] = None, required_app_versions: Optional[dict[str, str]] = None, required_app_commits: Optional[dict[str, str]] = None) -> OperationResult:
         inventory = self.get_site_inventory(site_id)
         if inventory.get("status") != "success":
             return OperationResult(inventory)
@@ -299,8 +319,11 @@ class FrappeBenchERPNextClient(ERPNextClient):
         missing_required_workspaces = sorted(set(required_workspaces or []) - current_workspaces)
         app_versions = installed_payload if isinstance(installed_payload, dict) else {}
         incompatible_apps = sorted(f"{app} (expected {version}, read {app_versions.get(app) or 'unknown'})" for app, version in (required_app_versions or {}).items() if app in apps and app_versions.get(app) != version)
+        app_commits = inventory.get("installed_app_commits") or {}
+        incompatible_commits = sorted(f"{app} commit (expected {commit}, read {app_commits.get(app) or 'unknown'})" for app, commit in (required_app_commits or {}).items() if app in apps and app_commits.get(app) != commit)
+        incompatible_apps.extend(incompatible_commits)
         verified = {"frappe", "erpnext", "lenerp_core"}.issubset(apps) and set(requested_modules).issubset(modules) and not missing_required_apps and not incompatible_apps and not missing_required_roles and not missing_required_workspaces
-        return OperationResult({"status": "success" if verified else "failed", "site_id": site_id, "provider": "frappe_staging_bench", "provider_verified": verified, "installed_apps": sorted(apps), "app_versions": app_versions, "modules": sorted(modules), "required_apps": requirements, "missing_required_apps": missing_required_apps, "incompatible_apps": incompatible_apps, "missing_required_roles": missing_required_roles, "missing_required_workspaces": missing_required_workspaces, "inventory": inventory})
+        return OperationResult({"status": "success" if verified else "failed", "site_id": site_id, "provider": "frappe_staging_bench", "provider_verified": verified, "installed_apps": sorted(apps), "app_versions": app_versions, "installed_app_commits": app_commits, "modules": sorted(modules), "required_apps": requirements, "missing_required_apps": missing_required_apps, "incompatible_apps": incompatible_apps, "missing_required_roles": missing_required_roles, "missing_required_workspaces": missing_required_workspaces, "inventory": inventory})
 
     def bind_domain(self, site_id: str, domain: str) -> OperationResult:
         if not self._site_exists(site_id):

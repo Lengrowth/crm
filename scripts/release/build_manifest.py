@@ -141,6 +141,39 @@ def main() -> int:
             raise SystemExit("application dependency manifest must be a JSON object with schema_version 1")
         application_dependencies = dependency_payload
 
+    application_records = {}
+    dependency_apps = application_dependencies.get("module_dependencies", {}) if isinstance(application_dependencies, dict) else {}
+    for app_name, app_payload in (dependency_apps.items() if isinstance(dependency_apps, dict) else []):
+        if not isinstance(app_payload, dict):
+            continue
+        runtime_payload = runtime_apps.get(app_name, {}) if isinstance(runtime_apps, dict) else {}
+        if not isinstance(runtime_payload, dict):
+            runtime_payload = {}
+        installed_version = runtime_payload.get("version")
+        installed_commit = runtime_payload.get("commit")
+        identity_verified = (
+            installed_version == app_payload.get("version")
+            and installed_commit == app_payload.get("commit")
+        )
+        compatibility_status = (app_payload.get("compatibility") or {}).get("status", "not_verified")
+        application_records[app_name] = {
+            "required_application": True,
+            "source": app_payload.get("source", "module"),
+            "repository": app_payload.get("repository"),
+            "tag": app_payload.get("tag"),
+            "intended_version": app_payload.get("version"),
+            "intended_commit": app_payload.get("commit"),
+            "packaged_source": app_payload.get("source_archive_url"),
+            "installed_version": installed_version,
+            "installed_commit": installed_commit,
+            "verification_status": "verified" if identity_verified and compatibility_status == "verified" else "not_verified",
+            "compatibility_status": compatibility_status,
+        }
+
+    baseline_reference = None
+    if args.runtime_baseline:
+        baseline_reference = str(Path("ops") / args.runtime_baseline.parent.name / args.runtime_baseline.name).replace("\\", "/")
+
     manifest = {
         "release_id": args.release_id,
         "control_plane_commit": args.control_plane_commit,
@@ -153,13 +186,10 @@ def main() -> int:
         "custom_app_version": custom_app_version,
         "custom_app_commit": custom_app_commit,
         "installed_apps": installed_apps,
+        "application_records": application_records,
         "database_revision_before": database_before,
         "database_revision_after": database_after,
-        "runtime_baseline": (
-            "ops/production/release-runtime-baseline.json"
-            if args.runtime_baseline
-            else None
-        ),
+        "runtime_baseline": baseline_reference,
         "dependency_lock_hashes": locks,
         "feature_flags": feature_flags,
         "application_dependencies": application_dependencies,

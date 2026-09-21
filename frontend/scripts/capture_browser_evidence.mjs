@@ -12,6 +12,7 @@ const expectedShell = process.env.EXPECTED_PHASE_ONE_SHELL ?? "on";
 const expectedRelease = process.env.EXPECTED_RELEASE;
 const runtimeReleaseUrl = process.env.RUNTIME_RELEASE_URL;
 const rolloutStage = process.env.ROLLOUT_STAGE ?? "operator-validation";
+const runPhase3BrowserEvidence = process.env.RUN_PHASE3_BROWSER_EVIDENCE !== "off";
 const cookieName = process.env.AUTH_COOKIE_NAME ?? "crm-auth-token";
 const hostHeader = process.env.HOST_HEADER;
 const organizationId = process.env.ORGANIZATION_ID ?? "synthetic-organization";
@@ -266,6 +267,7 @@ await writeFile(path.join(outputDir, "phase2-cleanup.json"), `${JSON.stringify(p
 await uiPage.close();
 
 const phase3Cleanup = { organization_ids: [], tenant_ids: [] };
+if (runPhase3BrowserEvidence) {
 const phase3Org = await phase2Api("/organizations", "POST", { name: `Phase 3 Browser Synthetic ${syntheticSuffix}`, status: "trial" });
 if (phase3Org.status !== 201 || !phase3Org.body?.id) throw new Error(`Phase 3 synthetic company setup failed: ${phase3Org.status}`);
 addUnique(phase3Cleanup.organization_ids, phase3Org.body.id);
@@ -314,6 +316,7 @@ if (phase3Reverse.status !== 200 || phase3Reverse.body?.effective?.effective_cod
 const phase3AuditAfter = await phase2Api(`/organizations/${phase3Org.body.id}/modules/audit`);
 if (phase3AuditAfter.status !== 200 || phase3AuditAfter.body.length !== 2) throw new Error("Phase 3 audit after reversal check failed");
 report.phase3_module_control = { catalog_loaded_from_backend: true, public_internal_identities_agree: true, module_search_detail: true, bundle_preview: true, bundle_apply: true, duplicate_retry_idempotent: true, invalid_selection_rejected: true, dependent_disable_rejected: true, company_modules_view: true, audit_before_after: { before: phase3AuditBefore.body.length, after: phase3AuditAfter.body.length }, entitlement_erp_state_separate: true, reversal: true, non_admin_denied: Boolean(nonAdminTokenFile), cleanup_manifest: "phase3-cleanup.json" };
+}
 
 const runtimeResponse = await fetch(runtimeReleaseUrl, { cache: "no-store" });
 if (!runtimeResponse.ok) throw new Error(`runtime release endpoint returned HTTP ${runtimeResponse.status}`);

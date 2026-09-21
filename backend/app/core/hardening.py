@@ -7,8 +7,12 @@ from typing import Optional
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse, Response
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.models.domain import SSORateLimitBucket
 
 
 class InMemoryRateLimiter:
@@ -29,6 +33,35 @@ class InMemoryRateLimiter:
             return False, retry_after
 
         bucket.append(now)
+        return True, 0
+
+
+class DatabaseRateLimiter:
+    """A small fixed-window limiter whose counters survive worker restarts."""
+
+    def allow(self, session: Session, key: str, limit: int, window_seconds: int) -> tuple[bool, int]:
+        from datetime import datetime, timedelta, timezone
+
+        now = datetime.now(timezone.utc)
+        bucket = session.execute(select(SSORateLimitBucket).where(SSORateLimitBucket.bucket_key == key)).scalar_one_or_none()
+        if bucket is None:
+            bucket = SSORateLimitBucket(bucket_key=key, window_started_at=now, request_count=0)
+            session.add(bucket)
+            try:
+                session.flush()
+            except IntegrityError:
+                session.rollback()
+                bucket = session.execute(select(SSORateLimitBucket).where(SSORateLimitBucket.bucket_key == key)).scalar_one()
+        started = bucket.window_started_at.replace(tzinfo=timezone.utc) if bucket.window_started_at.tzinfo is None else bucket.window_started_at
+        if now - started >= timedelta(seconds=window_seconds):
+            bucket.window_started_at = now
+            bucket.request_count = 0
+        if bucket.request_count >= limit:
+            retry_after = max(1, int((timedelta(seconds=window_seconds) - (now - started)).total_seconds()))
+            session.commit()
+            return False, retry_after
+        bucket.request_count += 1
+        session.commit()
         return True, 0
 
 

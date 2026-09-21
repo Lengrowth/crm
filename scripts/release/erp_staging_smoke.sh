@@ -10,9 +10,10 @@ EXPECTED_ERPNEXT_COMMIT="${EXPECTED_ERPNEXT_COMMIT:-945e825bee3d0d645f6cb59bcaab
 EXPECTED_HRMS_VERSION="${EXPECTED_HRMS_VERSION:-15.64.1}"
 EXPECTED_HRMS_COMMIT="${EXPECTED_HRMS_COMMIT:-e68a3deaa95ae5b2c3d743297d0a4ab505733fc1}"
 EXPECTED_CUSTOM_APP_VERSION="${EXPECTED_CUSTOM_APP_VERSION:-0.2.0}"
+EXPECTED_CUSTOM_APP_COMMIT="${EXPECTED_CUSTOM_APP_COMMIT:-8d77cec7504d22f9c0a235034777e31fa07fc62}"
 OUTPUT_FILE="${OUTPUT_FILE:-}"
 BACKUP_DIR="${BACKUP_DIR:-}"
-export EXPECTED_HRMS_COMMIT EXPECTED_HRMS_VERSION BENCH_ROOT SITE OUTPUT_FILE BACKUP_DIR
+export EXPECTED_HRMS_COMMIT EXPECTED_HRMS_VERSION EXPECTED_CUSTOM_APP_COMMIT BENCH_ROOT SITE OUTPUT_FILE BACKUP_DIR
 
 for unit in \
   frappe-staging-redis-cache.service \
@@ -95,12 +96,15 @@ grep -Eq "^lenerp_core[[:space:]]+${EXPECTED_CUSTOM_APP_VERSION}([[:space:]]|$)"
   echo "staging HRMS commit mismatch" >&2
   exit 1
 }
+[[ "$(sudo -u frappe tr -d '\r\n' < "$BENCH_ROOT/apps/lenerp_core/SOURCE_COMMIT.txt")" == "$EXPECTED_CUSTOM_APP_COMMIT" ]] || {
+  echo "staging custom app source marker mismatch" >&2
+  exit 1
+}
 
-# The HRMS v15 installer has an upstream-reported first-install fixture race
-# (frappe/hrms#1639).  A successful install is not enough: prove that the
-# exact site contains the expected HRMS application, migration readback,
-# upstream HR/Payroll roles, and HRMS-owned workspaces.  Keep these checks
-# candidate-bound and fail closed when any readback is unavailable.
+# A successful install is not enough: prove that the exact site contains the
+# expected HRMS application, migration readback, upstream HR/Payroll roles,
+# HRMS-owned workspaces, and the exact custom-app artifact marker. Keep these
+# checks candidate-bound and fail closed when any readback is unavailable.
 installed_apps_json="$(sudo -u frappe bash -lc "cd '$BENCH_ROOT' && bench --site '$SITE' execute frappe.get_installed_apps")"
 roles_json="$(sudo -u frappe bash -lc "cd '$BENCH_ROOT' && bench --site '$SITE' execute frappe.get_all --args '[\"Role\"]' --kwargs '{\"filters\":{\"name\":[\"in\",[\"HR User\",\"HR Manager\",\"Payroll User\",\"Payroll Manager\"]]},\"pluck\":\"name\"}'")"
 workspaces_json="$(sudo -u frappe bash -lc "cd '$BENCH_ROOT' && bench --site '$SITE' execute frappe.get_all --args '[\"Workspace\"]' --kwargs '{\"filters\":{\"name\":[\"in\",[\"HR\",\"Payroll\"]]},\"fields\":[\"name\",\"title\",\"module\"]}'")"
@@ -142,6 +146,7 @@ evidence = {
     "installed_apps": apps,
     "hrms_version": os.environ.get("EXPECTED_HRMS_VERSION", ""),
     "hrms_commit": commit,
+    "custom_app_commit": os.environ.get("EXPECTED_CUSTOM_APP_COMMIT", ""),
     "roles": sorted(str(item) for item in roles),
     "workspaces": sorted(workspaces, key=lambda item: str(item)),
     "provider_verified": True,

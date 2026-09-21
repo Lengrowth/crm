@@ -6,7 +6,7 @@ RELEASE_ROOT="${RELEASE_ROOT:-/opt/saas-control/releases}"
 TARGET_REF="${TARGET_REF:-${GITHUB_SHA:-$(git -C "$SOURCE_REPO" rev-parse HEAD)}}"
 RELEASE_ID="${RELEASE_ID:-$(git -C "$SOURCE_REPO" rev-parse "$TARGET_REF")}"
 CANDIDATE_DIR="$RELEASE_ROOT/$RELEASE_ID"
-RUNTIME_BASELINE_FILE="${RUNTIME_BASELINE_FILE:-$SOURCE_REPO/ops/production/release-runtime-baseline.json}"
+RUNTIME_BASELINE_FILE="${RUNTIME_BASELINE_FILE:-$SOURCE_REPO/ops/${DEPLOY_TARGET:-staging}/release-runtime-baseline.json}"
 
 mkdir -p "$RELEASE_ROOT"
 if [[ -f "$CANDIDATE_DIR/.candidate-complete" ]]; then

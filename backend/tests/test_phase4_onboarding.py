@@ -157,6 +157,30 @@ def test_failed_step_is_not_ready_and_can_resume_after_injection_removed():
         session.close()
 
 
+def test_provider_failure_is_sanitized_and_tenant_never_becomes_ready():
+    session = make_session()
+    original_flags = settings.feature_flags
+    settings.feature_flags = "onboarding_public_intake=true,onboarding_conversion=true,onboarding_execution=true,onboarding_synthetic_allowlist=true,onboarding_real_execution=false"
+    try:
+        operator = SaaSUser(email="phase4-provider-failure@example.test", full_name="Provider Failure Operator", status="active", is_platform_admin=True)
+        session.add(operator)
+        session.commit()
+        created = phase4_onboarding_service.create_public(session, PublicOnboardingCreate(idempotency_key="phase4-provider-failure-1", payload=payload()))
+        phase4_onboarding_service.submit_public(session, created.request_id, created.management_token or "")
+        phase4_onboarding_service.begin_review(session, operator, created.request_id, OperatorReviewAction(version=1, reason="Review."))
+        phase4_onboarding_service.approve(session, operator, created.request_id, OperatorReviewAction(version=1, reason="Approve synthetic failure."))
+        converted = phase4_onboarding_service.convert(session, operator, created.request_id)
+        phase4_onboarding_service.authorize_execution(session, operator, created.request_id, OperatorExecutionAuthorization(version=1, confirmation="authorize_isolated_synthetic_execution", reason="Confirm synthetic target."))
+        failed = run_next_job(session, client=MockERPNextClient(failures={"create_site": True}))
+        assert failed is not None
+        tenant = session.get(Tenant, converted.tenant_id)
+        assert tenant is not None and tenant.status != "ready"
+        assert all("password" not in str(item).lower() and "token" not in str(item).lower() for item in failed.logs_json)
+    finally:
+        settings.feature_flags = original_flags
+        session.close()
+
+
 def test_expired_validation_lease_is_reclaimed_and_fenced():
     session = make_session()
     tenant = Tenant(organization_id="org-lease", tenant_slug="lease-tenant", environment="staging")

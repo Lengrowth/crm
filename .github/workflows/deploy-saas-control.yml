@@ -50,6 +50,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: saas-control-staging-deploy
@@ -95,6 +96,37 @@ jobs:
           set -euo pipefail
           [[ "$REPOSITORY" == "Lengrowth/crm" ]] || { echo "Candidate validation is restricted to the canonical repository" >&2; exit 1; }
           git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          count_open_prs() {
+            CANDIDATE_SHA="$1" EXPECTED_HEAD_REF="${2:-}" python3 - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          candidate_sha = os.environ["CANDIDATE_SHA"]
+          expected_head_ref = os.environ["EXPECTED_HEAD_REF"]
+          repository = os.environ["REPOSITORY"]
+          token = os.environ["GH_TOKEN"]
+          request = urllib.request.Request(
+              f"https://api.github.com/repos/{repository}/commits/{candidate_sha}/pulls",
+              headers={
+                  "Accept": "application/vnd.github+json",
+                  "Authorization": f"Bearer {token}",
+                  "X-GitHub-Api-Version": "2022-11-28",
+              },
+          )
+          with urllib.request.urlopen(request) as response:
+              pulls = json.load(response)
+          matches = [
+              pull for pull in pulls
+              if pull.get("state") == "open"
+              and pull.get("base", {}).get("ref") == "main"
+              and pull.get("head", {}).get("sha") == candidate_sha
+              and pull.get("head", {}).get("ref") == (expected_head_ref or pull.get("head", {}).get("ref"))
+              and pull.get("head", {}).get("repo", {}).get("full_name") == repository
+          ]
+          print(len(matches))
+          PY
+          }
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
             if [[ "$PHASE3_ENABLED" == "true" ]]; then
               [[ "$CANDIDATE_REF" =~ ^[0-9a-f]{40}$ ]] || { echo "workflow_dispatch Phase 03 requires an exact 40-character commit ref" >&2; exit 1; }
@@ -106,7 +138,7 @@ jobs:
                 echo "Manually supplied staging candidate does not descend from authoritative main" >&2
                 exit 1
               }
-              pr_count="$(gh api "repos/$REPOSITORY/commits/$CANDIDATE_SHA/pulls" --jq '[.[] | select(.state == "open" and .base.ref == "main" and .head.sha == "'"$CANDIDATE_SHA"'" and .head.repo.full_name == "'"$REPOSITORY"'")] | length')"
+              pr_count="$(count_open_prs "$CANDIDATE_SHA")"
               test "$pr_count" = "1" || { echo "Candidate is not the exact head of one open same-repository PR to main" >&2; exit 1; }
             else
               git merge-base --is-ancestor "$CANDIDATE_SHA" refs/remotes/origin/main || {
@@ -120,7 +152,7 @@ jobs:
               echo "Phase 03 candidate does not descend from authoritative main" >&2
               exit 1
             }
-            pr_count="$(gh api "repos/$REPOSITORY/commits/$CANDIDATE_SHA/pulls" --jq '[.[] | select(.state == "open" and .base.ref == "main" and .head.ref == "codex/phase3-unified-identity" and .head.sha == "'"$CANDIDATE_SHA"'" and .head.repo.full_name == "'"$REPOSITORY"'")] | length')"
+            pr_count="$(count_open_prs "$CANDIDATE_SHA" "codex/phase3-unified-identity")"
             test "$pr_count" = "1" || { echo "Feature-branch candidate is not the exact head of one open same-repository PR to main" >&2; exit 1; }
           else
             git merge-base --is-ancestor "$CANDIDATE_SHA" refs/remotes/origin/main || {
@@ -132,7 +164,7 @@ jobs:
       - name: Verify the commit-pinned LenERP Core staging bundle
         run: |
           core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
-          test "$core_commit" = "a7e47208baf6583295f5f2632f4787262cd3f475"
+          test "$core_commit" = "8d77cec7504d22f9c0a235034777e31fa07fc62"
           archive="ops/staging/lenerp_core-${core_commit}.tar"
           test -f "$archive"
           python3 - <<'PY'
@@ -454,28 +486,19 @@ jobs:
         run: |
           hrms_commit="e68a3deaa95ae5b2c3d743297d0a4ab505733fc1"
           hrms_dir=/opt/frappe-staging-bench/apps/hrms
+          apps="$(sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test list-apps")"
           if [[ ! -d "$hrms_dir/.git" ]]; then
             sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench get-app --branch v15.64.1 https://github.com/frappe/hrms"
           fi
+          grep -Eq '^frappe[[:space:]]+15\.119\.1([[:space:]]|$)' <<<"$apps"
+          grep -Eq '^erpnext[[:space:]]+15\.120\.0([[:space:]]|$)' <<<"$apps"
           test -d "$hrms_dir/.git"
           test "$(sudo -u frappe git -C "$hrms_dir" rev-parse HEAD)" = "$hrms_commit"
+          test "$(sudo -u frappe git -C /opt/frappe-staging-bench/apps/frappe rev-parse HEAD)" = "edae775dd36b6c4ad7acab10230262bd74040765"
+          test "$(sudo -u frappe git -C /opt/frappe-staging-bench/apps/erpnext rev-parse HEAD)" = "945e825bee3d0d645f6cb59bcaab90fcbfb98ce3"
           sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench setup requirements hrms"
-          if ! sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test list-apps | grep -Eq '^hrms[[:space:]]'"; then
-            # HRMS v15.64.1 has an upstream-reported first-install fixture
-            # race (frappe/hrms#1639).  Retry exactly once after removing a
-            # partial site registration; never continue without a successful
-            # provider readback on the exact pinned app.
-            set +e
+          if ! grep -Eq '^hrms[[:space:]]+15\.64\.1([[:space:]]|$)' <<<"$apps"; then
             sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test install-app hrms"
-            first_install_status=$?
-            set -e
-            if [[ "$first_install_status" -ne 0 ]]; then
-              if sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test list-apps | grep -Eq '^hrms[[:space:]]'"; then
-                sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test uninstall-app hrms --yes --force --no-backup"
-              fi
-              sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test clear-cache"
-              sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test install-app hrms"
-            fi
           fi
           sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test migrate"
           sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench build --app hrms"
@@ -485,8 +508,9 @@ jobs:
           core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
           exact_dir="$RUNNER_TEMP/lenerp_core-exact"
           test -d "$exact_dir"
-          test "$core_commit" = "a7e47208baf6583295f5f2632f4787262cd3f475"
+          test "$core_commit" = "8d77cec7504d22f9c0a235034777e31fa07fc62"
           sudo rsync -a --delete --exclude='.git' "$exact_dir/" /opt/frappe-staging-bench/apps/lenerp_core/
+          printf '%s\n' "$core_commit" | sudo tee /opt/frappe-staging-bench/apps/lenerp_core/SOURCE_COMMIT.txt >/dev/null
           sudo chown -R frappe:frappe /opt/frappe-staging-bench/apps/lenerp_core
           # The exact bundle is copied into the protected bench rather than
           # fetched with bench get-app. Register it explicitly before asking
@@ -503,6 +527,7 @@ jobs:
               path.write_text('\n'.join([*lines, 'lenerp_core']) + '\n', encoding='utf-8')
           PY
           sudo -u frappe grep -qx 'lenerp_core' "$apps_file"
+          test "$(sudo -u frappe tr -d '\r\n' < /opt/frappe-staging-bench/apps/lenerp_core/SOURCE_COMMIT.txt)" = "$core_commit"
           if ! sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test list-apps | grep -Eq '^lenerp_core[[:space:]]'"; then
             sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test install-app lenerp_core"
           fi
@@ -513,7 +538,8 @@ jobs:
       - name: Verify the dedicated ERP staging bench and queues
         env:
           OUTPUT_FILE: ${{ github.workspace }}/staging-browser-evidence/erp/phase02-runtime-readback.json
-        run: sudo env OUTPUT_FILE="$OUTPUT_FILE" BACKUP_DIR="${PHASE02_STAGING_BACKUP_DIR:-}" scripts/release/erp_staging_smoke.sh
+          EXPECTED_CUSTOM_APP_COMMIT: 8d77cec7504d22f9c0a235034777e31fa07fc62
+        run: sudo env OUTPUT_FILE="$OUTPUT_FILE" BACKUP_DIR="${PHASE02_STAGING_BACKUP_DIR:-}" EXPECTED_CUSTOM_APP_COMMIT="$EXPECTED_CUSTOM_APP_COMMIT" scripts/release/erp_staging_smoke.sh
 
       - name: Run the persisted Champion synthetic ERP demonstration smoke
         env:
@@ -665,6 +691,21 @@ jobs:
           sudo install -m 600 -o saas-staging -g saas-staging "$token_tmp" /run/saas-control-staging/smoke/non-admin-auth-token
           sudo rm -f -- "$token_tmp"
 
+      - name: Remove stale exact Phase 2 browser records before empty-state capture
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/staging-browser-evidence"
+          cleanup_tmp="/tmp/saas-control-phase2-pre-browser-cleanup-${GITHUB_RUN_ID}.json"
+          set -a
+          . /opt/saas-control-staging/shared/env/staging-backend.env
+          set +a
+          sudo -n -E -u saas-staging env PYTHONPATH=/opt/saas-control-staging/current/backend \
+            /opt/saas-control-staging/shared/backend-venv/bin/python \
+            /opt/saas-control-staging/current/scripts/release/cleanup_phase2_synthetic.py \
+            --discover-stale --output "$cleanup_tmp"
+          sudo install -m 644 -o "$(id -u)" -g "$(id -g)" "$cleanup_tmp" \
+            "$GITHUB_WORKSPACE/staging-browser-evidence/pre-browser-phase2-cleanup.json"
+          sudo rm -f -- "$cleanup_tmp"
+
       - name: Capture candidate-bound browser and accessibility evidence
         # Keep this capture step adjacent to the deployed release dependencies.
         env:
@@ -672,6 +713,7 @@ jobs:
           EXPECTED_RELEASE: ${{ steps.candidate.outputs.sha }}
           RUNTIME_RELEASE_URL: http://127.0.0.1:18001/runtime/release
           ROLLOUT_STAGE: ${{ inputs.rollout_stage || 'operator-validation' }}
+          RUN_PHASE3_BROWSER_EVIDENCE: "off"
           HEADLESS: "false"
           BASE_URL: http://127.0.0.1:13001
           HOST_HEADER: staging.example.test
@@ -866,8 +908,10 @@ jobs:
               output.append(line)
           path.write_text('\n'.join(output) + '\n', encoding='utf-8')
           PY
-          sudo systemctl restart saas-control-staging-backend
-          sleep 3
+          sudo systemctl stop saas-control-staging-backend
+          sudo systemctl start saas-control-staging-backend
+          sudo systemctl is-active --quiet saas-control-staging-backend
+          sleep 5
           set -a
           . /opt/saas-control-staging/shared/env/staging-backend.env
           set +a
