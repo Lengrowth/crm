@@ -25,3 +25,39 @@ artifact name, and documentation hash. The pinned LenERP Core app is
 `PHASE 02 HRMS AND DEPENDENCY REMEDIATION: READY FOR INDEPENDENT REVIEW`
 
 This is a remediation-readiness verdict only. It does not award independent PASS, Champion acceptance, real-data authorization, production activation, or Phase 6 approval.
+
+## Phase 03 bootstrap and protected staging record
+
+The zero-job run `35544065745` was not valid protected evidence. Its PR workflow
+contained invalid YAML (an extra leading space before the
+`EXPECTED_CUSTOM_APP_COMMIT` mapping), and the registered default-branch copy
+only selected `push` events for `main`; therefore the PR-branch push had no
+eligible job. Action-aware validation also rejected the PR workflow before any
+job could start. The failure was not solely a default-branch registration issue.
+
+The minimal safe bootstrap was merged normally through [PR #83](https://github.com/Lengrowth/crm/pull/83)
+at `854460e8c1a94fcbf844b18878023ab87d665f09`. It preserved the required job
+name `Build one immutable candidate and deploy staging`, keeps the Phase 03
+lane default-off, validates same-repository immutable candidate refs, and
+retains staging-only permissions and cleanup.
+
+The first complete protected push run for PR #82 was run `35580080046`, job
+`106270676103`, against control-plane commit
+`f9589276076e6514c9054447a026f9758ef64a71`; it passed the required check and
+uploaded artifact ID `10630670710`, named
+`staging-browser-evidence-f9589276076e6514c9054447a026f9758ef64a71`, digest
+`sha256:8dadcefb707df1fb481e7a1980d3aa533c28a099837e814a3f4de1197be4f412`.
+The candidate-bound manifest records canonical LenERP commit
+`8d77cec7504d22f9c0a235034777e31fa07fc62` and bundle SHA-256
+`D136208D613DEECE9A51F25A7A1A5B4C7C916D8E657043FFFC7BEEC03B90AAA7`.
+
+The protected lane passed CRM/frontend/release/LenERP validation, browser SSO
+and bidirectional navigation, replay/PKCE/state/redirect/tenant/membership/
+role denial checks, membership revocation, break-glass before enablement and
+after rollback, and deterministic rollback readiness. Cleanup removed identity
+records, role principals, browser records, temporary files/configuration and
+synthetic ERP records; the ERP read-only reset ended with zero synthetic
+`LenERP Well Site` and `LenERP Drilling Job` records. Production SSO,
+production infrastructure, Cloudflare, and temporary AWS SSH access were not
+changed. A documentation-only refresh follows; its push-triggered protected
+run is the final SHA-bound gate.

@@ -1,13 +1,13 @@
 # Phase 03 — Unified Identity and Cross-Navigation Evidence
 
 **Date:** 2026-09-21 (Asia/Tbilisi)
-**Status:** LOCAL REMEDIATION COMPLETE — protected staging rerun required; production SSO is disabled.
+**Status:** PROTECTED STAGING PASS — final documentation refresh is followed by one SHA-bound protected rerun; production SSO is disabled.
 **Scope:** additive authorization-code broker boundary, canonical LenERP relying-party bridge, and control-plane/ERP navigation.
 
 ## Release identity
 
 - Control-plane branch: `codex/phase3-unified-identity`.
-- Control-plane candidate commit: `d4517eeb842e121cd133ca630f9e8b15c4b22f8c`.
+- Control-plane candidate commit: `f9589276076e6514c9054447a026f9758ef64a71`.
 - Canonical `lenerp_core` branch: `codex/phase3-unified-identity`.
 - Canonical LenERP remediation commit: `8d77cec7504d22f9c0a235034777e31fa07fc62`.
 - Immutable remediation bundle: `ops/staging/lenerp_core-8d77cec7504d22f9c0a235034777e31fa07fc62.tar`.
@@ -64,15 +64,20 @@ gate for a maintained OIDC provider with back-channel logout support.
 
 ## Staging and production boundary
 
-Protected run `35542421306` was executed against the prior remediation candidate
-and reached the Phase 03 browser flow, where it exposed an unsupported
-`frappe.db.advisory_lock` call. The current candidate replaces that call with an
-explicit MariaDB `GET_LOCK`/`RELEASE_LOCK` guard and repins the immutable bundle.
-The server-controlled `phase3_unified_identity` flag defaults off. A fresh
-protected run must still capture the browser artifact, API contracts, membership
-removal, authenticated break-glass checks before enablement/during enablement/after
-rollback, and exact cleanup. Production SSO, production, Cloudflare, upstream
-Frappe, ERPNext, and HRMS remain unchanged.
+The zero-job run `35544065745` had invalid PR-workflow YAML and no eligible
+PR-branch job under the default-branch event filters. The safe bootstrap PR was
+[PR #83](https://github.com/Lengrowth/crm/pull/83), merged normally at
+`854460e8c1a94fcbf844b18878023ab87d665f09`.
+
+Protected push run `35580080046` / job `106270676103` passed for candidate
+`f9589276076e6514c9054447a026f9758ef64a71`. Artifact ID `10630670710` is
+`staging-browser-evidence-f9589276076e6514c9054447a026f9758ef64a71` with
+digest `sha256:8dadcefb707df1fb481e7a1980d3aa533c28a099837e814a3f4de1197be4f412`.
+The exact LenERP commit and bundle checksum are recorded above. The lane passed
+the browser, denial, revocation, rollback, and cleanup gates; production SSO,
+production, Cloudflare, and AWS SSH access remained unchanged. A documentation-
+only commit now requires one final protected rerun, and no PR #82 merge is
+authorized.
 
 ## Rollback
 
@@ -86,11 +91,12 @@ audit rows, backups, or prior releases as part of rollback.
 
 ## Independent read-only review prompt
 
-Review the exact control-plane candidate and canonical `lenerp_core` commit for
+Review the exact final control-plane candidate and canonical `lenerp_core` commit for
 Phase 03 only. Verify migration `20260920_0013_phase3_unified_identity`, hash-only
 single-use codes, PKCE S256, exact tenant/membership/readiness/role checks,
 allowlisted redirects and paths, host-scoped cookie separation, deterministic
 JIT role reconciliation, break-glass preservation, rate limits, secret-safe
 audits, direct and bidirectional navigation, staging flag-off defaults, and the
-protected staging browser evidence. Do not infer Champion approval or production
-SSO authorization from synthetic records.
+final SHA-bound protected staging browser evidence. Confirm PR #82 remains open,
+unmerged, and mergeable without bypass. Do not infer Champion approval or
+production SSO authorization from synthetic records.
