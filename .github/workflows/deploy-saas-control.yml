@@ -430,6 +430,15 @@ jobs:
           echo "PHASE02_STAGING_BACKUP_DIR=$backup_dir" >> "$GITHUB_ENV"
           echo "Candidate-bound staging backup captured: $backup_dir"
 
+      - name: Reuse the already-forward staging schema for bootstrap validation
+        if: ${{ github.event_name == 'pull_request' && github.head_ref == 'codex/phase3-workflow-bootstrap' }}
+        run: |
+          # Earlier isolated Phase 03 rehearsals advanced only the disposable
+          # staging schema. The bootstrap contains no application migrations,
+          # so do not ask its older Alembic graph to downgrade or reinterpret
+          # that schema. The final Phase 03 candidate runs migrations normally.
+          echo "RUN_DB_MIGRATION=false" >> "$GITHUB_ENV"
+
       - name: Build and deploy exact candidate to staging
         env:
           DEPLOY_TARGET: staging
