@@ -508,7 +508,7 @@ jobs:
           core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
           exact_dir="$RUNNER_TEMP/lenerp_core-exact"
           test -d "$exact_dir"
-          test "$core_commit" = "a1b74431165bfc202fbd3717df21f3372ffee984"
+          test "$core_commit" = "8d77cec7504d22f9c0a235034777e31fa07fc62"
           sudo rsync -a --delete --exclude='.git' "$exact_dir/" /opt/frappe-staging-bench/apps/lenerp_core/
           printf '%s\n' "$core_commit" | sudo tee /opt/frappe-staging-bench/apps/lenerp_core/SOURCE_COMMIT.txt >/dev/null
           sudo chown -R frappe:frappe /opt/frappe-staging-bench/apps/lenerp_core
