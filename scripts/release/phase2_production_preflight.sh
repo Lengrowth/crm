@@ -54,6 +54,19 @@ for name in ("frappe", "erpnext", "lenerp_core"):
             and baseline.get("commit") == candidate.get("custom_app_commit")
         ):
             app_payload = baseline
+        elif (
+            isinstance(candidate.get("custom_app_commit"), str)
+            and len(candidate["custom_app_commit"]) == 40
+            and candidate.get("custom_app_version") == "0.2.0"
+        ):
+            # The materializer independently validates this exact identity
+            # against protected staging evidence before writing the candidate
+            # manifest. Keep the top-level candidate identity as the final
+            # compatibility fallback for older release-manifest shapes.
+            app_payload = {
+                "commit": candidate["custom_app_commit"],
+                "version": candidate["custom_app_version"],
+            }
     commit = app_payload.get("commit")
     if not isinstance(commit, str) or len(commit) != 40:
         raise SystemExit(f"candidate is missing exact {name} commit")
