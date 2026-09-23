@@ -38,7 +38,23 @@ if candidate_before != current_after:
         raise SystemExit("unreviewed production database revision transition")
 apps = candidate.get("installed_apps") or {}
 for name in ("frappe", "erpnext", "lenerp_core"):
-    commit = (apps.get(name) or {}).get("commit")
+    app_payload = apps.get(name) or {}
+    # Older staging slots can carry the ERP identity in the checked-in
+    # dependency baseline even when their generated installed_apps map is
+    # incomplete. Accept that exact, candidate-bound fallback only when the
+    # top-level custom-app identity agrees with it.
+    if name == "lenerp_core" and (
+        not isinstance(app_payload.get("commit"), str) or len(app_payload.get("commit", "")) != 40
+    ):
+        baseline = ((candidate.get("application_dependencies") or {}).get("baseline") or {}).get(name) or {}
+        if (
+            isinstance(baseline.get("commit"), str)
+            and len(baseline["commit"]) == 40
+            and baseline.get("version") == candidate.get("custom_app_version")
+            and baseline.get("commit") == candidate.get("custom_app_commit")
+        ):
+            app_payload = baseline
+    commit = app_payload.get("commit")
     if not isinstance(commit, str) or len(commit) != 40:
         raise SystemExit(f"candidate is missing exact {name} commit")
 if (candidate.get("custom_app_version") or "") == "not-installed":
@@ -56,7 +72,18 @@ grep -Eq '^erpnext[[:space:]]+15\.120\.0([[:space:]]|$)' <<<"$apps" || { echo "p
 declare -A expected_commits
 expected_commits[frappe]="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["installed_apps"]["frappe"]["commit"])' "$MANIFEST")"
 expected_commits[erpnext]="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["installed_apps"]["erpnext"]["commit"])' "$MANIFEST")"
-expected_commits[lenerp_core]="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["installed_apps"]["lenerp_core"]["commit"])' "$MANIFEST")"
+expected_commits[lenerp_core]="$(python3 - "$MANIFEST" <<'PY'
+import json
+import sys
+
+manifest = json.load(open(sys.argv[1], encoding="utf-8"))
+installed = (manifest.get("installed_apps") or {}).get("lenerp_core") or {}
+commit = installed.get("commit")
+if not isinstance(commit, str) or len(commit) != 40:
+    commit = (((manifest.get("application_dependencies") or {}).get("baseline") or {}).get("lenerp_core") or {}).get("commit")
+print(commit or "")
+PY
+)"
 for app in frappe erpnext lenerp_core; do
   app_path="$ERP_BENCH_DIR/apps/$app"
   if [[ "$app" == "lenerp_core" ]]; then
