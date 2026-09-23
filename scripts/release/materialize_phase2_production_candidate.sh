@@ -145,8 +145,11 @@ if [[ ! -e "$target_candidate" ]]; then
   # frontend/node_modules) without duplicating their bytes on the shared
   # release volume. The staging and production release roots are on the same
   # deployment volume; hardlinks preserve rollback safety because cleanup of
-  # the staging directory only removes its directory entries.
-  cp -al -- "$source_candidate" "$incoming"
+  # the staging directory only removes its directory entries. The staging
+  # service owns the source tree, so use the workflow's non-interactive sudo
+  # path for protected hardlink creation, then restore release ownership.
+  sudo -n cp -al -- "$source_candidate" "$incoming"
+  sudo -n chown -R "$(id -u):$(id -g)" "$incoming"
   printf 'candidate_sha=%s\nstaging_run_id=%s\n' "$RELEASE_ID" "$STAGING_RUN_ID" > "$incoming/.phase2-staging-evidence-verified"
   mv -T -- "$incoming" "$target_candidate"
   trap - EXIT
