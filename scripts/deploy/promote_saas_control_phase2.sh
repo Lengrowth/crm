@@ -5,8 +5,9 @@ if [[ "${PRODUCTION_PROMOTION_APPROVED:-}" != "yes" ]]; then
   echo "Phase 02 production promotion requires the protected Phase 02 workflow." >&2
   exit 1
 fi
-if [[ "${PHASE3_MIGRATION_APPROVED:-no}" != "no" ]]; then
-  echo "Phase 02 promotion refuses any Phase 03 migration approval." >&2
+PHASE3_MIGRATION_APPROVED="${PHASE3_MIGRATION_APPROVED:-no}"
+if [[ "$PHASE3_MIGRATION_APPROVED" != "no" && "$PHASE3_MIGRATION_APPROVED" != "yes" ]]; then
+  echo "PHASE3_MIGRATION_APPROVED must be yes or no." >&2
   exit 1
 fi
 RELEASE_ID="${RELEASE_ID:?Set RELEASE_ID}"
@@ -30,7 +31,7 @@ grep -Fxq "$RELEASE_ID" "$CANDIDATE_DIR/.staging-smoke-passed" || { echo "stagin
 [[ -s "$CANDIDATE_DIR/.phase2-staging-evidence-verified" ]] || { echo "candidate has no verified Phase 02 staging evidence" >&2; exit 1; }
 grep -Fxq "candidate_sha=$RELEASE_ID" "$CANDIDATE_DIR/.phase2-staging-evidence-verified" || { echo "Phase 02 evidence marker mismatch" >&2; exit 1; }
 
-python3 - "$CANDIDATE_DIR/release-manifest.json" <<'PY'
+database_revision_after="$(python3 - "$CANDIDATE_DIR/release-manifest.json" <<'PY'
 import json
 import sys
 
@@ -38,7 +39,12 @@ with open(sys.argv[1], encoding="utf-8") as handle:
     manifest = json.load(handle)
 if manifest.get("environment") != "staging" or manifest.get("build_environment") != "staging":
     raise SystemExit("production can promote only a staging-built candidate")
+revision = manifest.get("database_revision_after")
+if not isinstance(revision, str) or not revision:
+    raise SystemExit("candidate database revision is missing")
+print(revision)
 PY
+)"
 bash "$CANDIDATE_DIR/scripts/release/preflight.sh" "$CANDIDATE_DIR"
 [[ -r "$AUTH_TOKEN_FILE" ]] || { echo "authenticated production smoke token is missing" >&2; exit 1; }
 
@@ -77,7 +83,7 @@ if ! restart_services || ! validate_nginx; then
   exit 1
 fi
 
-if ! AUTH_TOKEN_FILE="$AUTH_TOKEN_FILE" REQUIRE_AUTH_SMOKE=true BASE_URL="${PRODUCTION_BASE_URL:?Set PRODUCTION_BASE_URL}" BACKEND_URL="${PRODUCTION_BACKEND_URL:?Set PRODUCTION_BACKEND_URL}" EXPECTED_RELEASE="$RELEASE_ID" EXPECTED_RUNTIME_ENVIRONMENT=production EXPECTED_BUILD_ENVIRONMENT=staging EXPECTED_DATABASE_REVISION=20260918_0011 bash "$CANDIDATE_DIR/scripts/release/smoke.sh"; then
+if ! AUTH_TOKEN_FILE="$AUTH_TOKEN_FILE" REQUIRE_AUTH_SMOKE=true BASE_URL="${PRODUCTION_BASE_URL:?Set PRODUCTION_BASE_URL}" BACKEND_URL="${PRODUCTION_BACKEND_URL:?Set PRODUCTION_BACKEND_URL}" EXPECTED_RELEASE="$RELEASE_ID" EXPECTED_RUNTIME_ENVIRONMENT=production EXPECTED_BUILD_ENVIRONMENT=staging EXPECTED_DATABASE_REVISION="$database_revision_after" bash "$CANDIDATE_DIR/scripts/release/smoke.sh"; then
   rollback "$old_target" "$old_previous" || echo "CRITICAL: production rollback after smoke failure was not fully verified" >&2
   exit 1
 fi
@@ -85,5 +91,5 @@ if [[ -n "$old_target" && "$old_target" != "$CANDIDATE_DIR" ]]; then atomic_link
 promotion_dir="/opt/saas-control/shared/phase2-promotions/$RELEASE_ID"
 sudo install -d -m 0750 "$promotion_dir"
 sudo install -m 0640 "$BACKUP_EVIDENCE_FILE" "$promotion_dir/production-backup.json"
-printf 'candidate_sha=%s\nprevious_release=%s\nphase3_migration=not-run\n' "$RELEASE_ID" "${old_target##*/}" | sudo tee "$promotion_dir/promotion-readback.txt" >/dev/null
+printf 'candidate_sha=%s\nprevious_release=%s\nphase3_migration=%s\ndatabase_revision=%s\n' "$RELEASE_ID" "${old_target##*/}" "$PHASE3_MIGRATION_APPROVED" "$database_revision_after" | sudo tee "$promotion_dir/promotion-readback.txt" >/dev/null
 echo "Phase 02 production promotion completed for $RELEASE_ID"

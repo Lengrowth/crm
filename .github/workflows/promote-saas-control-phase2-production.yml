@@ -11,6 +11,14 @@ on:
         description: Successful protected staging workflow run for this candidate
         required: true
         type: string
+      phase3_migration_approved:
+        description: Approve the additive Phase 3 schema migration required when current main is ahead of production
+        required: true
+        default: "no"
+        type: choice
+        options:
+          - "no"
+          - "yes"
 
 permissions:
   contents: read
@@ -66,9 +74,63 @@ jobs:
       - name: Verify production baseline before any Phase 02 application mutation
         env:
           BACKUP_EVIDENCE_FILE: ${{ github.workspace }}/phase2-production-backup.json
+          PHASE3_MIGRATION_APPROVED: ${{ inputs.phase3_migration_approved }}
           TARGET_ENVIRONMENT: production
           ERP_SITE: erp.lengrowth.com
         run: ./scripts/release/phase2_production_preflight.sh "/opt/saas-control/releases/${{ inputs.release_id }}"
+
+      - name: Keep Phase 03 and Phase 04 runtime behavior disabled during Phase 02 promotion
+        run: |
+          set -euo pipefail
+          sudo python3 - /opt/saas-control/shared/env/backend.env <<'PY'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          disabled = {
+              "module_entitlement_general",
+              "module_entitlement_operator_only",
+              "module_entitlement_writes",
+              "onboarding_public_intake",
+              "onboarding_operator_view",
+              "onboarding_conversion",
+              "onboarding_execution",
+              "onboarding_synthetic_allowlist",
+              "onboarding_real_execution",
+          }
+          lines = path.read_text(encoding="utf-8").splitlines()
+          output = []
+          updated = False
+          for line in lines:
+              if not line.startswith("FEATURE_FLAGS="):
+                  output.append(line)
+                  continue
+              entries = [
+                  entry for entry in line.removeprefix("FEATURE_FLAGS=").split(",")
+                  if entry and entry.split("=", 1)[0].strip() not in disabled
+              ]
+              entries.extend(f"{name}=off" for name in sorted(disabled))
+              output.append("FEATURE_FLAGS=" + ",".join(entries))
+              updated = True
+          if not updated:
+              output.append("FEATURE_FLAGS=" + ",".join(f"{name}=off" for name in sorted(disabled)))
+          path.write_text("\n".join(output) + "\n", encoding="utf-8")
+          PY
+
+      - name: Apply reviewed additive Phase 3 migration when required by current main
+        if: ${{ inputs.phase3_migration_approved == 'yes' }}
+        env:
+          RELEASE_ID: ${{ inputs.release_id }}
+        run: |
+          set -euo pipefail
+          set -a
+          . /opt/saas-control/shared/env/backend.env
+          set +a
+          cd "/opt/saas-control/releases/$RELEASE_ID/backend"
+          PYTHONPATH="/opt/saas-control/releases/$RELEASE_ID/backend" \
+            /opt/saas-control/shared/backend-venv/bin/alembic -c alembic.ini upgrade head
+          PYTHONPATH="/opt/saas-control/releases/$RELEASE_ID/backend" \
+            /opt/saas-control/shared/backend-venv/bin/python -m app.db.seed
 
       - name: Install and migrate exact HRMS, then verify production readbacks
         env:
@@ -81,7 +143,7 @@ jobs:
           RELEASE_ID: ${{ inputs.release_id }}
           BACKUP_EVIDENCE_FILE: ${{ github.workspace }}/phase2-production-backup.json
           PRODUCTION_PROMOTION_APPROVED: yes
-          PHASE3_MIGRATION_APPROVED: no
+          PHASE3_MIGRATION_APPROVED: ${{ inputs.phase3_migration_approved }}
           AUTH_TOKEN_FILE: /run/saas-control/smoke/auth-token
           PRODUCTION_BASE_URL: https://lenerp.lengrowth.com
           PRODUCTION_BACKEND_URL: https://lenerp-api.lengrowth.com
