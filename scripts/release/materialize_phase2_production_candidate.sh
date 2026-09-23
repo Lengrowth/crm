@@ -137,6 +137,15 @@ target_candidate="$PRODUCTION_ROOT/$RELEASE_ID"
 [[ -s "$source_candidate/.staging-smoke-passed" ]] || { echo "staging smoke marker is missing" >&2; exit 1; }
 grep -Fxq "$RELEASE_ID" "$source_candidate/.staging-smoke-passed" || { echo "staging smoke marker mismatch" >&2; exit 1; }
 
+current_target="$(readlink -f /opt/saas-control/current 2>/dev/null || true)"
+previous_target="$(readlink -f /opt/saas-control/previous 2>/dev/null || true)"
+if [[ -e "$target_candidate" && "$target_candidate" != "$current_target" && "$target_candidate" != "$previous_target" ]]; then
+  if ! cmp -s "$source_candidate/release-manifest.json" "$target_candidate/release-manifest.json"; then
+    echo "Replacing the unreferenced production candidate with the exact staging candidate: $RELEASE_ID"
+    rm -rf -- "$target_candidate"
+  fi
+fi
+
 if [[ ! -e "$target_candidate" ]]; then
   mkdir -p -- "$PRODUCTION_ROOT"
   incoming="$PRODUCTION_ROOT/.${RELEASE_ID}.phase2-incoming.$$"
@@ -154,13 +163,29 @@ if [[ ! -e "$target_candidate" ]]; then
   mv -T -- "$incoming" "$target_candidate"
   trap - EXIT
 fi
-# The protected staging runtime readback is the authoritative candidate-bound
-# release identity. Reinstall it into the production copy so materialization
-# cannot silently retain a stale/incomplete manifest from the staging slot.
+# The embedded release manifest in the protected staging evidence is a
+# candidate-bound identity snapshot, not the complete release manifest. Keep
+# the complete manifest from the exact staging candidate so required fields
+# such as application_records are not discarded during materialization.
 authoritative_manifest="$ARTIFACT_ROOT/phase2-release-manifest.json"
 [[ -s "$authoritative_manifest" ]] || { echo "candidate-bound release manifest is missing" >&2; exit 1; }
-manifest_tmp="$target_candidate/.release-manifest.phase2.$$"
-install -m 0644 "$authoritative_manifest" "$manifest_tmp"
-mv -f -- "$manifest_tmp" "$target_candidate/release-manifest.json"
+SOURCE_MANIFEST="$source_candidate/release-manifest.json" EVIDENCE_MANIFEST="$authoritative_manifest" TARGET_MANIFEST="$target_candidate/release-manifest.json" python3 - <<'PY'
+import json
+import os
+
+with open(os.environ["SOURCE_MANIFEST"], encoding="utf-8") as handle:
+    source = json.load(handle)
+with open(os.environ["EVIDENCE_MANIFEST"], encoding="utf-8") as handle:
+    evidence = json.load(handle)
+for field in ("release_id", "control_plane_commit", "environment", "build_environment", "installed_apps"):
+    if source.get(field) != evidence.get(field):
+        raise SystemExit(f"staging evidence release manifest does not match source field: {field}")
+if "application_records" not in source:
+    raise SystemExit("exact staging release manifest is missing application_records")
+PY
+cmp -s "$source_candidate/release-manifest.json" "$target_candidate/release-manifest.json" || {
+  echo "production candidate manifest does not exactly match the protected staging candidate" >&2
+  exit 1
+}
 printf 'candidate_sha=%s\nstaging_run_id=%s\n' "$RELEASE_ID" "$STAGING_RUN_ID" > "$target_candidate/.phase2-staging-evidence-verified"
 echo "Phase 02 candidate materialized: $RELEASE_ID (staging run $STAGING_RUN_ID)"

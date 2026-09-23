@@ -64,6 +64,8 @@ jobs:
           STAGING_RUN_ID: ${{ inputs.staging_run_id }}
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          STAGING_RELEASE_ROOT: /opt/saas-control-staging/releases
+          PRODUCTION_RELEASE_ROOT: /opt/saas-control/releases
         run: ./scripts/release/materialize_phase2_production_candidate.sh
 
       - name: Capture and verify fresh production application/site/off-host backup
