@@ -33,6 +33,17 @@ run_root() {
   "$SUDO_BIN" -n "$@"
 }
 
+restart_configured_services() {
+  local services
+  services="$(run_root "$SUPERVISORCTL_BIN" status | awk '$1 ~ /^frappe-bench-(web|workers):/ {print $1}')"
+  if [[ -z "$services" ]]; then
+    echo "No configured ERP web/worker services were reported by Supervisor; skipping service restart."
+    return 0
+  fi
+  mapfile -t service_names <<<"$services"
+  run_root "$SUPERVISORCTL_BIN" restart "${service_names[@]}"
+}
+
 current_upstream_commit() {
   python3 - "$APP_ROOT/current/release-manifest.json" "$1" <<'PY'
 import json
@@ -73,7 +84,7 @@ rollback_site() {
   if [[ -f "$ROLLBACK_ROOT/apps.txt" ]]; then
     run_root cp "$ROLLBACK_ROOT/apps.txt" "$BENCH_DIR/sites/apps.txt"
   fi
-  run_root "$SUPERVISORCTL_BIN" restart frappe-bench-web:frappe-bench-frappe-web frappe-bench-web:frappe-bench-node-socketio frappe-bench-workers:frappe-bench-frappe-short-worker frappe-bench-workers:frappe-bench-frappe-long-worker frappe-bench-workers:frappe-bench-frappe-schedule
+  restart_configured_services
 }
 trap 'status=$?; if [[ "$status" -ne 0 && "$MUTATION_STARTED" -eq 1 ]]; then rollback_site || echo "CRITICAL: ERP backup restore failed" >&2; fi; exit "$status"' EXIT
 
@@ -146,7 +157,7 @@ fi
 
 run_as_frappe "cd '$BENCH_DIR' && bench --site '$SITE' migrate"
 run_as_frappe "cd '$BENCH_DIR' && bench build --app hrms"
-run_root "$SUPERVISORCTL_BIN" restart frappe-bench-web:frappe-bench-frappe-web frappe-bench-web:frappe-bench-node-socketio frappe-bench-workers:frappe-bench-frappe-short-worker frappe-bench-workers:frappe-bench-frappe-long-worker frappe-bench-workers:frappe-bench-frappe-schedule
+restart_configured_services
 
 apps="$(run_as_frappe "cd '$BENCH_DIR' && bench --site '$SITE' list-apps")"
 grep -Eq '^hrms[[:space:]]' <<<"$apps"
