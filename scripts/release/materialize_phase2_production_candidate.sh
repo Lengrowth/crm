@@ -82,7 +82,7 @@ cleanup="$(find "$ARTIFACT_ROOT" -type f -name phase2-cleanup.json -print -quit)
   exit 1
 }
 
-MANIFEST="$manifest" RUNTIME="$runtime" CLEANUP="$cleanup" python3 - "$RELEASE_ID" "$STAGING_RUN_ID" <<'PY'
+MANIFEST="$manifest" RUNTIME="$runtime" CLEANUP="$cleanup" ARTIFACT_ROOT="$ARTIFACT_ROOT" python3 - "$RELEASE_ID" "$STAGING_RUN_ID" <<'PY'
 import json
 import os
 import sys
@@ -118,6 +118,17 @@ if not runtime.get("backup_dir", "").startswith("/opt/saas-control-staging/share
     raise SystemExit("staging backup path is not protected")
 if not isinstance(cleanup.get("organization_ids"), list) or not isinstance(cleanup.get("tenant_ids"), list):
     raise SystemExit("Phase 02 cleanup evidence is incomplete")
+release_manifest = manifest.get("release_manifest")
+if not isinstance(release_manifest, dict):
+    raise SystemExit("staging evidence does not contain the candidate release manifest")
+if release_manifest.get("control_plane_commit") != release_id or release_manifest.get("environment") != "staging":
+    raise SystemExit("candidate release manifest is not bound to the exact staging candidate")
+lenerp = (release_manifest.get("installed_apps") or {}).get("lenerp_core") or {}
+if lenerp.get("commit") != "8d77cec7504d22f9c0a235034777e31fa07fc62" or lenerp.get("version") != "0.2.0":
+    raise SystemExit("candidate release manifest does not contain the approved exact LenERP application")
+with open(os.path.join(os.environ["ARTIFACT_ROOT"], "phase2-release-manifest.json"), "w", encoding="utf-8") as handle:
+    json.dump(release_manifest, handle, indent=2, sort_keys=True)
+    handle.write("\n")
 PY
 
 source_candidate="$STAGING_ROOT/$RELEASE_ID"
@@ -135,5 +146,13 @@ if [[ ! -e "$target_candidate" ]]; then
   mv -T -- "$incoming" "$target_candidate"
   trap - EXIT
 fi
+# The protected staging runtime readback is the authoritative candidate-bound
+# release identity. Reinstall it into the production copy so materialization
+# cannot silently retain a stale/incomplete manifest from the staging slot.
+authoritative_manifest="$ARTIFACT_ROOT/phase2-release-manifest.json"
+[[ -s "$authoritative_manifest" ]] || { echo "candidate-bound release manifest is missing" >&2; exit 1; }
+manifest_tmp="$target_candidate/.release-manifest.phase2.$$"
+install -m 0644 "$authoritative_manifest" "$manifest_tmp"
+mv -f -- "$manifest_tmp" "$target_candidate/release-manifest.json"
 printf 'candidate_sha=%s\nstaging_run_id=%s\n' "$RELEASE_ID" "$STAGING_RUN_ID" > "$target_candidate/.phase2-staging-evidence-verified"
 echo "Phase 02 candidate materialized: $RELEASE_ID (staging run $STAGING_RUN_ID)"
