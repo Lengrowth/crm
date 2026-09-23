@@ -208,6 +208,13 @@ jobs:
       - name: Reclaim only the disposable npm cache on the staging runner
         run: npm cache clean --force
 
+      - name: Reclaim stale runner action diagnostics before candidate build
+        run: |
+          set -euo pipefail
+          sudo find /home/ubuntu/actions-runner/_diag -type f -name '*.log' -delete
+          sudo find /home/ubuntu/actions-runner/_work/_temp -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+          df -h / /home /opt
+
       - name: Reclaim disposable npm and Next.js temp directories
         run: |
           sudo find /tmp -maxdepth 1 -mindepth 1 \( -name 'npm-*' -o -name 'next-*' \) -exec rm -rf -- {} +
