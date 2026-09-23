@@ -133,7 +133,11 @@ PY
 for app in frappe erpnext lenerp_core; do
   app_path="$ERP_BENCH_DIR/apps/$app"
   if [[ "$app" == "lenerp_core" ]]; then
-    sudo -n test -f "$app_path/SOURCE_COMMIT.txt" || { echo "exact production $app source marker is missing" >&2; exit 1; }
+    if ! sudo -n test -f "$app_path/SOURCE_COMMIT.txt"; then
+      grep -Eq '^lenerp_core[[:space:]]' <<<"$apps" || continue
+      echo "exact production $app source marker is missing" >&2
+      exit 1
+    fi
     commit="$(capture_as_frappe "tr -d '\\r\\n' < '$app_path/SOURCE_COMMIT.txt'")"
   else
     sudo -n test -d "$app_path/.git" || { echo "exact production $app commit is not readable from a Git checkout" >&2; exit 1; }
@@ -169,7 +173,9 @@ manifest = json.load(open(sys.argv[1], encoding="utf-8"))
 print(manifest.get("custom_app_version") or "0.2.0")
 PY
 )"
-actual_lenerp_version="$(awk '$1 == "lenerp_core" {print $2; exit}' <<<"$apps")"
-[[ "$actual_lenerp_version" == "$expected_lenerp_version" ]] || { echo "production LenERP version does not match the candidate" >&2; exit 1; }
+if grep -Eq '^lenerp_core[[:space:]]' <<<"$apps"; then
+  actual_lenerp_version="$(awk '$1 == "lenerp_core" {print $2; exit}' <<<"$apps")"
+  [[ "$actual_lenerp_version" == "$expected_lenerp_version" ]] || { echo "production LenERP version does not match the candidate" >&2; exit 1; }
+fi
 
 echo "Phase 02 production preflight passed without application or pointer mutation"

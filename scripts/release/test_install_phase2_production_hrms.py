@@ -34,9 +34,15 @@ def write_executable(path: Path, body: str) -> None:
 
 def fixture(tmp_path: Path, mode: str) -> tuple[dict[str, str], Path]:
     bench = tmp_path / "bench"
+    (bench / "sites").mkdir(parents=True)
+    (bench / "sites" / "apps.txt").write_text("frappe\nerpnext\nhrms\nlenerp_core\n", encoding="utf-8")
     for app in ("frappe", "erpnext", "hrms", "lenerp_core"):
         (bench / "apps" / app / ".git").mkdir(parents=True)
-    (bench / "apps" / "lenerp_core" / "SOURCE_COMMIT.txt").write_text("a7e47208baf6583295f5f2632f4787262cd3f475\n", encoding="utf-8")
+    (bench / "apps" / "lenerp_core" / "SOURCE_COMMIT.txt").write_text("8d77cec7504d22f9c0a235034777e31fa07fc62\n", encoding="utf-8")
+    release_root = tmp_path / "releases"
+    candidate_source = release_root / "candidate" / "ops" / "staging" / "lenerp_core"
+    candidate_source.mkdir(parents=True)
+    (candidate_source / "SOURCE_COMMIT.txt").write_text("8d77cec7504d22f9c0a235034777e31fa07fc62\n", encoding="utf-8")
     backup = tmp_path / "backup"
     (backup / "erp").mkdir(parents=True)
     files = [backup / "erp" / "site-database.sql.gz", backup / "erp" / "site-files.tar", backup / "erp" / "site-private-files.tar"]
@@ -95,7 +101,7 @@ case "$*" in
 esac
 """)
     env = os.environ.copy()
-    env.update({"PATH": f"{bin_dir}{os.pathsep}{env.get('PATH', '')}", "OUTPUT_FILE": str(tmp_path / "output.json"), "BACKUP_EVIDENCE_FILE": str(evidence), "ERP_BENCH_DIR": str(bench), "ERP_SITE": "erp.synthetic.example", "SUDO_BIN": str(bin_dir / "sudo"), "SUPERVISORCTL_BIN": str(bin_dir / "supervisorctl"), "FAKE_GIT_MODE": "wrong" if mode == "wrong_source" else "exact"})
+    env.update({"PATH": f"{bin_dir}{os.pathsep}{env.get('PATH', '')}", "OUTPUT_FILE": str(tmp_path / "output.json"), "BACKUP_EVIDENCE_FILE": str(evidence), "RELEASE_ID": "candidate", "PRODUCTION_RELEASE_ROOT": str(release_root), "ERP_BENCH_DIR": str(bench), "ERP_SITE": "erp.synthetic.example", "SUDO_BIN": str(bin_dir / "sudo"), "SUPERVISORCTL_BIN": str(bin_dir / "supervisorctl"), "FAKE_GIT_MODE": "wrong" if mode == "wrong_source" else "exact"})
     return env, log
 
 

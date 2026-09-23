@@ -134,6 +134,7 @@ jobs:
 
       - name: Install and migrate exact HRMS, then verify production readbacks
         env:
+          RELEASE_ID: ${{ inputs.release_id }}
           OUTPUT_FILE: ${{ github.workspace }}/phase2-production-erp-readback.json
           BACKUP_EVIDENCE_FILE: ${{ github.workspace }}/phase2-production-backup.json
         run: ./scripts/release/install_phase2_production_hrms.sh
