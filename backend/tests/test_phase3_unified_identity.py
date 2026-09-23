@@ -6,6 +6,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 import pytest
+from pydantic import ValidationError
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -103,6 +104,17 @@ def test_non_ascii_code_verifier_is_rejected_as_a_client_error():
 
     assert error.value.status_code == 400
     assert error.value.audit_action == "sso_exchange_pkce_denied"
+
+
+def test_non_ascii_code_verifier_is_rejected_by_the_request_schema():
+    with pytest.raises(ValidationError, match="ASCII"):
+        SSOTokenRequest(
+            code="c" * 16,
+            client_id="client",
+            audience="audience",
+            redirect_uri="https://erp.example.test/callback",
+            code_verifier="é" * 43,
+        )
 
 
 @pytest.mark.parametrize("mutation", ["state", "pkce", "audience", "redirect", "path"])
