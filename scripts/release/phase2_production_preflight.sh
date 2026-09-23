@@ -21,14 +21,21 @@ sudo -n bash "$SCRIPT_DIR/verify_backup_manifest.sh" "$backup_dir" >/dev/null
 
 python3 - "$MANIFEST" "$APP_ROOT/current/release-manifest.json" <<'PY'
 import json
+import os
 import sys
 
 candidate = json.load(open(sys.argv[1], encoding="utf-8"))
 current = json.load(open(sys.argv[2], encoding="utf-8"))
 if candidate.get("environment") != "staging" or candidate.get("build_environment") != "staging":
     raise SystemExit("production may promote only a staging-built candidate")
-if candidate.get("database_revision_before") != current.get("database_revision_after"):
-    raise SystemExit("production database revision does not match candidate preflight expectation")
+candidate_before = candidate.get("database_revision_before")
+candidate_after = candidate.get("database_revision_after")
+current_after = current.get("database_revision_after")
+if candidate_before != current_after:
+    if os.environ.get("PHASE3_MIGRATION_APPROVED", "no") != "yes":
+        raise SystemExit("production database revision does not match candidate preflight expectation; explicit additive migration approval is required")
+    if current_after != "20260918_0011" or candidate_before != "20260921_0014" or candidate_after != "20260921_0014":
+        raise SystemExit("unreviewed production database revision transition")
 apps = candidate.get("installed_apps") or {}
 for name in ("frappe", "erpnext", "lenerp_core"):
     commit = (apps.get(name) or {}).get("commit")
