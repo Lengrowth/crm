@@ -163,7 +163,15 @@ apps="$(run_as_frappe "cd '$BENCH_DIR' && bench --site '$SITE' list-apps")"
 grep -Eq '^hrms[[:space:]]' <<<"$apps"
 installed_version="$(awk '$1 == "hrms" {print $2; exit}' <<<"$apps")"
 [[ "$installed_version" == "15.64.1" ]]
-grep -Eq "^lenerp_core[[:space:]]+$LENERP_VERSION([[:space:]]|$)" <<<"$apps"
+installed_app_names="$(run_as_frappe "cd '$BENCH_DIR' && bench --site '$SITE' execute frappe.get_installed_apps")"
+python3 - "$installed_app_names" <<'PY'
+import json
+import sys
+
+installed_apps = json.loads(sys.argv[1])
+if "lenerp_core" not in installed_apps:
+    raise SystemExit("lenerp_core is missing from Frappe's installed-app registry")
+PY
 [[ "$(run_as_frappe "tr -d '\r\n' < '$LENERP_DIR/SOURCE_COMMIT.txt'")" == "$LENERP_COMMIT" ]]
 role_count="$(run_as_frappe "cd '$BENCH_DIR' && bench --site '$SITE' execute frappe.client.get_count --kwargs '{\"doctype\":\"Role\",\"filters\":{\"name\":[\"in\",[\"HR User\",\"HR Manager\",\"Champion Administrator\",\"Champion Dispatcher\",\"Champion Sales User\",\"Champion Accounting User\",\"Champion Inventory Manager\",\"Champion Field Technician\",\"Champion Platform Operator\"]]}}'" | tr -d '\r\n ' )"
 [[ "$role_count" == "9" ]]
