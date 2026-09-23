@@ -5,7 +5,7 @@
 - Package: `C09` — Office work, people, payroll, quality, and support
 - Release type: Champion package / platform dependency implementation
 - Initial state: `in_development`
-- Candidate state: `phase02_pass_phase03_permitted`
+- Candidate state: `phase02_production_verified`
 - Feature flag: synthetic onboarding execution remains server-controlled and off by default
 - Previous known-good control-plane candidate: `802f1bdb0f7642ea627b08235dfa3aa16e7b9eda` (staging readback)
 - ERP baseline: Frappe `edae775dd36b6c4ad7acab10230262bd74040765`; ERPNext `945e825bee3d0d645f6cb59bcaab90fcbfb98ce3`
@@ -24,14 +24,13 @@
 - Local implementation: PASS.
 - Local backend tests: PASS, 74 tests.
 - Staging deployment/readback: the historical dirty/partial-site failure is not a compatibility verdict. Clean disposable proof passed with the exact install order and resolved `Expense Claim Type` to `HR/hrms`; final protected run `35506309957` / job `106066811682` passed the candidate-bound staging gates.
-- Production backup/promotion: BLOCKED pending independent read-only review and explicit promotion authorization. Production remains unchanged.
+- Production backup/promotion: PASS. Main commit `44cb6a360d078d9520a8b14f138e03477af82d26` passed protected staging run `35913962740` and production workflow `35915114849`; deployment `6623549817` completed successfully.
 - Champion acceptance: NOT CLAIMED.
 
-Current read-only AWS/Cloudflare state: production remains on the prior
-control-plane release and its ERP site has no HRMS installation. Staging now
-reports the exact pinned Frappe, ERPNext, HRMS, and `lenerp_core` identities
-from protected run `35505538638`; the prior unpinned LenERP checkout is
-historical and superseded.
+Current AWS/Cloudflare state: production is serving the exact main release
+`44cb6a360d078d9520a8b14f138e03477af82d26`. The production ERP readback
+reports the exact pinned Frappe, ERPNext, HRMS, and `lenerp_core` identities;
+the prior unpinned LenERP checkout is historical and superseded.
 Both public Cloudflare hostnames returned HTTP 200; no DNS, tunnel, or edge
 mutation was made.
 
@@ -41,8 +40,8 @@ Final Phase 02 evidence identity: reviewed head
 `staging-browser-evidence-9674a6a1b4adf9447af759458763b25721672272`, artifact
 ID `10603752341`, digest
 `sha256:bd808a20f5f9743e122dc064113160dbf60ad8bd073638b9dd132bf4c191a8ef`.
-No production promotion was executed; Phase 02 is PASS and Phase 03 is
-permitted.
+Production promotion was executed and verified; Phase 02 is PASS and Phase 03
+may begin from the merged main baseline.
 
 The first protected workflow for the corrected candidate
 `cdae0535cb3af425b423f6858aaa779d4edf3b98` (`35483735652`) stopped before

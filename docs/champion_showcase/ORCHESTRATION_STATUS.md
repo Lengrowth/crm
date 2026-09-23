@@ -1,6 +1,6 @@
 # Champion Pre-Kickoff Module Showcase — Orchestration Status
 
-Last updated: 2026-09-21 (Asia/Tbilisi)
+Last updated: 2026-09-24 (Asia/Tbilisi)
 
 ## Program state
 
@@ -8,10 +8,18 @@ Last updated: 2026-09-21 (Asia/Tbilisi)
 | --- | --- | --- |
 | 00 | Complete | PASS |
 | 01 | Complete; staging gate deferred by prior record | PASS WITH DEFERRED STAGING GATE |
-| 02 | Closed; exact protected candidate and browser evidence verified | PASS — Phase 03 permitted; production unchanged |
+| 02 | Closed; exact main commit, production provisioning, and readback verified | PASS — Phase 4 may start from main |
 | 03 | Protected staging PASS and independent read-only technical review complete; PR #82 and corrective PR #85 merged | PASS — production unchanged; Phase 04 not started |
 
 ## Phase 02 — HRMS and dependency-aware provisioning
+
+Final production closure: main commit `44cb6a360d078d9520a8b14f138e03477af82d26`
+passed protected staging run `35913962740` and production workflow
+`35915114849` (deployment `6623549817`). The production pointer now serves that
+commit. HRMS `15.64.1`, LenERP `0.2.0`, the required 9 roles, and 3 workspaces
+were read back successfully; authorization, tenant isolation, cleanup, health,
+backup, and rollback gates passed. Historical pre-promotion statements in this
+document remain for audit context and are superseded by this closure.
 
 The prior conclusion that no compatible official HRMS v15 baseline existed was
 unsupported. Issue #1639 records a failed site resolving the fixture through
