@@ -1,7 +1,7 @@
 # Phase 03 — Unified Identity and Cross-Navigation Evidence
 
 **Date:** 2026-09-21 (Asia/Tbilisi)
-**Status:** PROTECTED STAGING PASS — PR #82 merged; corrective evidence record prepared for independent read-only review; production SSO is disabled.
+**Status:** PASS — protected staging and independent read-only technical review complete; PR #82 and corrective PR #85 merged; production SSO is disabled.
 **Scope:** additive authorization-code broker boundary, canonical LenERP relying-party bridge, and control-plane/ERP navigation.
 
 ## Release identity
@@ -90,7 +90,19 @@ immutable candidate. Independent Frappe login and control-plane login remain
 available; retain identity mappings and audit history. Do not delete mappings,
 audit rows, backups, or prior releases as part of rollback.
 
-## Independent read-only review prompt
+## Independent read-only review disposition
+
+**Disposition:** PASS for Phase 03 technical scope. The review covered the exact
+CRM candidate `47b15d89a2dba0709b226fa2a2b44f758ef0ee95`, canonical LenERP commit
+`8d77cec7504d22f9c0a235034777e31fa07fc62`, protected run `35583191594` / job
+`106280466398`, and artifact `10631363593` with digest
+`sha256:c539d39a1d3699d00025ea93329ea82b92519dc5a8c261ceedf77e58593e92a7`.
+The review passed authorization-code replay protection, PKCE, state, redirect
+and path validation, tenant/membership/role enforcement, mapping revocation,
+browser SSO/navigation, break-glass preservation, rollback, and cleanup.
+Champion acceptance, production SSO, and Phase 04 remain out of scope.
+
+## Review scope and reproducibility prompt
 
 Review the exact final control-plane candidate and canonical `lenerp_core` commit for
 Phase 03 only. Verify migration `20260920_0013_phase3_unified_identity`, hash-only
