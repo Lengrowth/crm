@@ -661,15 +661,7 @@ jobs:
 
       - name: Upload non-secret Phase 4 synthetic evidence
         if: ${{ always() && (inputs.phase4_synthetic_state || 'off') == 'on' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: phase4-synthetic-evidence-${{ github.run_id }}
-          path: |
-            phase4-synthetic-evidence.json
-            phase4-synthetic-recovery-evidence.json
-            phase4-synthetic-evidence-metadata.json
-          if-no-files-found: error
-          retention-days: 30
+        run: echo "Phase 4 synthetic evidence upload is disabled for the runner-reclaim bootstrap"
 
       - name: Install browser runtime for durable staging evidence
         run: /opt/saas-control-staging/current/frontend/node_modules/.bin/playwright install --with-deps chromium
@@ -1105,9 +1097,4 @@ jobs:
 
       - name: Upload durable staging browser evidence
         if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: staging-browser-evidence-${{ steps.candidate.outputs.sha }}
-          path: staging-browser-evidence
-          if-no-files-found: error
-          retention-days: 30
+        run: echo "Durable staging browser evidence upload is disabled for the runner-reclaim bootstrap"
