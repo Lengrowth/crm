@@ -25,6 +25,21 @@ git -C "$SOURCE_REPO" archive "$TARGET_REF" | tar -x -C "$CANDIDATE_DIR"
 
 CUSTOM_APP_VERSION_VALUE="${CUSTOM_APP_VERSION:-not-installed}"
 CUSTOM_APP_COMMIT_VALUE="${CUSTOM_APP_COMMIT:-unknown}"
+if [[ "$CUSTOM_APP_COMMIT_VALUE" == "unknown" && -s "$SOURCE_REPO/ops/staging/lenerp_core/SOURCE_COMMIT.txt" ]]; then
+  CUSTOM_APP_COMMIT_VALUE="$(tr -d '\r\n' < "$SOURCE_REPO/ops/staging/lenerp_core/SOURCE_COMMIT.txt")"
+fi
+if [[ "$CUSTOM_APP_VERSION_VALUE" == "not-installed" && -s "$SOURCE_REPO/ops/staging/lenerp_core/pyproject.toml" ]]; then
+  CUSTOM_APP_VERSION_VALUE="$(python3 - "$SOURCE_REPO/ops/staging/lenerp_core/pyproject.toml" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+text = Path(sys.argv[1]).read_text(encoding="utf-8")
+match = re.search(r"^version\s*=\s*['\"]([^'\"]+)", text, flags=re.MULTILINE)
+print(match.group(1) if match else "not-installed")
+PY
+)"
+fi
 if [[ -n "${CUSTOM_APP_REPO:-}" ]]; then
   [[ -d "$CUSTOM_APP_REPO/.git" ]] || { echo "custom app repository is missing: $CUSTOM_APP_REPO" >&2; exit 1; }
   [[ -z "$(git -C "$CUSTOM_APP_REPO" status --porcelain --untracked-files=all)" ]] || { echo "custom app repository is not clean" >&2; exit 1; }
