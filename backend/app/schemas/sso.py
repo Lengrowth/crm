@@ -37,6 +37,15 @@ class SSOTokenRequest(SSOBaseModel):
     code_verifier: str = Field(min_length=43, max_length=128)
     client_secret: Optional[str] = Field(default=None, min_length=1, max_length=512)
 
+    @field_validator("code_verifier")
+    @classmethod
+    def validate_code_verifier(cls, value: str) -> str:
+        try:
+            value.encode("ascii")
+        except UnicodeEncodeError as exc:
+            raise ValueError("code_verifier must contain only ASCII characters.") from exc
+        return value
+
 
 class SSOTokenResponse(SSOBaseModel):
     issuer: str

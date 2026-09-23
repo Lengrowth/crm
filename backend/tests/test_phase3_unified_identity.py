@@ -6,6 +6,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 import pytest
+from pydantic import ValidationError
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -83,6 +84,37 @@ def test_successful_exchange_is_single_use_and_mapping_replay_is_idempotent():
     assert session.execute(select(ERPIdentityMapping).where(ERPIdentityMapping.id == first.mapping_id)).scalar_one().mapping_status == "active"
     with pytest.raises(SSOBrokerError, match="invalid or expired"):
         sso_service.exchange(session, SSOTokenRequest(code=authorization.code, client_id=payload.client_id, audience=payload.audience, redirect_uri=payload.redirect_uri, code_verifier=verifier, client_secret=settings.sso_exchange_secret))
+
+
+def test_non_ascii_code_verifier_is_rejected_as_a_client_error():
+    session, user, organization, tenant = ready_fixture()
+    verifier, payload = request_payload(tenant)
+    authorization = sso_service.authorize(session, user, payload)
+    bad_payload = SSOTokenRequest.model_construct(
+        code=authorization.code,
+        client_id=payload.client_id,
+        audience=payload.audience,
+        redirect_uri=payload.redirect_uri,
+        code_verifier="é" * 43,
+        client_secret=settings.sso_exchange_secret,
+    )
+
+    with pytest.raises(SSOBrokerError) as error:
+        sso_service.exchange(session, bad_payload)
+
+    assert error.value.status_code == 400
+    assert error.value.audit_action == "sso_exchange_pkce_denied"
+
+
+def test_non_ascii_code_verifier_is_rejected_by_the_request_schema():
+    with pytest.raises(ValidationError, match="ASCII"):
+        SSOTokenRequest(
+            code="c" * 16,
+            client_id="client",
+            audience="audience",
+            redirect_uri="https://erp.example.test/callback",
+            code_verifier="é" * 43,
+        )
 
 
 @pytest.mark.parametrize("mutation", ["state", "pkce", "audience", "redirect", "path"])

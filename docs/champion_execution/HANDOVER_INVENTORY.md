@@ -121,8 +121,9 @@ Status: `PLAT-P0` complete; `PLAT-P1` verified; `PLAT-P2` PASS; `PLAT-P3` PASS; 
 
 ## Phase 03 identity handover
 
-- The remediation candidate is CRM `d4517eeb842e121cd133ca630f9e8b15c4b22f8c` with LenERP `8d77cec7504d22f9c0a235034777e31fa07fc62`; migration `20260921_0014_phase3_security_hardening` follows `20260920_0013_phase3_unified_identity`.
-- Protected run `35542421306` exposed an unavailable Frappe advisory-lock API during the browser callback and completed cleanup. The callback now uses MariaDB `GET_LOCK`/`RELEASE_LOCK`; a fresh protected rerun must verify browser-bound state, mapping-handle isolation, durable rate limiting, accessibility, and authenticated break-glass recovery before independent review closes.
+- The final remediation candidate is CRM `47b15d89a2dba0709b226fa2a2b44f758ef0ee95` with LenERP `8d77cec7504d22f9c0a235034777e31fa07fc62`; migration `20260921_0014_phase3_security_hardening` follows `20260920_0013_phase3_unified_identity`.
+- Protected run `35583191594` / job `106280466398` passed for that exact candidate. Artifact `staging-browser-evidence-47b15d89a2dba0709b226fa2a2b44f758ef0ee95` has digest `sha256:c539d39a1d3699d00025ea93329ea82b92519dc5a8c261ceedf77e58593e92a7`; it records browser-bound state, mapping-handle isolation, durable rate limiting, accessibility, and authenticated break-glass recovery before/during/after rollback. Earlier run `35542421306` remains historical failure evidence; no fresh rerun is pending for the reviewed candidate.
+- PR #82 merged at `c7b0b4e40b6e5ac31ab244cde2303fc83a884d36`; production SSO remains disabled, production and Cloudflare were unchanged, and Phase 04 did not start.
 - Rollback disables SSO entry points and restores independent logins without deleting identity mappings or audit history.
 
 - Phase 2 implementation is isolated on branch `codex/plat-p2` from verified

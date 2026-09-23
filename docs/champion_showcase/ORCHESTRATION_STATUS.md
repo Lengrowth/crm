@@ -9,7 +9,7 @@ Last updated: 2026-09-21 (Asia/Tbilisi)
 | 00 | Complete | PASS |
 | 01 | Complete; staging gate deferred by prior record | PASS WITH DEFERRED STAGING GATE |
 | 02 | Closed; exact protected candidate and browser evidence verified | PASS — Phase 03 permitted; production unchanged |
-| 03 | Protected staging PASS recorded; final documentation-refresh SHA-bound rerun pending | READY FOR INDEPENDENT READ-ONLY RE-REVIEW after final rerun |
+| 03 | Protected staging PASS recorded; PR #82 merged; evidence record corrected | CONDITIONAL — independent read-only review remains the release gate |
 
 ## Phase 02 — HRMS and dependency-aware provisioning
 
@@ -66,7 +66,7 @@ does not claim production SSO.
 ## Phase 03 — Unified identity and cross-navigation
 
 The remediation candidate passed the protected staging lane at CRM
-`f9589276076e6514c9054447a026f9758ef64a71` with canonical LenERP commit
+`47b15d89a2dba0709b226fa2a2b44f758ef0ee95` with canonical LenERP commit
 `8d77cec7504d22f9c0a235034777e31fa07fc62` and bundle SHA-256
 `D136208D613DEECE9A51F25A7A1A5B4C7C916D8E657043FFFC7BEEC03B90AAA7`.
 
@@ -76,15 +76,16 @@ job. The minimal bootstrap PR #83 was merged normally at
 `854460e8c1a94fcbf844b18878023ab87d665f09` and preserved the required job
 name and default-off Phase 03 lane.
 
-Protected run `35580080046` / job `106270676103` passed the required check and
-uploaded artifact ID `10630670710`,
-`staging-browser-evidence-f9589276076e6514c9054447a026f9758ef64a71`, digest
-`sha256:8dadcefb707df1fb481e7a1980d3aa533c28a099837e814a3f4de1197be4f412`.
+Protected run `35583191594` / job `106280466398` passed the required check and
+uploaded artifact ID `10631363593`,
+`staging-browser-evidence-47b15d89a2dba0709b226fa2a2b44f758ef0ee95`, digest
+`sha256:c539d39a1d3699d00025ea93329ea82b92519dc5a8c261ceedf77e58593e92a7`.
 Browser SSO, bidirectional navigation, API denial/replay/PKCE/state/tenant/
 membership/role checks, revocation, break-glass before/after rollback, and
 cleanup passed. Production SSO, production, Cloudflare, and AWS SSH access
-remain unchanged. A documentation-only refresh requires one final protected
-rerun; PR #82 remains open and unmerged, and Phase 04 has not started.
+remain unchanged. PR #82 merged at
+`c7b0b4e40b6e5ac31ab244cde2303fc83a884d36`; the merge did not deploy to
+production or start Phase 04. The evidence record now matches the merged state.
 
 ## Worktree preservation
 

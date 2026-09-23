@@ -65,7 +65,7 @@
 | ID | Type | Status | Owner | Required action |
 |---|---|---|---|---|
 | P3-ID-D01 | Decision | Recorded | Release owner / security owner | Use the temporary isolated authorization-code broker only behind `phase3_unified_identity`; replace it with a maintained OAuth/OIDC provider before production authority. |
-| P3-ID-R01 | Risk | Open — current candidate protected staging rerun required | Release owner | Candidate `d4517eeb842e121cd133ca630f9e8b15c4b22f8c` / LenERP `8d77cec7504d22f9c0a235034777e31fa07fc62` is locally remediated; run the immutable protected staging candidate with browser-bound state, exchange-handle mapping isolation, denial/replay/role/membership/removal cases, durable rate-limit evidence, accessibility/responsive evidence, authenticated break-glass checks before/during/after rollback, cleanup, and rollback readback. |
+| P3-ID-R01 | Risk | Resolved — protected staging PASS; independent read-only review pending | Release owner | Candidate `47b15d89a2dba0709b226fa2a2b44f758ef0ee95` / LenERP `8d77cec7504d22f9c0a235034777e31fa07fc62` passed protected run `35583191594` / job `106280466398`. Artifact `staging-browser-evidence-47b15d89a2dba0709b226fa2a2b44f758ef0ee95` (`sha256:c539d39a1d3699d00025ea93329ea82b92519dc5a8c261ceedf77e58593e92a7`) contains the browser-bound state, mapping isolation, denial/replay/role/membership/removal, rate-limit, accessibility/responsive, break-glass rollback, cleanup, and rollback readback evidence. |
 | P3-ID-B01 | Blocker | Open | Release owner / acceptance authority | No production SSO or Champion acceptance until the protected staging artifact and independent read-only review pass. |
 
 | ID | Type | Status | Owner | Required action |
