@@ -1,13 +1,13 @@
 # Phase 03 — Unified Identity and Cross-Navigation Evidence
 
 **Date:** 2026-09-21 (Asia/Tbilisi)
-**Status:** PROTECTED STAGING PASS — final documentation refresh is followed by one SHA-bound protected rerun; production SSO is disabled.
+**Status:** PROTECTED STAGING PASS — PR #82 merged; corrective evidence record prepared for independent read-only review; production SSO is disabled.
 **Scope:** additive authorization-code broker boundary, canonical LenERP relying-party bridge, and control-plane/ERP navigation.
 
 ## Release identity
 
 - Control-plane branch: `codex/phase3-unified-identity`.
-- Control-plane candidate commit: `f9589276076e6514c9054447a026f9758ef64a71`.
+- Control-plane candidate commit: `47b15d89a2dba0709b226fa2a2b44f758ef0ee95`.
 - Canonical `lenerp_core` branch: `codex/phase3-unified-identity`.
 - Canonical LenERP remediation commit: `8d77cec7504d22f9c0a235034777e31fa07fc62`.
 - Immutable remediation bundle: `ops/staging/lenerp_core-8d77cec7504d22f9c0a235034777e31fa07fc62.tar`.
@@ -69,15 +69,16 @@ PR-branch job under the default-branch event filters. The safe bootstrap PR was
 [PR #83](https://github.com/Lengrowth/crm/pull/83), merged normally at
 `854460e8c1a94fcbf844b18878023ab87d665f09`.
 
-Protected push run `35580080046` / job `106270676103` passed for candidate
-`f9589276076e6514c9054447a026f9758ef64a71`. Artifact ID `10630670710` is
-`staging-browser-evidence-f9589276076e6514c9054447a026f9758ef64a71` with
-digest `sha256:8dadcefb707df1fb481e7a1980d3aa533c28a099837e814a3f4de1197be4f412`.
+Protected push run `35583191594` / job `106280466398` passed for candidate
+`47b15d89a2dba0709b226fa2a2b44f758ef0ee95`. Artifact ID `10631363593` is
+`staging-browser-evidence-47b15d89a2dba0709b226fa2a2b44f758ef0ee95` with
+digest `sha256:c539d39a1d3699d00025ea93329ea82b92519dc5a8c261ceedf77e58593e92a7`.
 The exact LenERP commit and bundle checksum are recorded above. The lane passed
 the browser, denial, revocation, rollback, and cleanup gates; production SSO,
 production, Cloudflare, and AWS SSH access remained unchanged. A documentation-
-only commit now requires one final protected rerun, and no PR #82 merge is
-authorized.
+only correction record now reflects that PR #82 merged at
+`c7b0b4e40b6e5ac31ab244cde2303fc83a884d36`; no production deployment or Phase 04
+execution is authorized by that merge.
 
 ## Rollback
 
@@ -97,6 +98,7 @@ single-use codes, PKCE S256, exact tenant/membership/readiness/role checks,
 allowlisted redirects and paths, host-scoped cookie separation, deterministic
 JIT role reconciliation, break-glass preservation, rate limits, secret-safe
 audits, direct and bidirectional navigation, staging flag-off defaults, and the
-final SHA-bound protected staging browser evidence. Confirm PR #82 remains open,
-unmerged, and mergeable without bypass. Do not infer Champion approval or
+final SHA-bound protected staging browser evidence. Confirm PR #82 is recorded as
+merged at `c7b0b4e40b6e5ac31ab244cde2303fc83a884d36` and that production remains
+unchanged. Do not infer Champion approval or
 production SSO authorization from synthetic records.

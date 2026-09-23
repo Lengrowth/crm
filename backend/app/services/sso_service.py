@@ -257,7 +257,23 @@ class SSOService:
             self._audit(session, action="sso_exchange_wrong_client", organization_id=code_record.organization_id, tenant_id=code_record.tenant_id, entity_id=code_record.request_id)
             session.commit()
             raise SSOBrokerError("The authorization code is invalid for this ERP client.", 400, audit_action="sso_exchange_wrong_client")
-        verifier_digest = base64.urlsafe_b64encode(hashlib.sha256(payload.code_verifier.encode("ascii")).digest()).rstrip(b"=").decode("ascii")
+        try:
+            verifier_bytes = payload.code_verifier.encode("ascii")
+        except UnicodeEncodeError as exc:
+            self._audit(
+                session,
+                action="sso_exchange_pkce_denied",
+                organization_id=code_record.organization_id,
+                tenant_id=code_record.tenant_id,
+                entity_id=code_record.request_id,
+            )
+            session.commit()
+            raise SSOBrokerError(
+                "The authorization code is invalid for this session.",
+                400,
+                audit_action="sso_exchange_pkce_denied",
+            ) from exc
+        verifier_digest = base64.urlsafe_b64encode(hashlib.sha256(verifier_bytes).digest()).rstrip(b"=").decode("ascii")
         if not hmac.compare_digest(verifier_digest, code_record.code_challenge):
             self._audit(session, action="sso_exchange_pkce_denied", organization_id=code_record.organization_id, tenant_id=code_record.tenant_id, entity_id=code_record.request_id)
             session.commit()

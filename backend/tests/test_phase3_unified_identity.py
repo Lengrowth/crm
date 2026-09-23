@@ -85,6 +85,26 @@ def test_successful_exchange_is_single_use_and_mapping_replay_is_idempotent():
         sso_service.exchange(session, SSOTokenRequest(code=authorization.code, client_id=payload.client_id, audience=payload.audience, redirect_uri=payload.redirect_uri, code_verifier=verifier, client_secret=settings.sso_exchange_secret))
 
 
+def test_non_ascii_code_verifier_is_rejected_as_a_client_error():
+    session, user, organization, tenant = ready_fixture()
+    verifier, payload = request_payload(tenant)
+    authorization = sso_service.authorize(session, user, payload)
+    bad_payload = SSOTokenRequest.model_construct(
+        code=authorization.code,
+        client_id=payload.client_id,
+        audience=payload.audience,
+        redirect_uri=payload.redirect_uri,
+        code_verifier="é" * 43,
+        client_secret=settings.sso_exchange_secret,
+    )
+
+    with pytest.raises(SSOBrokerError) as error:
+        sso_service.exchange(session, bad_payload)
+
+    assert error.value.status_code == 400
+    assert error.value.audit_action == "sso_exchange_pkce_denied"
+
+
 @pytest.mark.parametrize("mutation", ["state", "pkce", "audience", "redirect", "path"])
 def test_authorization_and_exchange_bind_state_pkce_audience_redirect_and_path(mutation: str):
     session, user, _, tenant = ready_fixture()

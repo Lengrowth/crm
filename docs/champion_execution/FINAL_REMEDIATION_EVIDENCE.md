@@ -41,12 +41,12 @@ name `Build one immutable candidate and deploy staging`, keeps the Phase 03
 lane default-off, validates same-repository immutable candidate refs, and
 retains staging-only permissions and cleanup.
 
-The first complete protected push run for PR #82 was run `35580080046`, job
-`106270676103`, against control-plane commit
-`f9589276076e6514c9054447a026f9758ef64a71`; it passed the required check and
-uploaded artifact ID `10630670710`, named
-`staging-browser-evidence-f9589276076e6514c9054447a026f9758ef64a71`, digest
-`sha256:8dadcefb707df1fb481e7a1980d3aa533c28a099837e814a3f4de1197be4f412`.
+The final protected push run for PR #82 was run `35583191594`, job
+`106280466398`, against control-plane commit
+`47b15d89a2dba0709b226fa2a2b44f758ef0ee95`; it passed the required check and
+uploaded artifact ID `10631363593`, named
+`staging-browser-evidence-47b15d89a2dba0709b226fa2a2b44f758ef0ee95`, digest
+`sha256:c539d39a1d3699d00025ea93329ea82b92519dc5a8c261ceedf77e58593e92a7`.
 The candidate-bound manifest records canonical LenERP commit
 `8d77cec7504d22f9c0a235034777e31fa07fc62` and bundle SHA-256
 `D136208D613DEECE9A51F25A7A1A5B4C7C916D8E657043FFFC7BEEC03B90AAA7`.
@@ -59,5 +59,7 @@ records, role principals, browser records, temporary files/configuration and
 synthetic ERP records; the ERP read-only reset ended with zero synthetic
 `LenERP Well Site` and `LenERP Drilling Job` records. Production SSO,
 production infrastructure, Cloudflare, and temporary AWS SSH access were not
-changed. A documentation-only refresh follows; its push-triggered protected
-run is the final SHA-bound gate.
+changed. PR #82 is merged at
+`c7b0b4e40b6e5ac31ab244cde2303fc83a884d36`; the merge did not deploy to
+production or start Phase 04. This correction record is the authoritative
+merged-state update for independent review.
