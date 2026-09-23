@@ -53,11 +53,17 @@ run_root bash "$SCRIPT_DIR/verify_backup_manifest.sh" "$backup_dir" >/dev/null
 
 rollback_site() {
   echo "Phase 02 ERP mutation failed; restoring the verified pre-mutation ERP backup" >&2
-  database="$(find "$backup_dir/erp" -maxdepth 1 -type f -name '*-database.sql.gz' -print -quit)"
-  public_files="$(find "$backup_dir/erp" -maxdepth 1 -type f -name '*-files.tar' -not -name '*private-files.tar' -print -quit)"
-  private_files="$(find "$backup_dir/erp" -maxdepth 1 -type f -name '*-private-files.tar' -print -quit)"
+  database="$(run_root find "$backup_dir/erp" -maxdepth 1 -type f -name '*-database.sql.gz' -print -quit)"
+  public_files="$(run_root find "$backup_dir/erp" -maxdepth 1 -type f -name '*-files.tar' -not -name '*private-files.tar' -print -quit)"
+  private_files="$(run_root find "$backup_dir/erp" -maxdepth 1 -type f -name '*-private-files.tar' -print -quit)"
   [[ -n "$database" && -n "$public_files" && -n "$private_files" ]] || return 1
-  run_as_frappe "cd '$BENCH_DIR' && bench --site '$SITE' restore '$database' --force --with-public-files '$public_files' --with-private-files '$private_files'"
+  restore_root="$(run_root mktemp -d /tmp/phase2-hrms-restore.XXXXXX)"
+  run_root cp "$database" "$restore_root/database.sql.gz"
+  run_root cp "$public_files" "$restore_root/files.tar"
+  run_root cp "$private_files" "$restore_root/private-files.tar"
+  run_root chown -R frappe:frappe "$restore_root"
+  run_as_frappe "cd '$BENCH_DIR' && bench --site '$SITE' restore '$restore_root/database.sql.gz' --force --with-public-files '$restore_root/files.tar' --with-private-files '$restore_root/private-files.tar'"
+  run_root rm -rf "$restore_root"
   if [[ "$LENERP_WAS_PRESENT" -eq 1 ]]; then
     run_root rm -rf "$LENERP_DIR"
     run_root cp -a "$ROLLBACK_ROOT/lenerp_core" "$LENERP_DIR"
@@ -107,6 +113,7 @@ if [[ "$LENERP_WAS_PRESENT" -eq 0 ]] || ! grep -Eq "^lenerp_core[[:space:]]+$LEN
   MUTATION_STARTED=1
   run_root rsync -a --delete --exclude='.git' "$LENERP_SOURCE_DIR/" "$LENERP_DIR/"
   run_root chown -R frappe:frappe "$LENERP_DIR"
+  run_as_frappe "cd '$BENCH_DIR' && bench setup requirements lenerp_core"
   run_root python3 - "$BENCH_DIR/sites/apps.txt" <<'PY'
 from pathlib import Path
 import sys
