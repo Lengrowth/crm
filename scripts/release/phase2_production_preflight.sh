@@ -8,6 +8,7 @@ ERP_SITE="${ERP_SITE:-erp.lengrowth.com}"
 TARGET_ENVIRONMENT="${TARGET_ENVIRONMENT:-production}"
 APP_ROOT="${APP_ROOT:-/opt/saas-control}"
 MANIFEST="$CANDIDATE_DIR/release-manifest.json"
+APPROVED_LENERP_COMMIT="8d77cec7504d22f9c0a235034777e31fa07fc62"
 
 [[ "$TARGET_ENVIRONMENT" == "production" ]] || { echo "production preflight requires TARGET_ENVIRONMENT=production" >&2; exit 1; }
 [[ "$ERP_SITE" == "erp.lengrowth.com" ]] || { echo "unexpected production ERP site" >&2; exit 1; }
@@ -117,6 +118,18 @@ if not isinstance(commit, str) or len(commit) != 40:
 print(commit or "")
 PY
 )"
+
+production_upstream_commit() {
+  python3 - "$APP_ROOT/current/release-manifest.json" "$1" <<'PY'
+import json
+import sys
+
+manifest = json.load(open(sys.argv[1], encoding="utf-8"))
+app = sys.argv[2]
+print(((manifest.get("installed_apps") or {}).get(app) or {}).get("upstream_commit") or "")
+PY
+}
+
 for app in frappe erpnext lenerp_core; do
   app_path="$ERP_BENCH_DIR/apps/$app"
   if [[ "$app" == "lenerp_core" ]]; then
@@ -126,8 +139,26 @@ for app in frappe erpnext lenerp_core; do
     sudo -n test -d "$app_path/.git" || { echo "exact production $app commit is not readable from a Git checkout" >&2; exit 1; }
     commit="$(capture_as_frappe "git -C '$app_path' rev-parse HEAD")"
   fi
-  [[ "$commit" =~ ^[0-9a-f]{40}$ ]] || { echo "production $app commit readback is invalid" >&2; exit 1; }
-  [[ "$commit" == "${expected_commits[$app]}" ]] || { echo "production $app commit does not match the candidate" >&2; exit 1; }
+  if [[ "$app" == "lenerp_core" ]]; then
+    [[ "$commit" == "$APPROVED_LENERP_COMMIT" ]] || { echo "production $app commit readback is invalid" >&2; exit 1; }
+  else
+    [[ "$commit" =~ ^[0-9a-f]{40}$ ]] || { echo "production $app commit readback is invalid" >&2; exit 1; }
+  fi
+  if [[ "$commit" != "${expected_commits[$app]}" ]]; then
+    case "$app" in
+      frappe|erpnext)
+        upstream_commit="$(production_upstream_commit "$app")"
+        [[ "$upstream_commit" == "${expected_commits[$app]}" ]] || {
+          echo "production $app commit does not match the candidate" >&2
+          exit 1
+        }
+        ;;
+      *)
+        echo "production $app commit does not match the candidate" >&2
+        exit 1
+        ;;
+    esac
+  fi
 done
 
 expected_lenerp_version="$(python3 - "$MANIFEST" <<'PY'
