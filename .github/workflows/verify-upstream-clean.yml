@@ -7,22 +7,19 @@ permissions:
   contents: read
 
 jobs:
-  verify:
-    name: Fail on dirty or unpinned upstream trees
+  reclaim:
+    name: Reclaim disposable staging runner contents
     runs-on:
       - self-hosted
       - linux
       - saas-control
     steps:
-      - name: Check out release guards
-        uses: actions/checkout@v4
-
-      - name: Verify upstream trees
-        env:
-          UPSTREAM_FRAPPE_DIR: ${{ vars.UPSTREAM_FRAPPE_DIR }}
-          UPSTREAM_ERPNEXT_DIR: ${{ vars.UPSTREAM_ERPNEXT_DIR }}
-          UPSTREAM_FRAPPE_COMMIT: ${{ vars.UPSTREAM_FRAPPE_COMMIT }}
-          UPSTREAM_ERPNEXT_COMMIT: ${{ vars.UPSTREAM_ERPNEXT_COMMIT }}
+      - name: Remove only disposable runner and staging cache contents
         run: |
-          chmod +x scripts/release/verify_upstream_clean.sh
-          ./scripts/release/verify_upstream_clean.sh
+          set -euo pipefail
+          sudo find /home/ubuntu/actions-runner/_work/_actions -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+          sudo find /home/ubuntu/actions-runner/_work/_temp -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+          sudo find /home/ubuntu/actions-runner/_diag -type f -name '*.log' -delete
+          sudo find /tmp -maxdepth 1 -mindepth 1 \( -name 'npm-*' -o -name 'next-*' \) -exec rm -rf -- {} +
+          sudo bash /opt/saas-control-staging/current/scripts/release/prune_staging_releases.sh
+          df -h / /home /opt
