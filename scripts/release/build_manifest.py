@@ -125,7 +125,11 @@ def main() -> int:
         "frappe": {"commit": runtime_frappe, "upstream_commit": upstream_frappe},
         "erpnext": {"commit": runtime_erpnext, "upstream_commit": upstream_erpnext},
     }
-    if custom_app_version != "not-installed" or custom_app_commit != "unknown":
+    # The co-hosted ERP bundle is pinned in the checked-in staging baseline.
+    # Keep its identity in installed_apps even when the caller omitted the
+    # optional custom-app environment variables; production preflight relies
+    # on this field to prove the candidate carries the exact ERP application.
+    if lenerp_core_runtime.get("commit") or custom_app_version != "not-installed" or custom_app_commit != "unknown":
         installed_apps["lenerp_core"] = {
             "version": custom_app_version,
             "commit": custom_app_commit,
