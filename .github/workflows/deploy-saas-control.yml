@@ -201,14 +201,9 @@ jobs:
         run: chmod +x scripts/release/*.sh scripts/deploy/*.sh
 
       - name: Use the supported Node.js runtime for the locked frontend toolchain
-        run: |
-          set -euo pipefail
-          # The self-hosted runner can fill its action cache before setup-node
-          # downloads. Reclaim only disposable caches first, then fail closed
-          # unless the runner already has the pinned runtime.
-          sudo find /tmp -maxdepth 1 -mindepth 1 \( -name 'npm-*' -o -name 'next-*' \) -exec rm -rf -- {} +
-          npm cache clean --force
-          node --version
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.1
 
       - name: Reclaim only the disposable npm cache on the staging runner
         run: npm cache clean --force
@@ -661,7 +656,15 @@ jobs:
 
       - name: Upload non-secret Phase 4 synthetic evidence
         if: ${{ always() && (inputs.phase4_synthetic_state || 'off') == 'on' }}
-        run: echo "Phase 4 synthetic evidence upload is disabled for the runner-reclaim bootstrap"
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase4-synthetic-evidence-${{ github.run_id }}
+          path: |
+            phase4-synthetic-evidence.json
+            phase4-synthetic-recovery-evidence.json
+            phase4-synthetic-evidence-metadata.json
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Install browser runtime for durable staging evidence
         run: /opt/saas-control-staging/current/frontend/node_modules/.bin/playwright install --with-deps chromium
@@ -1097,4 +1100,9 @@ jobs:
 
       - name: Upload durable staging browser evidence
         if: success()
-        run: echo "Durable staging browser evidence upload is disabled for the runner-reclaim bootstrap"
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-browser-evidence-${{ steps.candidate.outputs.sha }}
+          path: staging-browser-evidence
+          if-no-files-found: error
+          retention-days: 30
