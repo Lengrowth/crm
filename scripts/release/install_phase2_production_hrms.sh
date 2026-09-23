@@ -165,9 +165,9 @@ installed_version="$(awk '$1 == "hrms" {print $2; exit}' <<<"$apps")"
 [[ "$installed_version" == "15.64.1" ]]
 grep -Eq "^lenerp_core[[:space:]]+$LENERP_VERSION([[:space:]]|$)" <<<"$apps"
 [[ "$(run_as_frappe "tr -d '\r\n' < '$LENERP_DIR/SOURCE_COMMIT.txt'")" == "$LENERP_COMMIT" ]]
-role_count="$(run_as_frappe "cd '$BENCH_DIR' && bench --site '$SITE' execute frappe.client.get_count --args '[{\"doctype\":\"Role\",\"filters\":{\"name\":[\"in\",[\"HR User\",\"HR Manager\",\"Champion Administrator\",\"Champion Dispatcher\",\"Champion Sales User\",\"Champion Accounting User\",\"Champion Inventory Manager\",\"Champion Field Technician\",\"Champion Platform Operator\"]]}}]'" | tr -d '\r\n ' )"
+role_count="$(run_as_frappe "cd '$BENCH_DIR' && bench --site '$SITE' execute frappe.client.get_count --kwargs '{\"doctype\":\"Role\",\"filters\":{\"name\":[\"in\",[\"HR User\",\"HR Manager\",\"Champion Administrator\",\"Champion Dispatcher\",\"Champion Sales User\",\"Champion Accounting User\",\"Champion Inventory Manager\",\"Champion Field Technician\",\"Champion Platform Operator\"]]}}'" | tr -d '\r\n ' )"
 [[ "$role_count" == "9" ]]
-workspace_count="$(run_as_frappe "cd '$BENCH_DIR' && bench --site '$SITE' execute frappe.client.get_count --args '[{\"doctype\":\"Workspace\",\"filters\":{\"name\":[\"in\",[\"HR\",\"Payroll\",\"Champion ERP\"]]}}]'" | tr -d '\r\n ' )"
+workspace_count="$(run_as_frappe "cd '$BENCH_DIR' && bench --site '$SITE' execute frappe.client.get_count --kwargs '{\"doctype\":\"Workspace\",\"filters\":{\"name\":[\"in\",[\"HR\",\"Payroll\",\"Champion ERP\"]]}}'" | tr -d '\r\n ' )"
 [[ "$workspace_count" == "3" ]]
 
 python3 - "$OUTPUT_FILE" "$HRMS_COMMIT" "$installed_version" "$role_count" "$workspace_count" "$LENERP_COMMIT" "$LENERP_VERSION" <<'PY'
