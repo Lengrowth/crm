@@ -141,7 +141,12 @@ if [[ ! -e "$target_candidate" ]]; then
   mkdir -p -- "$PRODUCTION_ROOT"
   incoming="$PRODUCTION_ROOT/.${RELEASE_ID}.phase2-incoming.$$"
   trap 'rm -rf -- "$incoming"' EXIT
-  cp -a -- "$source_candidate" "$incoming"
+  mkdir -p -- "$incoming"
+  # The frontend build is already immutable in the staging candidate. Do not
+  # copy disposable Next.js caches/types into the production incoming tree:
+  # they are not runtime inputs and can exhaust the production volume while
+  # the old release must remain available for rollback.
+  rsync -a --exclude='frontend/.next/cache/***' --exclude='frontend/.next/types/***' "$source_candidate/" "$incoming/"
   printf 'candidate_sha=%s\nstaging_run_id=%s\n' "$RELEASE_ID" "$STAGING_RUN_ID" > "$incoming/.phase2-staging-evidence-verified"
   mv -T -- "$incoming" "$target_candidate"
   trap - EXIT
