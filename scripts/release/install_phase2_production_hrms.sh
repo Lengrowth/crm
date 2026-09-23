@@ -6,6 +6,7 @@ BACKUP_EVIDENCE_FILE="${BACKUP_EVIDENCE_FILE:?Set BACKUP_EVIDENCE_FILE}"
 RELEASE_ID="${RELEASE_ID:?Set RELEASE_ID}"
 BENCH_DIR="${ERP_BENCH_DIR:-/home/frappe/frappe-bench}"
 SITE="${ERP_SITE:-erp.lengrowth.com}"
+APP_ROOT="${APP_ROOT:-/opt/saas-control}"
 PRODUCTION_RELEASE_ROOT="${PRODUCTION_RELEASE_ROOT:-/opt/saas-control/releases}"
 RELEASE_DIR="$PRODUCTION_RELEASE_ROOT/$RELEASE_ID"
 FRAPPE_VERSION="15.119.1"
@@ -33,7 +34,7 @@ run_root() {
 }
 
 current_upstream_commit() {
-  python3 - "$PRODUCTION_RELEASE_ROOT/current/release-manifest.json" "$1" <<'PY'
+  python3 - "$APP_ROOT/current/release-manifest.json" "$1" <<'PY'
 import json
 import sys
 
