@@ -108,6 +108,18 @@ if run_root test -e "$LENERP_DIR"; then
 fi
 run_root cp "$BENCH_DIR/sites/apps.txt" "$ROLLBACK_ROOT/apps.txt"
 
+if [[ -z "$installed_version" ]]; then
+  echo "HRMS is absent; installing the approved source once through Bench."
+  MUTATION_STARTED=1
+  run_as_frappe "cd '$BENCH_DIR' && bench setup requirements hrms"
+  run_as_frappe "cd '$BENCH_DIR' && bench --site '$SITE' install-app hrms"
+else
+  echo "HRMS 15.64.1 is already installed at the approved source; replaying without reinstall."
+  MUTATION_STARTED=1
+  run_as_frappe "cd '$BENCH_DIR' && bench setup requirements hrms"
+fi
+apps="$(run_as_frappe "cd '$BENCH_DIR' && bench --site '$SITE' list-apps")"
+
 if [[ "$LENERP_WAS_PRESENT" -eq 0 ]] || ! grep -Eq "^lenerp_core[[:space:]]+$LENERP_VERSION([[:space:]]|$)" <<<"$apps" || [[ "$(run_as_frappe "tr -d '\r\n' < '$LENERP_DIR/SOURCE_COMMIT.txt'")" != "$LENERP_COMMIT" ]]; then
   echo "Provisioning exact lenerp_core source through the reviewed candidate release."
   MUTATION_STARTED=1
@@ -132,16 +144,6 @@ PY
   run_as_frappe "cd '$BENCH_DIR' && bench build --app lenerp_core"
 fi
 
-if [[ -z "$installed_version" ]]; then
-  echo "HRMS is absent; installing the approved source once through Bench."
-  MUTATION_STARTED=1
-  run_as_frappe "cd '$BENCH_DIR' && bench setup requirements hrms"
-  run_as_frappe "cd '$BENCH_DIR' && bench --site '$SITE' install-app hrms"
-else
-  echo "HRMS 15.64.1 is already installed at the approved source; replaying without reinstall."
-  MUTATION_STARTED=1
-  run_as_frappe "cd '$BENCH_DIR' && bench setup requirements hrms"
-fi
 run_as_frappe "cd '$BENCH_DIR' && bench --site '$SITE' migrate"
 run_as_frappe "cd '$BENCH_DIR' && bench build --app hrms"
 run_root "$SUPERVISORCTL_BIN" restart frappe-bench-web:frappe-bench-frappe-web frappe-bench-web:frappe-bench-node-socketio frappe-bench-workers:frappe-bench-frappe-short-worker frappe-bench-workers:frappe-bench-frappe-long-worker frappe-bench-workers:frappe-bench-frappe-schedule
