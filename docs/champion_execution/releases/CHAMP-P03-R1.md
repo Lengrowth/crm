@@ -3,7 +3,7 @@
 ## Release identity
 
 - Release type: Champion package / platform identity implementation
-- State: `protected_staging_pass_merged_review_correction_pending`
+- State: `PASS — protected staging and independent read-only technical review complete`
 - Control-plane branch: `codex/phase3-unified-identity`
 - Control-plane candidate commit: `47b15d89a2dba0709b226fa2a2b44f758ef0ee95`
 - Canonical LenERP commit: `8d77cec7504d22f9c0a235034777e31fa07fc62`
@@ -15,7 +15,8 @@
 - Protected staging run: `35583191594`, job `106280466398`, passed for the exact candidate above.
 - Evidence artifact: ID `10631363593`, name `staging-browser-evidence-47b15d89a2dba0709b226fa2a2b44f758ef0ee95`, digest `sha256:c539d39a1d3699d00025ea93329ea82b92519dc5a8c261ceedf77e58593e92a7`.
 - PR #82 merge: `c7b0b4e40b6e5ac31ab244cde2303fc83a884d36`; this merge occurred before the corrective review record was prepared.
-- Champion acceptance: not claimed; independent read-only review remains open.
+- Independent read-only technical review: PASS for the exact candidate and protected artifact.
+- Champion acceptance: not claimed; production SSO remains disabled and Phase 04 has not started.
 
 ## Gate status
 
@@ -28,7 +29,7 @@
 - [x] Protected staging candidate deployed and evidence uploaded for the exact remediation candidate.
 - [x] Browser control-plane-to-ERP and ERP-to-control-plane journeys captured.
 - [x] Protected remediation staging denial, replay, membership-removal, role, authenticated break-glass rollback, and cleanup evidence captured for the current candidate.
-- [ ] Independent read-only review completed.
+- [x] Independent read-only technical review completed for the exact candidate and protected artifact.
 
 Local validation totals: backend `89 passed, 25 warnings`, focused Phase 03 `10 passed`,
 frontend `12 passed`, canonical LenERP `11 passed`; frontend typecheck/build,
@@ -36,12 +37,13 @@ workflow YAML validation, and Python compilation passed.
 
 ## Safe current state
 
-The code and canonical ERP artifact were verified in staging. Central SSO is not
+The code and canonical ERP artifact were verified in staging, and the exact
+candidate passed independent read-only technical review. Central SSO is not
 authoritative anywhere. The protected lane verified flag/configuration restore,
 independent login after rollback, synthetic identity/mapping/file cleanup, zero
 synthetic ERP counts, and no temporary AWS SSH access. Production and Cloudflare
-were unchanged. PR #82 is merged at the merge commit recorded above; Phase 04
-has not started and production SSO remains disabled.
+were unchanged. PR #82 and corrective PR #85 are merged; Phase 04 has not
+started and production SSO remains disabled.
 
 Full implementation evidence is in
 [11_PHASE_03_IMPLEMENTATION_EVIDENCE.md](../../champion_showcase/11_PHASE_03_IMPLEMENTATION_EVIDENCE.md).

@@ -9,7 +9,7 @@ Last updated: 2026-09-21 (Asia/Tbilisi)
 | 00 | Complete | PASS |
 | 01 | Complete; staging gate deferred by prior record | PASS WITH DEFERRED STAGING GATE |
 | 02 | Closed; exact protected candidate and browser evidence verified | PASS — Phase 03 permitted; production unchanged |
-| 03 | Protected staging PASS recorded; PR #82 merged; evidence record corrected | CONDITIONAL — independent read-only review remains the release gate |
+| 03 | Protected staging PASS and independent read-only technical review complete; PR #82 and corrective PR #85 merged | PASS — production unchanged; Phase 04 not started |
 
 ## Phase 02 — HRMS and dependency-aware provisioning
 
@@ -60,8 +60,8 @@ ID `10603752341`, digest
 `sha256:bd808a20f5f9743e122dc064113160dbf60ad8bd073638b9dd132bf4c191a8ef`.
 Production and Cloudflare remain unchanged. Phase 02 is PASS. The prior Phase 03
 protected staging run is retained as historical evidence; the remediation candidate
-requires a fresh protected rerun before independent review can close. This record
-does not claim production SSO.
+passed its fresh protected rerun and independent read-only technical review. This
+record does not claim production SSO.
 
 ## Phase 03 — Unified identity and cross-navigation
 
@@ -85,7 +85,9 @@ membership/role checks, revocation, break-glass before/after rollback, and
 cleanup passed. Production SSO, production, Cloudflare, and AWS SSH access
 remain unchanged. PR #82 merged at
 `c7b0b4e40b6e5ac31ab244cde2303fc83a884d36`; the merge did not deploy to
-production or start Phase 04. The evidence record now matches the merged state.
+production or start Phase 04. Corrective PR #85 is also merged at
+`6f137d312fd6ec664cd1dcf51470a10095b9fba2`; the independent technical review
+passed and the evidence record matches the merged state.
 
 ## Worktree preservation
 
