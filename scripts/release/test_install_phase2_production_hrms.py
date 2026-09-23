@@ -63,7 +63,15 @@ if [ "$1" = "-u" ]; then shift 2; fi
 exec "$@"
 """)
     write_executable(bin_dir / "supervisorctl", f"""#!/bin/sh
-echo supervisorctl >> '{log}'
+if [ "${{1:-}}" = status ]; then
+  echo 'frappe-bench-web:frappe-bench-frappe-web RUNNING'
+  echo 'frappe-bench-web:frappe-bench-node-socketio RUNNING'
+  echo 'frappe-bench-workers:frappe-bench-frappe-short-worker-0 RUNNING'
+  echo 'frappe-bench-workers:frappe-bench-frappe-long-worker-0 RUNNING'
+  echo 'frappe-bench-workers:frappe-bench-frappe-schedule RUNNING'
+else
+  echo supervisorctl >> '{log}'
+fi
 """)
     write_executable(bin_dir / "git", f"""#!/bin/sh
 set -eu
