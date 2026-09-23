@@ -201,9 +201,14 @@ jobs:
         run: chmod +x scripts/release/*.sh scripts/deploy/*.sh
 
       - name: Use the supported Node.js runtime for the locked frontend toolchain
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22.13.1
+        run: |
+          set -euo pipefail
+          # The self-hosted runner can fill its action cache before setup-node
+          # downloads. Reclaim only disposable caches first, then fail closed
+          # unless the runner already has the pinned runtime.
+          sudo find /tmp -maxdepth 1 -mindepth 1 \( -name 'npm-*' -o -name 'next-*' \) -exec rm -rf -- {} +
+          npm cache clean --force
+          test "$(node --version)" = "v22.13.1"
 
       - name: Reclaim only the disposable npm cache on the staging runner
         run: npm cache clean --force
