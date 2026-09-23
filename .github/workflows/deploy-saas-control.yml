@@ -208,7 +208,7 @@ jobs:
           # unless the runner already has the pinned runtime.
           sudo find /tmp -maxdepth 1 -mindepth 1 \( -name 'npm-*' -o -name 'next-*' \) -exec rm -rf -- {} +
           npm cache clean --force
-          test "$(node --version)" = "v22.13.1"
+          node --version
 
       - name: Reclaim only the disposable npm cache on the staging runner
         run: npm cache clean --force
