@@ -1,24 +1,28 @@
 # Phase 02 — Implementation Evidence
 
-**Date:** 2026-09-20
-**Status:** PASS — final protected staging candidate and browser evidence passed. Phase 03 permitted; production remains unchanged.
+**Date:** 2026-09-24
+**Status:** PASS — exact main commit passed protected staging and was verified in production.
 **Release scope:** dependency-aware HRMS provisioning for synthetic Champion tenants only.
 
 ## Evidence boundary
 
-This record does not claim Champion acceptance, real employee/payroll data,
-production HRMS installation, or Phase 03 work. Production HR/Payroll
-navigation remains disabled until exact application, role, workspace, and site
-readback succeeds.
+This record does not claim Champion acceptance, real employee/payroll data, or
+Phase 03 work. Production HRMS/dependency-aware provisioning is verified for
+the synthetic Phase 02 flow; employee and payroll processing remain out of
+scope.
 
 ## Final Phase 02 closure readback
 
-- Protected staging run: `35506309957`; job: `106066811682`.
-- Reviewed PR head: `796ea2e0cd7aae0bd2b19bc88e6750b93f1a5642`.
-- Immutable merge candidate: `9674a6a1b4adf9447af759458763b25721672272`.
-- Exact artifact: `staging-browser-evidence-9674a6a1b4adf9447af759458763b25721672272` (artifact `10603752341`).
-- Artifact digest: `sha256:bd808a20f5f9743e122dc064113160dbf60ad8bd073638b9dd132bf4c191a8ef`.
-- Verdict: `PASS`; Phase 03 is permitted. Production and Cloudflare were not targeted or changed.
+- Protected staging run: `35913962740`; main merge commit: `44cb6a360d078d9520a8b14f138e03477af82d26`.
+- Production workflow: `35915114849`; deployment: `6623549817`; evidence artifact: `10774163302`.
+- Production runtime pointer: `/opt/saas-control/releases/44cb6a360d078d9520a8b14f138e03477af82d26`.
+- Production readback: database revision `20260921_0014`, local backend health `200`, services and backup timer active.
+- ERP readback: Frappe `15.119.1`, ERPNext `15.120.0`, HRMS `15.64.1` / `e68a3deaa95ae5b2c3d743297d0a4ab505733fc1`, LenERP `0.2.0` / `8d77cec7504d22f9c0a235034777e31fa07fc62`, 9 required roles, and 3 required workspaces.
+- Production authorization and tenant-isolation smoke passed; all disposable Phase 02 records were removed.
+- Verdict: `PASS`; production was promoted from main after protected staging and the required production environment approval.
+
+The older sections below retain historical pre-promotion evidence and are
+superseded by this final closure readback.
 
 ## HRMS pin and compatibility
 
