@@ -113,7 +113,7 @@ if [[ "$LENERP_WAS_PRESENT" -eq 0 ]] || ! grep -Eq "^lenerp_core[[:space:]]+$LEN
   MUTATION_STARTED=1
   run_root rsync -a --delete --exclude='.git' "$LENERP_SOURCE_DIR/" "$LENERP_DIR/"
   run_root chown -R frappe:frappe "$LENERP_DIR"
-  run_as_frappe "cd '$BENCH_DIR' && bench setup requirements lenerp_core"
+  run_as_frappe "cd '$BENCH_DIR' && uv pip install --quiet --python '$BENCH_DIR/env/bin/python' --no-deps -e '$LENERP_DIR'"
   run_root python3 - "$BENCH_DIR/sites/apps.txt" <<'PY'
 from pathlib import Path
 import sys
