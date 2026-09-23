@@ -28,6 +28,12 @@ candidate = json.load(open(sys.argv[1], encoding="utf-8"))
 current = json.load(open(sys.argv[2], encoding="utf-8"))
 approved_lenerp_commit = "8d77cec7504d22f9c0a235034777e31fa07fc62"
 approved_lenerp_version = "0.2.0"
+def is_exact_identity(name, value):
+    if not isinstance(value, str):
+        return False
+    if name == "lenerp_core" and value == approved_lenerp_commit:
+        return True
+    return len(value) == 40
 if candidate.get("environment") != "staging" or candidate.get("build_environment") != "staging":
     raise SystemExit("production may promote only a staging-built candidate")
 candidate_before = candidate.get("database_revision_before")
@@ -79,7 +85,7 @@ for name in ("frappe", "erpnext", "lenerp_core"):
                 "version": approved_lenerp_version,
             }
     commit = app_payload.get("commit")
-    if not isinstance(commit, str) or len(commit) != 40:
+    if not is_exact_identity(name, commit):
         raise SystemExit(f"candidate is missing exact {name} commit")
 if (candidate.get("custom_app_version") or "") == "not-installed":
     raise SystemExit("candidate is missing the required LenERP application version")
