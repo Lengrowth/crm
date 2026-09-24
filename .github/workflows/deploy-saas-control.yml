@@ -983,6 +983,42 @@ jobs:
             kill "$(cat "$tls_dir/proxy.pid")" 2>/dev/null || true
           fi
 
+      - name: Roll back Phase 04 workspace flag and verify legacy workspace
+        if: always()
+        run: |
+          site_config="/opt/frappe-staging-bench/sites/erp-staging.example.test/site_config.json"
+          sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test set-config lenerp_phase4_workspace_enabled 'off'"
+          sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test set-config lenerp_phase4_role_rollout '{}'"
+          sudo -u frappe bash -lc 'cd /opt/frappe-staging-bench && bench --site erp-staging.example.test clear-cache'
+          legacy_count="$(sudo -u frappe bash -lc 'cd /opt/frappe-staging-bench && bench --site erp-staging.example.test execute frappe.client.get_count --args \"{\\\"doctype\\\":\\\"Workspace\\\",\\\"filters\\\":{\\\"name\\\":\\\"Champion ERP\\\"}}\"' | tr -d '\r\n ' )"
+          sudo python3 - "$site_config" "$legacy_count" "$GITHUB_WORKSPACE/staging-browser-evidence/phase4-rollback-evidence.json" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          config_path, legacy_count, output_path = sys.argv[1:]
+          config = json.loads(Path(config_path).read_text(encoding="utf-8"))
+          flag = str(config.get("lenerp_phase4_workspace_enabled", "")).strip().lower()
+          rollout = config.get("lenerp_phase4_role_rollout", {})
+          if flag not in {"off", "0", "false"}:
+              raise SystemExit(f"Phase 04 workspace flag did not roll back: {flag!r}")
+          if rollout not in ({}, "{}"):
+              raise SystemExit(f"Phase 04 role rollout did not clear: {rollout!r}")
+          if legacy_count != "1":
+              raise SystemExit(f"legacy Champion ERP Workspace readback was {legacy_count!r}")
+          output = {
+              "status": "passed",
+              "phase4_workspace_enabled": False,
+              "phase4_role_rollout": {},
+              "legacy_workspace": "Champion ERP",
+              "legacy_workspace_count": 1,
+          }
+          path = Path(output_path)
+          path.parent.mkdir(parents=True, exist_ok=True)
+          path.write_text(json.dumps(output, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+          sudo chown "$(id -u):$(id -g)" "$GITHUB_WORKSPACE/staging-browser-evidence/phase4-rollback-evidence.json"
+
       - name: Remove synthetic ERP role principals
         if: always()
         env:
