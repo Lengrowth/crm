@@ -990,7 +990,7 @@ jobs:
           sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test set-config lenerp_phase4_workspace_enabled 'off'"
           sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test set-config lenerp_phase4_role_rollout '{}'"
           sudo -u frappe bash -lc 'cd /opt/frappe-staging-bench && bench --site erp-staging.example.test clear-cache'
-          legacy_count="$(sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test execute frappe.client.get_count --args '{\"doctype\":\"Workspace\",\"filters\":{\"name\":\"Champion ERP\"}}'" | tr -d '\r\n ' )"
+          legacy_count="$(sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test execute frappe.client.get_count --kwargs '{\"doctype\":\"Workspace\",\"filters\":{\"name\":\"Champion ERP\"}}'" | tr -d '\r\n ' )"
           sudo python3 - "$site_config" "$legacy_count" "$GITHUB_WORKSPACE/staging-browser-evidence/phase4-rollback-evidence.json" <<'PY'
           import json
           import sys

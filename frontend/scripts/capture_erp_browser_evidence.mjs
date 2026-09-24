@@ -102,6 +102,7 @@ async function championHomeContract(session, role) {
   if ((response?.status() ?? 0) >= 400 || !(await session.page.locator("#lenerp-phase4-root").count())) {
     throw new Error(`${role} Champion role home failed: ${response?.status()}`);
   }
+  await session.page.locator(".lenerp-phase4__nav a").first().waitFor({ state: "visible", timeout: 10000 });
   const moduleHome = await api(session.page, "/api/method/lenerp_core.api.module_home");
   const payload = responsePayload(moduleHome);
   if (moduleHome.status !== 200 || !["ready", "empty", "partial"].includes(payload?.state)) {
