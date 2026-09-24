@@ -19,7 +19,7 @@ def test_erp_demo_smoke_is_staging_only_and_explicitly_seeded():
 
 def test_staging_smoke_defaults_to_the_synthetic_demo_app_version():
     script = (ROOT / "scripts" / "release" / "erp_staging_smoke.sh").read_text(encoding="utf-8")
-    assert "EXPECTED_CUSTOM_APP_VERSION:-0.2.0" in script
+    assert "EXPECTED_CUSTOM_APP_VERSION:-0.3.0" in script
     assert "after 60s" in script
 
 
@@ -27,14 +27,14 @@ def test_staging_workflow_verifies_the_installed_custom_app_candidate():
     workflow = (ROOT / ".github" / "workflows" / "deploy-saas-control.yml").read_text(encoding="utf-8")
     baseline = (ROOT / "ops" / "staging" / "release-runtime-baseline.json").read_text(encoding="utf-8")
     bundle_commit = (ROOT / "ops" / "staging" / "lenerp_core" / "SOURCE_COMMIT.txt").read_text(encoding="utf-8").strip()
-    assert 'CUSTOM_APP_VERSION: "0.2.0"' in workflow
+    assert 'CUSTOM_APP_VERSION: "0.3.0"' in workflow
     assert 'CUSTOM_APP_COMMIT="$core_commit"' in workflow
     assert 'SOURCE_COMMIT.txt' in workflow
-    assert bundle_commit == "8d77cec7504d22f9c0a235034777e31fa07fc62"
+    assert bundle_commit == "5955cc8ac2aa0a2f0fb671aa2f25d3e8c5e7a5b4"
     assert "lenerp_core-${core_commit}.tar" in workflow
     assert 'staging.joinpath("lenerp_core.archive.sha256")' in workflow
-    assert '"version": "0.2.0"' in baseline
-    assert '"commit": "8d77cec7504d22f9c0a235034777e31fa07fc62"' in baseline
+    assert '"version": "0.3.0"' in baseline
+    assert '"commit": "5955cc8ac2aa0a2f0fb671aa2f25d3e8c5e7a5b4"' in baseline
     assert "erp_staging_smoke.sh" in workflow
     assert "erp_demo_smoke.sh" in workflow
     assert "erp_role_smoke.sh" in workflow
@@ -48,7 +48,7 @@ def test_staging_workflow_verifies_the_installed_custom_app_candidate():
     assert '"runtime_readback": runtime_readback' in workflow
     assert '"documentation": {' in workflow
     assert 'documentation_target = evidence_dir / "documentation"' in workflow
-    archive = ROOT / "ops" / "staging" / "lenerp_core-8d77cec7504d22f9c0a235034777e31fa07fc62.tar"
+    archive = ROOT / "ops" / "staging" / "lenerp_core-5955cc8ac2aa0a2f0fb671aa2f25d3e8c5e7a5b4.tar"
     with tarfile.open(archive, mode="r:*") as handle:
         assert "lenerp_core/public/js/accessibility.js" in handle.getnames()
 

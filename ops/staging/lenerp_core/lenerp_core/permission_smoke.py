@@ -20,6 +20,9 @@ ROLE_SPECS = {
     "Champion Accounting User": {"Customer", "Contact", "Sales Invoice", "Payment Entry"},
     "Champion Inventory Manager": {"Item", "Supplier", "Warehouse", "Purchase Receipt", "Stock Entry", "Asset"},
     "Champion Field Technician": {"LenERP Well Site", "LenERP Drilling Job", "Asset", "Asset Maintenance"},
+    "Champion HR Payroll User": {"Employee", "Attendance", "Leave Application", "Payroll Entry"},
+    "Champion Quality Support User": {"Issue", "Customer", "Contact"},
+    "Champion Read Only User": {"LenERP Well Site", "LenERP Drilling Job", "Customer", "Contact", "Quotation", "Asset", "Employee"},
     "Champion Platform Operator": set(),
 }
 

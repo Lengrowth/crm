@@ -14,8 +14,8 @@
       "license": "GNU General Public License (v3)"
     },
     "lenerp_core": {
-      "version": "0.2.0",
-      "commit": "8d77cec7504d22f9c0a235034777e31fa07fc62",
+      "version": "0.3.0",
+      "commit": "5955cc8ac2aa0a2f0fb671aa2f25d3e8c5e7a5b4",
       "source": "platform",
       "license": "Proprietary Len-OS application"
     }
@@ -63,7 +63,7 @@
             "frappe": "15.119.1",
             "erpnext": "15.120.0",
             "hrms": "15.64.1",
-            "lenerp_core": "0.2.0"
+            "lenerp_core": "0.3.0"
           },
           "source_commits": {
             "frappe": "edae775dd36b6c4ad7acab10230262bd74040765",

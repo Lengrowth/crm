@@ -33,7 +33,9 @@
     "site_readback": "erp.lengrowth.com",
     "installed_site_apps": ["frappe", "erpnext"],
     "hrms_mutation_authorized": false,
-    "exact_source_commit_readback_required": true
+    "exact_source_commit_readback_required": true,
+    "champion_phase4_workspace_flag": "off",
+    "champion_phase4_role_rollout": {}
   },
   "production_verified_post_deployment": null
 }

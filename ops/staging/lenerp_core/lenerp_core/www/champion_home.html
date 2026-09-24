@@ -1,0 +1,47 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ product }} — {{ role_label }}{% endblock %}
+
+{% block page_content %}
+<style>
+  :root { color-scheme: light dark; }
+  .lenerp-phase4 { max-width: 1180px; margin: 0 auto; padding: clamp(1rem, 3vw, 2.5rem); color: var(--text-color, #202124); }
+  .lenerp-phase4 a { color: var(--link-color, #1671d9); }
+  .lenerp-phase4__context, .lenerp-phase4__card { border: 1px solid var(--border-color, #d7dce2); border-radius: .8rem; background: var(--card-bg, #fff); }
+  .lenerp-phase4__context { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .75rem; padding: 1rem; }
+  .lenerp-phase4__context dt { font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .72; }
+  .lenerp-phase4__context dd { margin: .25rem 0 0; overflow-wrap: anywhere; }
+  .lenerp-phase4__heading { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; margin: 2rem 0 1rem; }
+  .lenerp-phase4__heading h1 { margin: 0; font-size: clamp(1.5rem, 4vw, 2.5rem); }
+  .lenerp-phase4__heading p { max-width: 62ch; margin: .5rem 0 0; opacity: .78; line-height: 1.55; }
+  .lenerp-phase4__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+  .lenerp-phase4__card { padding: 1rem; min-width: 0; }
+  .lenerp-phase4__card h2 { margin: 0 0 .75rem; font-size: 1rem; }
+  .lenerp-phase4__actions, .lenerp-phase4__nav { display: grid; gap: .5rem; }
+  .lenerp-phase4__action, .lenerp-phase4__nav a { display: block; padding: .7rem .8rem; border: 1px solid var(--border-color, #d7dce2); border-radius: .55rem; text-decoration: none; }
+  .lenerp-phase4__action:hover, .lenerp-phase4__nav a:hover, .lenerp-phase4__action:focus-visible, .lenerp-phase4__nav a:focus-visible { outline: 2px solid var(--focus-color, #1671d9); outline-offset: 2px; }
+  .lenerp-phase4__record { display: flex; justify-content: space-between; gap: .75rem; padding: .6rem 0; border-bottom: 1px solid var(--border-color, #d7dce2); }
+  .lenerp-phase4__record:last-child { border-bottom: 0; }
+  .lenerp-phase4__record small { opacity: .72; }
+  .lenerp-phase4__state { padding: .8rem; border-radius: .55rem; background: var(--subtle-bg, rgba(128,128,128,.1)); line-height: 1.5; }
+  .lenerp-phase4__state--attention { border-left: .25rem solid #d97706; }
+  .lenerp-phase4__footer { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-top: 1.25rem; font-size: .9rem; }
+  @media (max-width: 800px) { .lenerp-phase4__context { grid-template-columns: repeat(2, minmax(0, 1fr)); } .lenerp-phase4__grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 520px) { .lenerp-phase4 { padding: 1rem .75rem; } .lenerp-phase4__context, .lenerp-phase4__grid { grid-template-columns: 1fr; } .lenerp-phase4__heading { display: block; } }
+</style>
+<main id="lenerp-phase4-root" class="lenerp-phase4" data-api="/api/method/lenerp_core.api.module_home" aria-labelledby="lenerp-phase4-title">
+  <section class="lenerp-phase4__context" aria-label="Current workspace context">
+    <div><dt>Product</dt><dd>{{ product }}</dd></div>
+    <div><dt>Organization</dt><dd>{{ organization }}</dd></div>
+    <div><dt>Environment</dt><dd>{{ environment }}</dd></div>
+    <div><dt>Role</dt><dd>{{ role_label }}</dd></div>
+    <div><dt>Destination</dt><dd>{{ destination }}</dd></div>
+  </section>
+  <header class="lenerp-phase4__heading">
+    <div><p>{{ product }} / {{ destination }}</p><h1 id="lenerp-phase4-title">{{ role_label }} home</h1><p>{{ home.purpose }}</p></div>
+    <a href="{{ help_url }}" target="_blank" rel="noopener">Help &amp; context</a>
+  </header>
+  <div class="lenerp-phase4__grid" aria-live="polite"><div class="lenerp-phase4__state">Loading your authorized work…</div></div>
+</main>
+<script src="/assets/lenerp_core/js/lenerp_core.bundle.js"></script>
+{% endblock %}

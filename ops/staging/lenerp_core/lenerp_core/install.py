@@ -12,6 +12,9 @@ DEMO_ROLES = (
     "Champion Accounting User",
     "Champion Inventory Manager",
     "Champion Field Technician",
+    "Champion HR Payroll User",
+    "Champion Quality Support User",
+    "Champion Read Only User",
     "Champion Platform Operator",
 )
 
@@ -117,6 +120,7 @@ def _ensure_standard_permissions() -> None:
         "Customer", "Contact", "Address", "Lead", "Opportunity", "Quotation",
         "Sales Invoice", "Payment Entry", "Item", "Supplier", "Warehouse", "Asset",
         "Purchase Receipt", "Stock Entry", "Asset Maintenance", "Asset Maintenance Team",
+        "Employee", "Attendance", "Leave Application", "Payroll Entry", "Issue",
     )
     permissions = {
         "read": 1,
@@ -136,6 +140,9 @@ def _ensure_standard_permissions() -> None:
         "Champion Accounting User": {"Customer", "Contact", "Sales Invoice", "Payment Entry"},
         "Champion Inventory Manager": {"Item", "Supplier", "Warehouse", "Purchase Receipt", "Stock Entry", "Asset"},
         "Champion Field Technician": {"Asset", "Asset Maintenance"},
+        "Champion HR Payroll User": {"Employee", "Attendance", "Leave Application", "Payroll Entry"},
+        "Champion Quality Support User": {"Issue", "Customer", "Contact"},
+        "Champion Read Only User": {"Customer", "Contact", "Quotation", "Asset", "Employee"},
     }
     for role, role_doctypes in allowed_doctypes.items():
         for parent in doctypes:
@@ -155,11 +162,14 @@ def _ensure_standard_permissions() -> None:
                         update_modified=False,
                     )
                 continue
+            role_permissions = dict(permissions)
+            if role == "Champion Read Only User":
+                role_permissions.update({field: 0 for field in ("write", "create", "submit", "delete", "cancel")})
             if existing:
                 frappe.db.set_value(
                     "Custom DocPerm",
                     existing,
-                    permissions,
+                    role_permissions,
                     update_modified=False,
                 )
             else:
@@ -170,7 +180,7 @@ def _ensure_standard_permissions() -> None:
                     "parentfield": "permissions",
                     "role": role,
                     "permlevel": 0,
-                    **permissions,
+                    **role_permissions,
                 }).insert(ignore_permissions=True)
 
 

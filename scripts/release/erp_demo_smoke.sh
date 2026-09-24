@@ -6,7 +6,7 @@ set -euo pipefail
 BENCH_ROOT="${BENCH_ROOT:-/opt/frappe-staging-bench}"
 SITE="${SITE:-erp-staging.example.test}"
 KEEP_DEMO="${KEEP_DEMO:-1}"
-EXPECTED_CUSTOM_APP_VERSION="${EXPECTED_CUSTOM_APP_VERSION:-0.2.0}"
+EXPECTED_CUSTOM_APP_VERSION="${EXPECTED_CUSTOM_APP_VERSION:-0.3.0}"
 
 case "$SITE" in
   erp-staging.example.test|*.staging.example.test) ;;

@@ -19,6 +19,8 @@ import frappe
 import requests
 from frappe.exceptions import DuplicateEntryError
 
+from lenerp_core.phase4 import extend_bootinfo as extend_phase4_bootinfo
+
 
 MANAGED_ROLES = {
     "Champion Administrator",
@@ -27,6 +29,9 @@ MANAGED_ROLES = {
     "Champion Accounting User",
     "Champion Inventory Manager",
     "Champion Field Technician",
+    "Champion HR Payroll User",
+    "Champion Quality Support User",
+    "Champion Read Only User",
     "Champion Platform Operator",
 }
 DEFAULT_ROLE_PROFILES = {"champion-v1": ["Champion Sales User"]}
@@ -312,6 +317,7 @@ def callback(code: str | None = None, state: str | None = None) -> None:
 
 
 def extend_bootinfo(bootinfo: dict[str, object]) -> None:
+    extend_phase4_bootinfo(bootinfo)
     if not enabled() or frappe.session.user == "Guest":
         return
     tenant_id = _conf("lenerp_control_plane_tenant_id")
