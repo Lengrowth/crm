@@ -551,7 +551,7 @@ jobs:
 
       - name: Set staging-only Champion Phase 04 workspace flag
         env:
-          PHASE4_CHAMPION_STATE: ${{ inputs.phase4_champion_workspace_state || 'off' }}
+          PHASE4_CHAMPION_STATE: ${{ inputs.phase4_champion_workspace_state || (github.event_name == 'pull_request' && 'on') || 'off' }}
         run: |
           case "$PHASE4_CHAMPION_STATE" in on|off) ;; *) echo "Invalid Champion Phase 04 workspace state" >&2; exit 1 ;; esac
           sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test set-config lenerp_phase4_workspace_enabled '$PHASE4_CHAMPION_STATE'"
@@ -764,7 +764,7 @@ jobs:
           ERP_ROLE_PASSWORD_FILE: ${{ runner.temp }}/erp-role-password-${{ github.run_id }}
           OUTPUT_DIR: ${{ github.workspace }}/staging-browser-evidence/erp
           HEADLESS: "true"
-          PHASE4_CHAMPION_WORKSPACE_STATE: ${{ inputs.phase4_champion_workspace_state || 'off' }}
+          PHASE4_CHAMPION_WORKSPACE_STATE: ${{ inputs.phase4_champion_workspace_state || (github.event_name == 'pull_request' && 'on') || 'off' }}
         run: |
           browser_path="$(find "$HOME/.cache/ms-playwright" -type f -name chrome -path '*/chrome*/chrome' -print -quit 2>/dev/null || true)"
           [[ -n "$browser_path" ]] || { echo "Installed Chromium executable was not found" >&2; exit 1; }
@@ -990,7 +990,7 @@ jobs:
           sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test set-config lenerp_phase4_workspace_enabled 'off'"
           sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test set-config lenerp_phase4_role_rollout '{}'"
           sudo -u frappe bash -lc 'cd /opt/frappe-staging-bench && bench --site erp-staging.example.test clear-cache'
-          legacy_count="$(sudo -u frappe bash -lc 'cd /opt/frappe-staging-bench && bench --site erp-staging.example.test execute frappe.client.get_count --args \"{\\\"doctype\\\":\\\"Workspace\\\",\\\"filters\\\":{\\\"name\\\":\\\"Champion ERP\\\"}}\"' | tr -d '\r\n ' )"
+          legacy_count="$(sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test execute frappe.client.get_count --args '{\"doctype\":\"Workspace\",\"filters\":{\"name\":\"Champion ERP\"}}'" | tr -d '\r\n ' )"
           sudo python3 - "$site_config" "$legacy_count" "$GITHUB_WORKSPACE/staging-browser-evidence/phase4-rollback-evidence.json" <<'PY'
           import json
           import sys

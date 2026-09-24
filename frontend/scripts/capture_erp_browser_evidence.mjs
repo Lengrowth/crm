@@ -39,7 +39,7 @@ const championNavigation = {
   "Champion Read Only User": ["home", "sales", "jobs", "equipment", "reports"],
 };
 const roleReadDoctypes = {
-  "Champion Administrator": new Set(["LenERP Well Site", "LenERP Drilling Job", "Customer", "Contact", "Quotation", "Sales Invoice"]),
+  "Champion Administrator": new Set(["LenERP Well Site", "LenERP Drilling Job", "Customer", "Contact", "Quotation", "Sales Invoice", "Asset", "Employee", "Issue"]),
   "Champion Dispatcher": new Set(["LenERP Well Site", "LenERP Drilling Job", "Customer", "Contact"]),
   "Champion Sales User": new Set(["Customer", "Contact", "Lead", "Opportunity", "Quotation", "Sales Invoice"]),
   "Champion Accounting User": new Set(["Customer", "Contact", "Sales Invoice", "Payment Entry"]),
