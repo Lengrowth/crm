@@ -17,6 +17,9 @@ web_include_js = [
     "/assets/lenerp_core/js/lenerp_core.bundle.js",
     "/assets/lenerp_core/js/phase4.js",
 ]
+website_route_rules = [
+    {"from_route": "/champion-home", "to_route": "champion_home"},
+]
 update_website_context = ["lenerp_core.accessibility.update_context"]
 base_template = "lenerp_core/templates/base.html"
 

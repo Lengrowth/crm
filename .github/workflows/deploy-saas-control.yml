@@ -172,7 +172,7 @@ jobs:
       - name: Verify the commit-pinned LenERP Core staging bundle
         run: |
           core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
-          test "$core_commit" = "4452066e4cfda28ad59eaa829fa4d731cc36b85a"
+          test "$core_commit" = "4f356e5af68d3e5f0d4a7a4f5ed88ae41e4e12cb"
           archive="ops/staging/lenerp_core-${core_commit}.tar"
           test -f "$archive"
           python3 - <<'PY'
@@ -522,7 +522,7 @@ jobs:
           core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
           exact_dir="$RUNNER_TEMP/lenerp_core-exact"
           test -d "$exact_dir"
-          test "$core_commit" = "4452066e4cfda28ad59eaa829fa4d731cc36b85a"
+          test "$core_commit" = "4f356e5af68d3e5f0d4a7a4f5ed88ae41e4e12cb"
           sudo rsync -a --delete --exclude='.git' "$exact_dir/" /opt/frappe-staging-bench/apps/lenerp_core/
           printf '%s\n' "$core_commit" | sudo tee /opt/frappe-staging-bench/apps/lenerp_core/SOURCE_COMMIT.txt >/dev/null
           sudo chown -R frappe:frappe /opt/frappe-staging-bench/apps/lenerp_core
@@ -565,7 +565,7 @@ jobs:
       - name: Verify the dedicated ERP staging bench and queues
         env:
           OUTPUT_FILE: ${{ github.workspace }}/staging-browser-evidence/erp/phase02-runtime-readback.json
-          EXPECTED_CUSTOM_APP_COMMIT: 4452066e4cfda28ad59eaa829fa4d731cc36b85a
+          EXPECTED_CUSTOM_APP_COMMIT: 4f356e5af68d3e5f0d4a7a4f5ed88ae41e4e12cb
         run: sudo env OUTPUT_FILE="$OUTPUT_FILE" BACKUP_DIR="${PHASE02_STAGING_BACKUP_DIR:-}" EXPECTED_CUSTOM_APP_COMMIT="$EXPECTED_CUSTOM_APP_COMMIT" scripts/release/erp_staging_smoke.sh
 
       - name: Run the persisted Champion synthetic ERP demonstration smoke
