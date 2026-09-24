@@ -764,6 +764,7 @@ jobs:
           ERP_ROLE_PASSWORD_FILE: ${{ runner.temp }}/erp-role-password-${{ github.run_id }}
           OUTPUT_DIR: ${{ github.workspace }}/staging-browser-evidence/erp
           HEADLESS: "true"
+          PHASE4_CHAMPION_WORKSPACE_STATE: ${{ inputs.phase4_champion_workspace_state || 'off' }}
         run: |
           browser_path="$(find "$HOME/.cache/ms-playwright" -type f -name chrome -path '*/chrome*/chrome' -print -quit 2>/dev/null || true)"
           [[ -n "$browser_path" ]] || { echo "Installed Chromium executable was not found" >&2; exit 1; }

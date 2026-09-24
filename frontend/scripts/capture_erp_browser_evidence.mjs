@@ -25,6 +25,7 @@ const roles = [
   "Champion Read Only User",
   "Champion Platform Operator",
 ];
+const championWorkspaceEnabled = process.env.PHASE4_CHAMPION_WORKSPACE_STATE === "on";
 const emailFor = (role) => `${prefix}-${role.toLowerCase().replaceAll(" ", "-")}@example.test`;
 const browserArgs = [`--host-resolver-rules=MAP ${hostHeader} 127.0.0.1`];
 const baseUrl = rawBase.replace(new URL(rawBase).hostname, hostHeader);
@@ -159,21 +160,30 @@ await unauthenticatedContext.close();
 
 const admin = await login("Champion Administrator");
 const adminPage = admin.page;
-const championHomeResponse = await adminPage.goto(`${baseUrl}/champion-home`, { waitUntil: "networkidle", timeout: 30000 });
-if ((championHomeResponse?.status() ?? 0) >= 400) throw new Error(`Champion role home failed: ${championHomeResponse?.status()}`);
-await adminPage.waitForTimeout(1000);
-if (!(await adminPage.locator("#lenerp-phase4-root").count())) throw new Error("Champion role home root is missing");
-await adminPage.screenshot({ path: path.join(outputDir, "champion-home-administrator-desktop.png"), fullPage: true });
-evidence.accessibility.routes["champion-home"] = {
-  role: "Champion Administrator",
-  route: "/champion-home",
-  viewport: { width: 1440, height: 1000 },
-  ...await accessibility(adminPage, "champion-home-administrator-desktop"),
-};
-const championHomeApi = await api(adminPage, "/api/method/lenerp_core.api.module_home");
-if (championHomeApi.status !== 200) throw new Error(`Champion role home API failed: ${championHomeApi.status}`);
-const championHomePayload = championHomeApi.body?.message ?? championHomeApi.body;
-if (!["ready", "empty", "partial"].includes(championHomePayload?.state)) throw new Error("Champion role home returned an invalid state");
+if (championWorkspaceEnabled) {
+  const championHomeResponse = await adminPage.goto(`${baseUrl}/champion-home`, { waitUntil: "networkidle", timeout: 30000 });
+  if ((championHomeResponse?.status() ?? 0) >= 400) throw new Error(`Champion role home failed: ${championHomeResponse?.status()}`);
+  await adminPage.waitForTimeout(1000);
+  if (!(await adminPage.locator("#lenerp-phase4-root").count())) throw new Error("Champion role home root is missing");
+  await adminPage.screenshot({ path: path.join(outputDir, "champion-home-administrator-desktop.png"), fullPage: true });
+  evidence.accessibility.routes["champion-home"] = {
+    role: "Champion Administrator",
+    route: "/champion-home",
+    viewport: { width: 1440, height: 1000 },
+    ...await accessibility(adminPage, "champion-home-administrator-desktop"),
+  };
+  const championHomeApi = await api(adminPage, "/api/method/lenerp_core.api.module_home");
+  if (championHomeApi.status !== 200) throw new Error(`Champion role home API failed: ${championHomeApi.status}`);
+  const championHomePayload = championHomeApi.body?.message ?? championHomeApi.body;
+  if (!["ready", "empty", "partial"].includes(championHomePayload?.state)) throw new Error("Champion role home returned an invalid state");
+} else {
+  const disabledChampionHome = await adminPage.goto(`${baseUrl}/champion-home`, { waitUntil: "networkidle", timeout: 30000 });
+  if ((disabledChampionHome?.status() ?? 0) < 400) throw new Error("Disabled Champion role home was reachable");
+  const disabledChampionHomeApi = await api(adminPage, "/api/method/lenerp_core.api.module_home");
+  if (disabledChampionHomeApi.status < 400) throw new Error("Disabled Champion role home API was reachable");
+  await adminPage.goto(`${baseUrl}/app`, { waitUntil: "networkidle", timeout: 30000 });
+  if (!adminPage.url().match(/\/app(?:\/.*)?$/)) throw new Error(`Legacy workspace rollback failed: ${adminPage.url()}`);
+}
 const erpRoutes = [
   ["well-list", "/app/len-erp-well-site"],
   ["well-detail", "/app/len-erp-well-site/WELL-NR-01"],
@@ -277,7 +287,7 @@ await admin.context.close();
 for (const role of roles.slice(1)) {
   const session = await login(role);
   const championHome = await session.page.goto(`${baseUrl}/champion-home`, { waitUntil: "networkidle", timeout: 30000 });
-  const expectedChampionHome = role !== "Champion Platform Operator";
+  const expectedChampionHome = championWorkspaceEnabled && role !== "Champion Platform Operator";
   if (expectedChampionHome) {
     if ((championHome?.status() ?? 0) >= 400 || !(await session.page.locator("#lenerp-phase4-root").count())) {
       throw new Error(`${role} Champion role home failed: ${championHome?.status()}`);
@@ -288,7 +298,11 @@ for (const role of roles.slice(1)) {
       throw new Error(`${role} Champion role home API failed: ${moduleHome.status}`);
     }
   } else if ((championHome?.status() ?? 0) < 400) {
-    throw new Error("Platform operator Champion role home denial failed");
+    throw new Error(`${role} Champion role home denial failed`);
+  }
+  if (!expectedChampionHome) {
+    const moduleHome = await api(session.page, "/api/method/lenerp_core.api.module_home");
+    if (moduleHome.status < 400) throw new Error(`${role} Champion role home API denial failed`);
   }
   const listResponse = await api(session.page, "/api/resource/LenERP%20Well%20Site?limit_page_length=20");
   const jobResponse = await api(session.page, "/api/resource/LenERP%20Drilling%20Job?limit_page_length=20");
