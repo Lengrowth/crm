@@ -585,6 +585,28 @@ jobs:
           sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE/staging-browser-evidence"
           sudo install -m 600 -o "$(id -u)" -g "$(id -g)" "$ROLE_PASSWORD_FILE" "$RUNNER_TEMP/erp-role-password-${{ github.run_id }}"
 
+      - name: Normalize the protected synthetic staging lane permissions
+        if: ${{ (inputs.phase4_synthetic_state || 'off') == 'on' }}
+        run: |
+          # The long-lived staging runner can retain root-owned runtime paths
+          # after a failed or interrupted cleanup. Repair only the two narrow
+          # synthetic-lane paths required by the unprivileged smoke process;
+          # never broaden access to the database credential file.
+          sudo install -d -o root -g saas-staging -m 0750 /run/saas-control-staging
+          sudo chown root:saas-staging /run/saas-control-staging
+          sudo chmod 0750 /run/saas-control-staging
+          sudo chown root:saas-staging /run/saas-control-staging/frappe-bench.env
+          sudo chmod 0640 /run/saas-control-staging/frappe-bench.env
+          sudo install -d -o saas-staging -g saas-staging -m 0700 /run/saas-control-staging/smoke
+          sudo chown saas-staging:saas-staging /run/saas-control-staging/smoke
+          sudo chmod 0700 /run/saas-control-staging/smoke
+          if [[ -e /run/saas-control-staging/smoke/auth-token ]]; then
+            sudo chown saas-staging:saas-staging /run/saas-control-staging/smoke/auth-token
+            sudo chmod 0600 /run/saas-control-staging/smoke/auth-token
+          fi
+          sudo -n -u saas-staging test -r /run/saas-control-staging/frappe-bench.env
+          sudo -n -u saas-staging test -r /run/saas-control-staging/smoke/auth-token
+
       - name: Run isolated synthetic Phase 4 onboarding smoke
         if: ${{ (inputs.phase4_synthetic_state || 'off') == 'on' }}
         env:
