@@ -30,7 +30,8 @@
  "permissions": [
   {"role":"Champion Administrator","read":1,"write":1,"create":1,"delete":1,"print":1,"export":1,"share":1},
   {"role":"Champion Dispatcher","read":1,"write":1,"create":1,"print":1,"export":1},
-  {"role":"Champion Field Technician","read":1,"write":1,"print":1}
+  {"role":"Champion Field Technician","read":1,"write":1,"print":1},
+  {"role":"Champion Read Only User","read":1,"print":1,"export":1}
  ],
  "sort_field": "modified",
  "sort_order": "DESC",

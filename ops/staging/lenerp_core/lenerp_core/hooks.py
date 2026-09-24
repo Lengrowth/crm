@@ -11,9 +11,11 @@ app_license = "MIT"
 # unchanged.
 app_include_js = [
     "/assets/lenerp_core/js/lenerp_core.bundle.js",
+    "/assets/lenerp_core/js/phase4.js",
 ]
 web_include_js = [
     "/assets/lenerp_core/js/lenerp_core.bundle.js",
+    "/assets/lenerp_core/js/phase4.js",
 ]
 update_website_context = ["lenerp_core.accessibility.update_context"]
 base_template = "lenerp_core/templates/base.html"

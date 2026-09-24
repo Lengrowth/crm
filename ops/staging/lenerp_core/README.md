@@ -39,3 +39,18 @@ bench --site <disposable-site> uninstall-app lenerp_core --yes
 
 Do not place passwords, API keys, private keys, tokens, or Champion records in
 this repository.
+
+## Phase 04 role-based workspace
+
+Version `0.3.0` adds the version-controlled Champion role/home registry and
+the `/champion-home` presentation route. It is server-controlled and remains
+off unless the ERP site configuration explicitly sets
+`lenerp_phase4_workspace_enabled=1`. An optional JSON object in
+`lenerp_phase4_role_rollout` enables named roles independently, for example
+`{"Champion Dispatcher": true}`. With the flag off, the existing
+`Champion ERP` Workspace remains the rollback surface.
+
+The home API reads authorized ERPNext/HRMS records in place. It does not copy
+operational records into LenERP or create a second task, employee, payroll, or
+inventory system. Missing optional applications are rendered as
+`Pending configuration`.

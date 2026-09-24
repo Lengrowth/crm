@@ -22,14 +22,16 @@
       "verification_status": "candidate_expected"
     },
     "lenerp_core": {
-      "version": "0.2.0",
-      "commit": "8d77cec7504d22f9c0a235034777e31fa07fc62",
+      "version": "0.3.0",
+      "commit": "fabf6ad49ceddf47ffc88e736715feb314bb16dc",
       "verification_status": "candidate_expected"
     }
   },
   "staging_pre_deployment": {
     "observed_runtime": "recorded in candidate-bound workflow evidence",
-    "mutation_status": "not_assumed"
+    "mutation_status": "not_assumed",
+    "champion_phase4_workspace_flag": "off_until_approved",
+    "champion_phase4_role_rollout": {}
   },
   "staging_verified_post_deployment": null
 }

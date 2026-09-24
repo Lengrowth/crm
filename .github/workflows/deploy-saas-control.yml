@@ -39,6 +39,14 @@ on:
         options:
           - "off"
           - "on"
+      phase4_champion_workspace_state:
+        description: Staging-only Champion role-based ERP workspace state
+        required: true
+        default: "off"
+        type: choice
+        options:
+          - "off"
+          - "on"
       phase3_identity_staging:
         description: Staging-only Phase 03 identity and cross-navigation rehearsal
         required: false
@@ -164,7 +172,7 @@ jobs:
       - name: Verify the commit-pinned LenERP Core staging bundle
         run: |
           core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
-          test "$core_commit" = "8d77cec7504d22f9c0a235034777e31fa07fc62"
+          test "$core_commit" = "fabf6ad49ceddf47ffc88e736715feb314bb16dc"
           archive="ops/staging/lenerp_core-${core_commit}.tar"
           test -f "$archive"
           python3 - <<'PY'
@@ -192,7 +200,7 @@ jobs:
           text = (Path(os.environ['EXACT_DIR']) / 'pyproject.toml').read_text(encoding='utf-8')
           match = re.search(r'^version\s*=\s*["\']([^"\']+)', text, flags=re.MULTILINE)
           version = match.group(1) if match else None
-          if version != '0.2.0':
+          if version != '0.3.0':
               raise SystemExit(f'Unexpected bundled lenerp_core version: {version}')
           print(f'Bundled lenerp_core {version} validated')
           PY
@@ -482,7 +490,7 @@ jobs:
           DEPLOY_TARGET: staging
           TARGET_REF: ${{ steps.candidate.outputs.sha }}
           RELEASE_ID: ${{ steps.candidate.outputs.sha }}
-          CUSTOM_APP_VERSION: "0.2.0"
+          CUSTOM_APP_VERSION: "0.3.0"
           REQUIRE_AUTH_SMOKE: "true"
         run: |
           core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
@@ -514,7 +522,7 @@ jobs:
           core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
           exact_dir="$RUNNER_TEMP/lenerp_core-exact"
           test -d "$exact_dir"
-          test "$core_commit" = "8d77cec7504d22f9c0a235034777e31fa07fc62"
+          test "$core_commit" = "fabf6ad49ceddf47ffc88e736715feb314bb16dc"
           sudo rsync -a --delete --exclude='.git' "$exact_dir/" /opt/frappe-staging-bench/apps/lenerp_core/
           printf '%s\n' "$core_commit" | sudo tee /opt/frappe-staging-bench/apps/lenerp_core/SOURCE_COMMIT.txt >/dev/null
           sudo chown -R frappe:frappe /opt/frappe-staging-bench/apps/lenerp_core
@@ -541,16 +549,29 @@ jobs:
           sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench build --app lenerp_core"
           sudo systemctl restart frappe-staging-web.service frappe-staging-worker-short.service frappe-staging-schedule.service
 
+      - name: Set staging-only Champion Phase 04 workspace flag
+        env:
+          PHASE4_CHAMPION_STATE: ${{ inputs.phase4_champion_workspace_state || 'off' }}
+        run: |
+          case "$PHASE4_CHAMPION_STATE" in on|off) ;; *) echo "Invalid Champion Phase 04 workspace state" >&2; exit 1 ;; esac
+          sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test set-config lenerp_phase4_workspace_enabled '$PHASE4_CHAMPION_STATE'"
+          if [[ "$PHASE4_CHAMPION_STATE" == "on" ]]; then
+            sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test set-config lenerp_phase4_role_rollout '{\"Champion Administrator\":true,\"Champion Dispatcher\":true,\"Champion Sales User\":true,\"Champion Accounting User\":true,\"Champion Inventory Manager\":true,\"Champion Field Technician\":true,\"Champion HR Payroll User\":true,\"Champion Quality Support User\":true,\"Champion Read Only User\":true}'"
+          else
+            sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test set-config lenerp_phase4_role_rollout '{}'"
+          fi
+          sudo -u frappe bash -lc "cd /opt/frappe-staging-bench && bench --site erp-staging.example.test clear-cache"
+
       - name: Verify the dedicated ERP staging bench and queues
         env:
           OUTPUT_FILE: ${{ github.workspace }}/staging-browser-evidence/erp/phase02-runtime-readback.json
-          EXPECTED_CUSTOM_APP_COMMIT: 8d77cec7504d22f9c0a235034777e31fa07fc62
+          EXPECTED_CUSTOM_APP_COMMIT: fabf6ad49ceddf47ffc88e736715feb314bb16dc
         run: sudo env OUTPUT_FILE="$OUTPUT_FILE" BACKUP_DIR="${PHASE02_STAGING_BACKUP_DIR:-}" EXPECTED_CUSTOM_APP_COMMIT="$EXPECTED_CUSTOM_APP_COMMIT" scripts/release/erp_staging_smoke.sh
 
       - name: Run the persisted Champion synthetic ERP demonstration smoke
         env:
           KEEP_DEMO: "1"
-          EXPECTED_CUSTOM_APP_VERSION: "0.2.0"
+          EXPECTED_CUSTOM_APP_VERSION: "0.3.0"
         run: sudo scripts/release/erp_demo_smoke.sh
 
       - name: Create real ERP role principals and verify permissions
