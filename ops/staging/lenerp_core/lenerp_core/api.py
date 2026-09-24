@@ -39,6 +39,13 @@ def _can_read(doctype: str) -> bool:
     )
 
 
+def _authorized_demo_rows(doctype: str, *, filters: dict[str, object], fields: list[str], order_by: str) -> list[object]:
+    """Read synthetic dashboard rows only when the current ERP user can read them."""
+    if not _can_read(doctype):
+        return []
+    return frappe.get_all(doctype, filters=filters, fields=fields, order_by=order_by)
+
+
 def _read_source(
     source: str,
     doctype: str,
@@ -165,25 +172,26 @@ def demo_status() -> dict:
 @frappe.whitelist()
 def dashboard_summary() -> dict:
     _require_demo_role()
-    jobs = frappe.get_all(
+    jobs = _authorized_demo_rows(
         "LenERP Drilling Job",
         filters={"job_id": ["in", DEMO_JOB_IDS]},
         fields=["name", "customer", "well_site", "job_type", "status", "scheduled_date", "priority"],
         order_by="scheduled_date asc",
     )
-    wells = frappe.get_all(
+    wells = _authorized_demo_rows(
         "LenERP Well Site",
         filters={"well_id": ["in", DEMO_WELL_IDS]},
         fields=["name", "well_id", "site_name", "customer", "city", "latitude", "longitude", "depth_m", "status"],
         order_by="site_name asc",
     )
-    invoices = frappe.get_all(
+    financial_totals_visible = _can_read("Sales Invoice")
+    invoices = _authorized_demo_rows(
         "Sales Invoice",
         filters={"customer": ["like", "DEMO-%"]},
-        fields=["name", "customer", "grand_total", "status", "outstanding_amount", "posting_date"],
+        fields=["name", "customer", "grand_total", "status", "outstanding_amount", "posting_date"] if financial_totals_visible else [],
         order_by="posting_date desc",
     )
-    inventory_bins = frappe.get_all(
+    inventory_bins = _authorized_demo_rows(
         "Bin",
         filters={"item_code": ["in", [DEMO_ITEM_PUMP, DEMO_ITEM_RIG]]},
         fields=["item_code", "warehouse", "actual_qty", "reserved_qty", "ordered_qty", "projected_qty"],
@@ -202,13 +210,13 @@ def dashboard_summary() -> dict:
         if (row.projected_qty or 0) < 0
         or (row.actual_qty or 0) < (row.reserved_qty or 0)
     ]
-    assets = frappe.get_all(
+    assets = _authorized_demo_rows(
         "Asset",
         filters={"company": DEMO_COMPANY},
         fields=["name", "asset_name", "status", "maintenance_required", "location"],
         order_by="asset_name asc",
     )
-    maintenance_records = frappe.get_all(
+    maintenance_records = _authorized_demo_rows(
         "Asset Maintenance",
         filters={"company": DEMO_COMPANY},
         fields=["name", "asset_name", "maintenance_team"],
@@ -310,6 +318,7 @@ def dashboard_summary() -> dict:
         "status": "synthetic",
         "source": "persisted ERPNext records",
         "real_data_authorized": False,
+        "financial_totals_visible": financial_totals_visible,
         "jobs": jobs,
         "wells": wells,
         "invoices": invoices,
