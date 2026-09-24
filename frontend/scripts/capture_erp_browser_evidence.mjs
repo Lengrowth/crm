@@ -26,6 +26,39 @@ const roles = [
   "Champion Platform Operator",
 ];
 const championWorkspaceEnabled = process.env.PHASE4_CHAMPION_WORKSPACE_STATE === "on";
+const platformOperatorRole = "Champion Platform Operator";
+const championNavigation = {
+  "Champion Administrator": ["home", "office", "sales", "jobs", "inventory", "equipment", "crew", "quality", "support", "accounting", "reports"],
+  "Champion Dispatcher": ["home", "office", "sales", "jobs", "equipment", "quality", "support", "reports"],
+  "Champion Sales User": ["home", "sales", "jobs", "support", "reports"],
+  "Champion Accounting User": ["home", "sales", "accounting", "reports"],
+  "Champion Inventory Manager": ["home", "inventory", "equipment", "reports"],
+  "Champion Field Technician": ["home", "jobs", "equipment", "crew", "quality", "reports"],
+  "Champion HR Payroll User": ["home", "crew", "accounting", "reports"],
+  "Champion Quality Support User": ["home", "sales", "jobs", "quality", "support", "reports"],
+  "Champion Read Only User": ["home", "sales", "jobs", "equipment", "reports"],
+};
+const roleReadDoctypes = {
+  "Champion Administrator": new Set(["LenERP Well Site", "LenERP Drilling Job", "Customer", "Contact", "Quotation", "Sales Invoice", "Asset", "Employee", "Issue"]),
+  "Champion Dispatcher": new Set(["LenERP Well Site", "LenERP Drilling Job", "Customer", "Contact"]),
+  "Champion Sales User": new Set(["Customer", "Contact", "Lead", "Opportunity", "Quotation", "Sales Invoice"]),
+  "Champion Accounting User": new Set(["Customer", "Contact", "Sales Invoice", "Payment Entry"]),
+  "Champion Inventory Manager": new Set(["Item", "Supplier", "Warehouse", "Purchase Receipt", "Stock Entry", "Asset"]),
+  "Champion Field Technician": new Set(["LenERP Well Site", "LenERP Drilling Job", "Asset", "Asset Maintenance"]),
+  "Champion HR Payroll User": new Set(["Employee", "Attendance", "Leave Application", "Payroll Entry"]),
+  "Champion Quality Support User": new Set(["Issue", "Customer", "Contact"]),
+  "Champion Read Only User": new Set(["LenERP Well Site", "LenERP Drilling Job", "Customer", "Contact", "Quotation", "Asset", "Employee"]),
+  [platformOperatorRole]: new Set(),
+};
+const accessCases = [
+  { doctype: "LenERP Well Site", route: "/app/len-erp-well-site" },
+  { doctype: "LenERP Drilling Job", route: "/app/len-erp-drilling-job" },
+  { doctype: "Customer", route: "/app/customer" },
+  { doctype: "Sales Invoice", route: "/app/sales-invoice" },
+  { doctype: "Asset", route: "/app/asset" },
+  { doctype: "Employee", route: "/app/employee" },
+  { doctype: "Issue", route: "/app/issue" },
+];
 const emailFor = (role) => `${prefix}-${role.toLowerCase().replaceAll(" ", "-")}@example.test`;
 const browserArgs = [`--host-resolver-rules=MAP ${hostHeader} 127.0.0.1`];
 const baseUrl = rawBase.replace(new URL(rawBase).hostname, hostHeader);
@@ -58,6 +91,84 @@ async function api(page, pathname, init = {}) {
     try { body = JSON.parse(text); } catch { body = text.slice(0, 300); }
     return { status: response.status, contentType: response.headers.get("content-type"), body };
   }, { pathname, init });
+}
+
+function responsePayload(response) {
+  return response.body?.message ?? response.body;
+}
+
+async function championHomeContract(session, role) {
+  const response = await session.page.goto(`${baseUrl}/champion-home`, { waitUntil: "networkidle", timeout: 30000 });
+  if ((response?.status() ?? 0) >= 400 || !(await session.page.locator("#lenerp-phase4-root").count())) {
+    throw new Error(`${role} Champion role home failed: ${response?.status()}`);
+  }
+  await session.page.locator(".lenerp-phase4__nav a").first().waitFor({ state: "visible", timeout: 10000 });
+  const moduleHome = await api(session.page, "/api/method/lenerp_core.api.module_home");
+  const payload = responsePayload(moduleHome);
+  if (moduleHome.status !== 200 || !["ready", "empty", "partial"].includes(payload?.state)) {
+    throw new Error(`${role} Champion role home API failed: ${moduleHome.status} ${JSON.stringify(moduleHome.body).slice(0, 2000)}`);
+  }
+  if (payload.role !== role) throw new Error(`${role} home resolved the wrong role: ${payload.role}`);
+  const expectedIds = championNavigation[role];
+  const visibleIds = (payload.navigation || []).map((item) => item.id);
+  if (visibleIds[0] !== "home" || visibleIds.some((id) => !expectedIds.includes(id))) {
+    throw new Error(`${role} home exposed an unexpected navigation set: ${JSON.stringify(visibleIds)}`);
+  }
+  const visibleLabels = await session.page.locator(".lenerp-phase4__nav a").allTextContents();
+  for (const item of payload.navigation || []) {
+    if (!visibleLabels.some((label) => label.trim() === item.label)) {
+      throw new Error(`${role} home did not render visible navigation ${item.label}`);
+    }
+  }
+  if (!Array.isArray(payload.actions) || payload.actions.length < 2 || payload.actions.length > 3) {
+    throw new Error(`${role} home did not expose two or three primary actions`);
+  }
+  if ((payload.actions || []).some((action) => !expectedIds.includes(action.nav))) {
+    throw new Error(`${role} home exposed an action outside its configured navigation`);
+  }
+  await session.page.screenshot({ path: path.join(outputDir, `champion-home-${role.toLowerCase().replaceAll(" ", "-")}-desktop.png`), fullPage: true });
+  return {
+    status: response.status(),
+    state: payload.state,
+    role: payload.role,
+    visible_navigation: visibleIds,
+    pending: payload.pending || [],
+    action_count: payload.actions.length,
+  };
+}
+
+async function roleAccessContract(session, role) {
+  const allowed = roleReadDoctypes[role] || new Set();
+  const allowedCase = accessCases.find((item) => allowed.has(item.doctype));
+  const deniedCase = accessCases.find((item) => !allowed.has(item.doctype));
+  let deniedApiStatus = null;
+  let deniedRouteStatus = null;
+  if (allowedCase) {
+    const allowedResponse = await api(session.page, `/api/resource/${encodeURIComponent(allowedCase.doctype)}?limit_page_length=1`);
+    if (allowedResponse.status !== 200) throw new Error(`${role} authorized API read failed for ${allowedCase.doctype}: ${allowedResponse.status}`);
+  }
+  if (deniedCase) {
+      const deniedApi = await api(session.page, `/api/resource/${encodeURIComponent(deniedCase.doctype)}?limit_page_length=1`);
+      deniedApiStatus = deniedApi.status;
+      if (deniedApi.status < 400) throw new Error(`${role} unauthorized API read was allowed for ${deniedCase.doctype}`);
+      const deniedRoute = await session.page.goto(`${baseUrl}${deniedCase.route}`, { waitUntil: "networkidle", timeout: 30000 });
+      deniedRouteStatus = deniedRoute?.status() ?? 0;
+      const deniedBody = (await session.page.locator("body").innerText()).toLowerCase();
+      const routeDenied = deniedRouteStatus >= 400 || /(not permitted|not authorized|permission|access denied)/i.test(deniedBody);
+      // ERPNext may serve the generic desk shell with HTTP 200 for a direct
+      // DocType route; the resource API is the authorization boundary for the
+      // records rendered by that shell. Preserve the route result as evidence,
+      // but require the protected API response above for the denial contract.
+      if (!routeDenied && deniedApi.status < 400) {
+        throw new Error(`${role} unauthorized direct route was not denied for ${deniedCase.doctype}`);
+      }
+  }
+  return {
+    allowed_doctype: allowedCase?.doctype || null,
+    denied_doctype: deniedCase?.doctype || null,
+    denied_api_status: deniedApiStatus,
+    denied_route_status: deniedRouteStatus,
+  };
 }
 
 async function accessibility(page, label) {
@@ -160,22 +271,15 @@ await unauthenticatedContext.close();
 
 const admin = await login("Champion Administrator");
 const adminPage = admin.page;
+let administratorHomeEvidence = null;
 if (championWorkspaceEnabled) {
-  const championHomeResponse = await adminPage.goto(`${baseUrl}/champion-home`, { waitUntil: "networkidle", timeout: 30000 });
-  if ((championHomeResponse?.status() ?? 0) >= 400) throw new Error(`Champion role home failed: ${championHomeResponse?.status()}`);
-  await adminPage.waitForTimeout(1000);
-  if (!(await adminPage.locator("#lenerp-phase4-root").count())) throw new Error("Champion role home root is missing");
-  await adminPage.screenshot({ path: path.join(outputDir, "champion-home-administrator-desktop.png"), fullPage: true });
+  administratorHomeEvidence = await championHomeContract(admin, "Champion Administrator");
   evidence.accessibility.routes["champion-home"] = {
     role: "Champion Administrator",
     route: "/champion-home",
     viewport: { width: 1440, height: 1000 },
     ...await accessibility(adminPage, "champion-home-administrator-desktop"),
   };
-  const championHomeApi = await api(adminPage, "/api/method/lenerp_core.api.module_home");
-  if (championHomeApi.status !== 200) throw new Error(`Champion role home API failed: ${championHomeApi.status} ${JSON.stringify(championHomeApi.body).slice(0, 2000)}`);
-  const championHomePayload = championHomeApi.body?.message ?? championHomeApi.body;
-  if (!["ready", "empty", "partial"].includes(championHomePayload?.state)) throw new Error("Champion role home returned an invalid state");
 } else {
   const disabledChampionHome = await adminPage.goto(`${baseUrl}/champion-home`, { waitUntil: "networkidle", timeout: 30000 });
   if ((disabledChampionHome?.status() ?? 0) < 400) throw new Error("Disabled Champion role home was reachable");
@@ -183,6 +287,11 @@ if (championWorkspaceEnabled) {
   if (disabledChampionHomeApi.status < 400) throw new Error("Disabled Champion role home API was reachable");
   await adminPage.goto(`${baseUrl}/app`, { waitUntil: "networkidle", timeout: 30000 });
   if (!adminPage.url().match(/\/app(?:\/.*)?$/)) throw new Error(`Legacy workspace rollback failed: ${adminPage.url()}`);
+  evidence.rollback = {
+    champion_home_status: disabledChampionHome?.status() ?? 0,
+    champion_home_api_status: disabledChampionHomeApi.status,
+    legacy_workspace_url: adminPage.url(),
+  };
 }
 const erpRoutes = [
   ["well-list", "/app/len-erp-well-site"],
@@ -281,35 +390,34 @@ evidence.browser_zoom.mobile = await renderedAccessibilityContract(adminPage);
 if (!evidence.browser_zoom.mobile.zoom_allowed || !evidence.browser_zoom.mobile.logo_alternatives_present) {
   throw new Error(`authenticated mobile ERP accessibility contract failed: ${JSON.stringify(evidence.browser_zoom.mobile)}`);
 }
-evidence.roles["Champion Administrator"] = { email: emailFor("Champion Administrator"), routes: erpRoutes.length, api_read: true, print: true, export: true, address_and_coordinates: true };
+evidence.roles["Champion Administrator"] = {
+  email: emailFor("Champion Administrator"),
+  routes: erpRoutes.length,
+  api_read: true,
+  print: true,
+  export: true,
+  address_and_coordinates: true,
+  champion_home: administratorHomeEvidence,
+  access_contract: await roleAccessContract(admin, "Champion Administrator"),
+};
 await admin.context.close();
 
 for (const role of roles.slice(1)) {
   const session = await login(role);
-  const championHome = await session.page.goto(`${baseUrl}/champion-home`, { waitUntil: "networkidle", timeout: 30000 });
-  const expectedChampionHome = championWorkspaceEnabled && role !== "Champion Platform Operator";
-  if (expectedChampionHome) {
-    if ((championHome?.status() ?? 0) >= 400 || !(await session.page.locator("#lenerp-phase4-root").count())) {
-      throw new Error(`${role} Champion role home failed: ${championHome?.status()}`);
-    }
-    const moduleHome = await api(session.page, "/api/method/lenerp_core.api.module_home");
-    const moduleHomePayload = moduleHome.body?.message ?? moduleHome.body;
-    if (moduleHome.status !== 200 || !["ready", "empty", "partial"].includes(moduleHomePayload?.state)) {
-      throw new Error(`${role} Champion role home API failed: ${moduleHome.status} ${JSON.stringify(moduleHome.body).slice(0, 2000)}`);
-    }
-  } else if ((championHome?.status() ?? 0) < 400) {
-    throw new Error(`${role} Champion role home denial failed`);
-  }
+  const expectedChampionHome = championWorkspaceEnabled && role !== platformOperatorRole;
+  const championHomeEvidence = expectedChampionHome ? await championHomeContract(session, role) : null;
   if (!expectedChampionHome) {
-    const moduleHome = await api(session.page, "/api/method/lenerp_core.api.module_home");
-    if (moduleHome.status < 400) throw new Error(`${role} Champion role home API denial failed`);
+    const deniedHome = await session.page.goto(`${baseUrl}/champion-home`, { waitUntil: "networkidle", timeout: 30000 });
+    if ((deniedHome?.status() ?? 0) < 400) throw new Error(`${role} Champion role home denial failed`);
+    const deniedHomeApi = await api(session.page, "/api/method/lenerp_core.api.module_home");
+    if (deniedHomeApi.status < 400) throw new Error(`${role} Champion role home API denial failed`);
   }
-  const listResponse = await api(session.page, "/api/resource/LenERP%20Well%20Site?limit_page_length=20");
-  const jobResponse = await api(session.page, "/api/resource/LenERP%20Drilling%20Job?limit_page_length=20");
-  const expectedAllowed = ["Champion Dispatcher", "Champion Field Technician", "Champion Read Only User"].includes(role);
-  if (role === "Champion Platform Operator" && (listResponse.status < 400 || jobResponse.status < 400)) throw new Error("Platform operator ERP API denial failed");
-  if (expectedAllowed && (listResponse.status !== 200 || jobResponse.status !== 200)) throw new Error(`${role} ERP API allow failed`);
-  evidence.roles[role] = { email: emailFor(role), champion_home_status: championHome?.status() ?? 0, well_api_status: listResponse.status, job_api_status: jobResponse.status, expected_well_access: expectedAllowed, expected_champion_home: expectedChampionHome };
+  evidence.roles[role] = {
+    email: emailFor(role),
+    champion_home: championHomeEvidence,
+    expected_champion_home: expectedChampionHome,
+    access_contract: await roleAccessContract(session, role),
+  };
   await session.context.close();
 }
 

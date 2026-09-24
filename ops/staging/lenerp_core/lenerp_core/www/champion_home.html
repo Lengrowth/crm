@@ -41,6 +41,12 @@
     <div><p>{{ product }} / {{ destination }}</p><h1 id="lenerp-phase4-title">{{ role_label }} home</h1><p>{{ home.purpose }}</p></div>
     <a href="{{ help_url }}" target="_blank" rel="noopener">Help &amp; context</a>
   </header>
+  <section class="lenerp-phase4__card" aria-labelledby="lenerp-phase4-navigation-title">
+    <h2 id="lenerp-phase4-navigation-title">Champion navigation</h2>
+    <nav class="lenerp-phase4__nav" aria-label="Champion navigation">
+      {% for item in navigation %}<a href="{{ item.route }}">{{ item.label }}</a>{% endfor %}
+    </nav>
+  </section>
   <div class="lenerp-phase4__grid" aria-live="polite"><div class="lenerp-phase4__state">Loading your authorized work…</div></div>
 </main>
 <script src="/assets/lenerp_core/js/lenerp_core.bundle.js"></script>

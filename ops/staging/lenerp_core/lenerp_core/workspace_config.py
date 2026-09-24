@@ -40,7 +40,7 @@ ROLE_HOMES: dict[str, dict[str, object]] = {
         "purpose": "Move customer conversations and quotes forward with the records already in ERPNext.",
         "actions": [
             {"label": "Find customers", "nav": "sales"},
-            {"label": "Open a quote", "nav": "quotes"},
+            {"label": "Open a quote", "nav": "sales"},
             {"label": "Review reports", "nav": "reports"},
         ],
         "sources": ["customers", "quotes", "issues"],
