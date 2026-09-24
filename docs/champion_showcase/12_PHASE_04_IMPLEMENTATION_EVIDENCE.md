@@ -7,7 +7,8 @@ verified; production promotion is pending the required operational approvals.
 
 ## Exact release inputs
 
-- Control-plane candidate / protected-main merge: `d367883927c6406b40b645d4e66eeb71aaf77d4f`.
+- Control-plane Phase 04 implementation merge: `d367883927c6406b40b645d4e66eeb71aaf77d4f`.
+- Current protected-main candidate: `30732f6eb0606fb08e14e155f5f669faf85eac94`.
 - Canonical `lenerp_core` source: `6629ea60bd4093907a89bae8f3712ceb5c6a1cd6`.
 - Canonical `lenerp_core` version: `0.3.0`.
 - Immutable staged archive:
@@ -34,8 +35,8 @@ unchanged, including the tenant and organization context.
 
 ## Local validation
 
-- Canonical `lenerp_core` tests: `19 passed`.
-- Staged mirror `lenerp_core` tests: `19 passed`.
+- Canonical `lenerp_core` tests: `20 passed`.
+- Staged mirror `lenerp_core` tests: `20 passed`.
 - Staged mirror Python compilation: passed.
 - ERP release smoke contract tests: `4 passed`.
 - Backend full suite with `PYTHONPATH=backend`: `93 passed`, 25 existing
@@ -45,16 +46,15 @@ unchanged, including the tenant and organization context.
 - Frontend production build: passed.
 - Protected staging browser, axe, 320 CSS-pixel, 200% zoom, direct-route/API
   denial, cross-navigation tenant context, empty/error-state, role, and
-  installed-app/module readback: **passed** in workflow run
-  `35982361805`.
-- Staging release ID: `d367883927c6406b40b645d4e66eeb71aaf77d4f`.
-- Staging candidate: `d367883927c6406b40b645d4e66eeb71aaf77d4f`.
+  installed-app/module readback: **passed** in the post-merge workflow run
+  `35988056898`.
+- Staging release ID: `30732f6eb0606fb08e14e155f5f669faf85eac94`.
+- Staging candidate: `30732f6eb0606fb08e14e155f5f669faf85eac94`.
 - Staging custom app commit: `6629ea60bd4093907a89bae8f3712ceb5c6a1cd6`.
 - Staging HRMS: `15.64.1`; installed apps read back as `frappe`, `erpnext`,
   `lenerp_core`, and `hrms`; site `erp-staging.example.test`.
-- Durable evidence artifact: `staging-browser-evidence-d367883927c6406b40b645d4e66eeb71aaf77d4f`,
-  artifact ID `10800943204`, upload SHA-256
-  `cc20b5be79fc44a3dc69c2c8827df756b951fd380b539167156bdc7ed69f8f3`.
+- Durable evidence artifact: `staging-browser-evidence-30732f6eb0606fb08e14e155f5f669faf85eac94`,
+  artifact ID `10803711362` from workflow run `35988056898`.
 - The synthetic staging run enabled the workspace flag only for staging,
   verified all nine role principals and permission denials, and removed the
   disposable synthetic principals and records during cleanup.
