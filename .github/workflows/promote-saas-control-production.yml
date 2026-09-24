@@ -70,6 +70,11 @@ jobs:
           PROMOTION_RUN_ID: ${{ github.run_id }}
         run: ./scripts/release/materialize_production_candidate.sh
 
+      - name: Capture and verify fresh production application/site/off-host backup
+        env:
+          OUTPUT_FILE: ${{ github.workspace }}/production-backup.json
+        run: ./scripts/release/run_verified_production_backup.sh "$OUTPUT_FILE"
+
       - name: Keep Phase 3 entitlement writes fail-closed during promotion
         run: |
           sudo python3 - /opt/saas-control/shared/env/backend.env <<'PY'
@@ -194,6 +199,7 @@ jobs:
       - name: Promote only the requested tested candidate
         env:
           RELEASE_ID: ${{ inputs.release_id }}
+          BACKUP_EVIDENCE_FILE: ${{ github.workspace }}/production-backup.json
           PRODUCTION_PROMOTION_APPROVED: yes
           PRODUCTION_BACKUP_VERIFIED: ${{ inputs.production_backup_verified }}
           OFFHOST_BACKUP_VERIFIED: ${{ inputs.offhost_backup_verified }}
@@ -253,7 +259,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: production-readback-${{ github.run_id }}
-          path: production-readback.json
+          path: |
+            production-backup.json
+            production-readback.json
           if-no-files-found: error
           retention-days: 30
 

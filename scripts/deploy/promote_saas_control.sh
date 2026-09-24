@@ -9,6 +9,24 @@ if [[ "${PRODUCTION_BACKUP_VERIFIED:-}" != "yes" || "${OFFHOST_BACKUP_VERIFIED:-
   echo "Production promotion requires verified application/site backups and an off-host copy." >&2
   exit 1
 fi
+BACKUP_EVIDENCE_FILE="${BACKUP_EVIDENCE_FILE:?Set BACKUP_EVIDENCE_FILE to independently verified production backup evidence}"
+[[ -s "$BACKUP_EVIDENCE_FILE" ]] || {
+  echo "Verified production backup evidence is missing: $BACKUP_EVIDENCE_FILE" >&2
+  exit 1
+}
+python3 - "$BACKUP_EVIDENCE_FILE" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    evidence = json.load(handle)
+if evidence.get("status") != "passed":
+    raise SystemExit("production backup evidence did not pass")
+if evidence.get("sha256_manifest_verified") is not True:
+    raise SystemExit("production backup evidence has no verified byte-hash manifest")
+if not evidence.get("r2_prefix") or not evidence.get("local_backup_dir"):
+    raise SystemExit("production backup evidence is missing local/off-host locations")
+PY
 RELEASE_ID="${RELEASE_ID:?Set RELEASE_ID to an existing tested staging candidate}"
 APP_ROOT="${APP_ROOT:-/opt/saas-control}"
 RELEASE_ROOT="${RELEASE_ROOT:-$APP_ROOT/releases}"
