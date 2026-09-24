@@ -8,12 +8,12 @@
 
 - Control-plane candidate: the Phase 04 branch commit recorded after the final
   protected-main merge.
-- Canonical `lenerp_core` source: `a4198d9b0badcbeae3d7ecf484ff0a02c47e334b`.
+- Canonical `lenerp_core` source: `4452066e4cfda28ad59eaa829fa4d731cc36b85a`.
 - Canonical `lenerp_core` version: `0.3.0`.
 - Immutable staged archive:
-  `ops/staging/lenerp_core-a4198d9b0badcbeae3d7ecf484ff0a02c47e334b.tar`.
+  `ops/staging/lenerp_core-4452066e4cfda28ad59eaa829fa4d731cc36b85a.tar`.
 - Archive SHA-256:
-  `86F78C6EC93723AE1C96CBA6630895EF7C0136E9D455A124C09C98856D9FB902`.
+  `BF5FB9FB22B278FAFEC6EDD87F3DB300A4D1C0A8DEC006EF7107421A33FD0F0B`.
 - Staged application dependency baseline: Frappe `15.119.1`, ERPNext
   `15.120.0`, HRMS `15.64.1`, and `lenerp_core 0.3.0` at the exact source
   commit above.
