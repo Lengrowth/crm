@@ -30,13 +30,13 @@
   @media (max-width: 520px) { .lenerp-phase4 { padding: 1rem .75rem; } .lenerp-phase4__context, .lenerp-phase4__grid { grid-template-columns: 1fr; } .lenerp-phase4__heading { display: block; } }
 </style>
 <main id="lenerp-phase4-root" class="lenerp-phase4" data-api="/api/method/lenerp_core.api.module_home" aria-labelledby="lenerp-phase4-title">
-  <section class="lenerp-phase4__context" aria-label="Current workspace context">
+  <dl class="lenerp-phase4__context" aria-label="Current workspace context">
     <div><dt>Product</dt><dd>{{ product }}</dd></div>
     <div><dt>Organization</dt><dd>{{ organization }}</dd></div>
     <div><dt>Environment</dt><dd>{{ environment }}</dd></div>
     <div><dt>Role</dt><dd>{{ role_label }}</dd></div>
     <div><dt>Destination</dt><dd>{{ destination }}</dd></div>
-  </section>
+  </dl>
   <header class="lenerp-phase4__heading">
     <div><p>{{ product }} / {{ destination }}</p><h1 id="lenerp-phase4-title">{{ role_label }} home</h1><p>{{ home.purpose }}</p></div>
     <a href="{{ help_url }}" target="_blank" rel="noopener">Help &amp; context</a>
