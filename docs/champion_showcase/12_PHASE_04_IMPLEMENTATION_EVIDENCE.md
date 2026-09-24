@@ -1,19 +1,19 @@
 # Phase 04 — Role-Based ERP Shell and Module Home Evidence
 
-**Status:** IMPLEMENTED LOCALLY; protected staging and production promotion are pending.
+**Status:** IMPLEMENTED, protected-main merged, and protected synthetic staging
+verified; production promotion is pending the required operational approvals.
 **Production Champion workspace flag:** `off`.
 **Real Champion data/payroll/identity cutover:** not enabled or used.
 
 ## Exact release inputs
 
-- Control-plane candidate: the Phase 04 branch commit recorded after the final
-  protected-main merge.
+- Control-plane candidate / protected-main merge: `d367883927c6406b40b645d4e66eeb71aaf77d4f`.
 - Canonical `lenerp_core` source: `82cd42353b51d6ccca379e6bfd6d92bbbc097171`.
 - Canonical `lenerp_core` version: `0.3.0`.
 - Immutable staged archive:
   `ops/staging/lenerp_core-82cd42353b51d6ccca379e6bfd6d92bbbc097171.tar`.
 - Archive SHA-256:
-  `7B983DA26AED261A7F40DE6FE6EBC00A772CA14BA7AE8900514EE9DA6C487D81`.
+  `67584D2419A87DE7776DEC7DB394315E80CEF92513AB986D0C902CCFB2AFB0CC`.
 - Staged application dependency baseline: Frappe `15.119.1`, ERPNext
   `15.120.0`, HRMS `15.64.1`, and `lenerp_core 0.3.0` at the exact source
   commit above.
@@ -43,8 +43,21 @@ unchanged, including the tenant and organization context.
 - Frontend Vitest: `12 passed` in 4 files.
 - Frontend typecheck: passed.
 - Frontend production build: passed.
-- Protected staging browser, axe, 320 CSS-pixel, 200% zoom, and installed-
-  app/module readback: **Pending protected staging run**.
+- Protected staging browser, axe, 320 CSS-pixel, 200% zoom, direct-route/API
+  denial, cross-navigation tenant context, empty/error-state, role, and
+  installed-app/module readback: **passed** in workflow run
+  `35982361805`.
+- Staging release ID: `d367883927c6406b40b645d4e66eeb71aaf77d4f`.
+- Staging candidate: `d367883927c6406b40b645d4e66eeb71aaf77d4f`.
+- Staging custom app commit: `82cd42353b51d6ccca379e6bfd6d92bbbc097171`.
+- Staging HRMS: `15.64.1`; installed apps read back as `frappe`, `erpnext`,
+  `lenerp_core`, and `hrms`; site `erp-staging.example.test`.
+- Durable evidence artifact: `staging-browser-evidence-d367883927c6406b40b645d4e66eeb71aaf77d4f`,
+  artifact ID `10800943204`, upload SHA-256
+  `cc20b5be79fc44a3dc69c2c8827df756b951fd380b539167156bdc7ed69f8f3`.
+- The synthetic staging run enabled the workspace flag only for staging,
+  verified all nine role principals and permission denials, and removed the
+  disposable synthetic principals and records during cleanup.
 
 ## Required protected staging evidence
 
@@ -73,5 +86,7 @@ of rollback.
 Phase 05 may begin only after the exact Phase 04 candidate has passed protected
 staging evidence, protected-main merge, production code promotion with the
 workspace flag still off, deployed-SHA/health/access-denial verification, and
-an approved decision to enable any synthetic role rollout. The Phase 05 gate
-is therefore **not open** from this local implementation alone.
+an approved decision to enable any synthetic role rollout. Protected staging
+and the protected-main merge are complete, but production promotion and its
+required operational approvals are not; the Phase 05 gate is therefore
+**not open**.
