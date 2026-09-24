@@ -5,7 +5,7 @@ from __future__ import annotations
 import frappe
 
 from lenerp_core.phase4 import _require_enabled
-from lenerp_core.workspace_config import NAVIGATION, ROLE_HOMES
+from lenerp_core.workspace_config import ROLE_HOMES, navigation_for_role
 
 from lenerp_core.demo_seed import (
     DEMO_COMPANY,
