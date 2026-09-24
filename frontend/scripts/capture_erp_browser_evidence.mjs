@@ -173,7 +173,7 @@ if (championWorkspaceEnabled) {
     ...await accessibility(adminPage, "champion-home-administrator-desktop"),
   };
   const championHomeApi = await api(adminPage, "/api/method/lenerp_core.api.module_home");
-  if (championHomeApi.status !== 200) throw new Error(`Champion role home API failed: ${championHomeApi.status}`);
+  if (championHomeApi.status !== 200) throw new Error(`Champion role home API failed: ${championHomeApi.status} ${JSON.stringify(championHomeApi.body).slice(0, 2000)}`);
   const championHomePayload = championHomeApi.body?.message ?? championHomeApi.body;
   if (!["ready", "empty", "partial"].includes(championHomePayload?.state)) throw new Error("Champion role home returned an invalid state");
 } else {
@@ -295,7 +295,7 @@ for (const role of roles.slice(1)) {
     const moduleHome = await api(session.page, "/api/method/lenerp_core.api.module_home");
     const moduleHomePayload = moduleHome.body?.message ?? moduleHome.body;
     if (moduleHome.status !== 200 || !["ready", "empty", "partial"].includes(moduleHomePayload?.state)) {
-      throw new Error(`${role} Champion role home API failed: ${moduleHome.status}`);
+      throw new Error(`${role} Champion role home API failed: ${moduleHome.status} ${JSON.stringify(moduleHome.body).slice(0, 2000)}`);
     }
   } else if ((championHome?.status() ?? 0) < 400) {
     throw new Error(`${role} Champion role home denial failed`);
