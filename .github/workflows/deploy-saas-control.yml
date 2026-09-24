@@ -172,7 +172,7 @@ jobs:
       - name: Verify the commit-pinned LenERP Core staging bundle
         run: |
           core_commit="$(tr -d '\r\n' < ops/staging/lenerp_core/SOURCE_COMMIT.txt)"
-          test "$core_commit" = "82cd42353b51d6ccca379e6bfd6d92bbbc097171"
+          test "$core_commit" = "6629ea60bd4093907a89bae8f3712ceb5c6a1cd6"
           archive="ops/staging/lenerp_core-${core_commit}.tar"
           test -f "$archive"
           python3 - <<'PY'

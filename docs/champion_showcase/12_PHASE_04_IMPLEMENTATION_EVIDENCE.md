@@ -8,12 +8,12 @@ verified; production promotion is pending the required operational approvals.
 ## Exact release inputs
 
 - Control-plane candidate / protected-main merge: `d367883927c6406b40b645d4e66eeb71aaf77d4f`.
-- Canonical `lenerp_core` source: `82cd42353b51d6ccca379e6bfd6d92bbbc097171`.
+- Canonical `lenerp_core` source: `6629ea60bd4093907a89bae8f3712ceb5c6a1cd6`.
 - Canonical `lenerp_core` version: `0.3.0`.
 - Immutable staged archive:
-  `ops/staging/lenerp_core-82cd42353b51d6ccca379e6bfd6d92bbbc097171.tar`.
+  `ops/staging/lenerp_core-6629ea60bd4093907a89bae8f3712ceb5c6a1cd6.tar`.
 - Archive SHA-256:
-  `67584D2419A87DE7776DEC7DB394315E80CEF92513AB986D0C902CCFB2AFB0CC`.
+  `EE4BAAEC71998D0EEF7F556D56BFCC6E47EA8FE56D8E62260FCDC4B1DA459753`.
 - Staged application dependency baseline: Frappe `15.119.1`, ERPNext
   `15.120.0`, HRMS `15.64.1`, and `lenerp_core 0.3.0` at the exact source
   commit above.
@@ -49,7 +49,7 @@ unchanged, including the tenant and organization context.
   `35982361805`.
 - Staging release ID: `d367883927c6406b40b645d4e66eeb71aaf77d4f`.
 - Staging candidate: `d367883927c6406b40b645d4e66eeb71aaf77d4f`.
-- Staging custom app commit: `82cd42353b51d6ccca379e6bfd6d92bbbc097171`.
+- Staging custom app commit: `6629ea60bd4093907a89bae8f3712ceb5c6a1cd6`.
 - Staging HRMS: `15.64.1`; installed apps read back as `frappe`, `erpnext`,
   `lenerp_core`, and `hrms`; site `erp-staging.example.test`.
 - Durable evidence artifact: `staging-browser-evidence-d367883927c6406b40b645d4e66eeb71aaf77d4f`,

@@ -80,3 +80,11 @@ def test_module_home_exposes_honest_empty_partial_slow_failed_and_denied_states(
     assert '"state": state' in api and '"partial"' in api and '"empty"' in api
     for marker in ("Nothing is assigned", "partial", "taking longer", "could not load", "Access denied"):
         assert marker in script
+
+
+def test_synthetic_dashboard_permission_filters_financial_totals():
+    api = (ROOT / "lenerp_core" / "api.py").read_text(encoding="utf-8")
+    assert "def _authorized_demo_rows" in api
+    assert '_authorized_demo_rows(\n        "Sales Invoice"' in api
+    assert 'financial_totals_visible = _can_read("Sales Invoice")' in api
+    assert '"financial_totals_visible": financial_totals_visible' in api
