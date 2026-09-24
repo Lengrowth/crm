@@ -1100,6 +1100,9 @@ jobs:
           RUNTIME_RELEASE_URL: http://127.0.0.1:18001/runtime/release
           EVIDENCE_DIR: ${{ github.workspace }}/staging-browser-evidence
         run: |
+          if [[ -d "$EVIDENCE_DIR" ]]; then
+            sudo chown -R "$(id -u):$(id -g)" "$EVIDENCE_DIR"
+          fi
           if [[ ! -d "$EVIDENCE_DIR" ]]; then
             echo "No staging evidence directory was produced"
             exit 0
