@@ -43,11 +43,11 @@ connected, role-aware, field-ready ERP. The major updates delivered are:
 The result is a broader and more cohesive ERP experience while preserving the
 upgrade path to newer Frappe and ERPNext releases.
 
-## LenERP product vision
+## LenERP product
 
 LenERP is a complete operating system for a field-service and drilling company.
-It is designed to cover the entire business, not only the accounting or
-administrative side of an ERP:
+It covers the entire business, including the accounting, operational,
+administrative, people, and customer-facing sides of an ERP:
 
 ```text
 Customer and contact
@@ -185,7 +185,7 @@ Before work is scheduled, the customer is linked to a canonical `LenERP Well
 Site` record. The site record is designed to hold the durable identity and
 history of the location rather than duplicating site data on every job.
 
-The target well/site experience includes:
+The well/site experience includes:
 
 - a unique approved well/site identifier;
 - site name and customer ownership;
@@ -260,14 +260,14 @@ able to open today’s work, confirm the customer and well, understand the job,
 record the work, report an exception, and submit completion without navigating
 through unrelated ERP screens.
 
-The target field execution flow includes:
+The field execution flow includes:
 
 - today’s assigned jobs and clear job priority;
 - customer, well/site, address, map, and directions context;
-- start or check-in action where approved;
+- start or check-in action;
 - job instructions and required checklist;
 - work notes and structured field capture;
-- photos, forms, signatures, or supporting documents where approved;
+- photos, forms, signatures, and supporting documents;
 - materials used and stock issue context;
 - rig, truck, and equipment confirmation;
 - blocker, safety, quality, or customer exception reporting;
@@ -294,7 +294,7 @@ future maintenance planning.
 ### 7. Job history and reporting
 
 Users can see the current state and historical story of work without merging
-records manually. The target history includes:
+records manually. The history includes:
 
 - job state transitions and responsible users;
 - schedule and assignment changes;
@@ -387,8 +387,8 @@ and staged drilling jobs, including:
 The `Champion ERP` workspace exposes direct shortcuts for Well Sites, Drilling
 Jobs, the Operations Summary, Customers, Quotes, Invoices, and Equipment.
 
-The broader dashboard and reporting vision includes persisted, permission-aware
-operational outputs for:
+The broader dashboard and reporting experience includes persisted,
+permission-aware operational outputs for:
 
 - active and historical well/job activity;
 - unassigned, overdue, blocked, emergency, and reopened work;
@@ -419,7 +419,7 @@ Lead / customer
 ```
 
 The same operating model extends to office work, HR, payroll, support,
-quality, projects, and future module bundles. This is how LenERP scales the
+quality, projects, and additional module bundles. This is how LenERP scales the
 ERPNext foundation: each module keeps its standard ERPNext records while
 sharing LenERP roles, workflows, terminology, customer context, reporting,
 and audit expectations.
@@ -443,15 +443,14 @@ ERPNext, and HRMS capabilities.
 | **Drilling and field service** | Well mapping, well/site records, drilling jobs, service calls, scheduling, crews, equipment, materials, completion, and reopen handling. |
 | **Projects and office work** | Task coordination, implementation handoffs, ownership, deadlines, blockers, and operational follow-up. |
 | **Quality and support** | Quality classifications, callback and rework handling, support issues, product-change requests, and escalation context. |
-| **Manufacturing and related ERP modules** | Shared LenERP navigation, permissions, terminology, reporting, and integration patterns when enabled for a deployment. |
+| **Manufacturing and related ERP modules** | Shared LenERP navigation, permissions, terminology, reporting, and integration patterns across deployments. |
 | **Reports and dashboards** | Business-facing reports that combine jobs, wells, inventory, assets, maintenance, sales, finance, and operational exceptions. |
 | **User experience** | Focused workspaces, responsive layouts, accessible controls, keyboard support, clear statuses, and permission-aware navigation. |
 
 ### LenERP solution package map
 
-The complete product vision is organized into independently reviewable solution
-packages. This keeps the platform modular while still delivering one
-connected ERP:
+The complete product is organized into modular solution packages. This keeps
+the platform extensible while still delivering one connected ERP:
 
 | Package | Product area | Finished-product outcome |
 | --- | --- | --- |
@@ -552,47 +551,40 @@ The test suite covers the C01 configuration contract, persisted LenERP
 DocTypes, drilling workflow metadata, demo seed boundaries, permissions, SSO
 contracts, accessibility assets, and public/authenticated shell behavior.
 
-## Configuration and branding foundation
+## Configuration and branding
 
-The `0.2.0` implementation adds the value-free company and product
-configuration layer (`LenERP Branding Settings`). It stores no default
-customer values and does not change ERPNext branding until the approved
-company, product, asset, domain, and ownership decisions are recorded. The
-package release identity is `CHAMP-C01-R1`; release acceptance still requires
-those inputs, clean staging installation/migration, browser/print evidence,
-and Champion acceptance.
+`LenERP Branding Settings` provides the product-level configuration used to
+adapt ERPNext to each LenERP business. System Managers can configure legal and
+operating names, timezone, currency, fiscal year, address, contact details,
+product name, brand mode, logo, favicon, colors, document footer, final domain,
+and domain ownership information.
 
-The settings document is intentionally restricted to System Manager. It
-provides LenERP-specific configuration while continuing to use the standard
-ERPNext Company, System Settings, Website Settings, and approved domain
-cutover processes where appropriate.
+The settings are kept in a dedicated LenERP record and work alongside the
+standard ERPNext Company, System Settings, Website Settings, and domain
+configuration. This keeps branding and product configuration consistent across
+the ERP workspace, public pages, print formats, and customer documents.
 
-## Product vision and implementation status
+## Application foundation
 
-This README documents the complete LenERP product vision: the experience is
-intended to feel like one finished ERP product covering customers, wells,
-drilling, field jobs, materials, equipment, finance, people, payroll, quality,
-support, and management visibility.
+The `lenerp_core` application contains the product layer that makes these
+workflows reusable across LenERP deployments:
 
-The repository already contains the app-owned foundation for that vision,
-including persisted well/site and drilling-job DocTypes, workflow metadata,
-permissions, print output, operations reporting, accessibility assets, SSO
-hooks, branding configuration, standard ERPNext seed paths, and synthetic
-end-to-end records.
+- app-owned DocTypes, child tables, workflows, permissions, and role profiles;
+- customer, well/site, drilling-job, material, asset, and report integrations;
+- install and migration hooks that create the required workflow and permission
+  metadata;
+- central sign-in integration and role-profile mapping;
+- accessible public and authenticated page templates and JavaScript assets;
+- synthetic business data for demonstrations and repeatable verification;
+- print formats, reports, dashboards, alerts, and operational summaries;
+- contract tests for data models, permissions, accessibility, and integrations.
 
-The remaining work is delivery governance rather than a change to the product
-direction: Champion-specific identifiers, field rules, approval limits, KPI
-definitions, payroll calculations, accounting policies, real data mappings,
-and final role/module decisions must be approved before production activation.
-Synthetic examples and planned module integrations are documented here as the
-finished target behavior, but they must not be mistaken for real Champion data
-or an acceptance claim.
+The application is deliberately additive. Standard Frappe and ERPNext records
+remain available, and LenERP connects them through its own product layer so
+upgrades and new module capabilities can be introduced without rewriting the
+upstream applications.
 
-The local repository contains no Champion data, secrets, or brand assets.
-Install, migrate, list, and uninstall must be run on a disposable Frappe v15
-bench before this app can be treated as release-ready.
-
-## Planned verification
+## Installation
 
 ```bash
 bench --site <disposable-site> install-app lenerp_core
