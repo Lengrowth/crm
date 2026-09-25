@@ -26,157 +26,57 @@ execution in the same system. Standard ERPNext records remain the system of
 record; LenERP adds the business relationships, workflows, user experience,
 permissions, reports, and industry context that connect them.
 
-## The LenERP operating model
+## Champion ERP relationship
 
-LenERP connects the complete business journey:
+The CRM repository is the platform foundation around the ERP site. It owns:
 
-```text
-Lead or customer
-  → Contact and well/site
-  → Request, opportunity, or quotation
-  → Drilling or service job
-  → Schedule, crew, rig, truck, and materials
-  → Field execution and completion
-  → Invoice, payment, and accounting
-  → Inventory, maintenance, dashboards, alerts, and history
-```
+- organizations, tenants, ERP-site records, onboarding, and implementation;
+- module catalog, bundles, dependencies, entitlements, and audit history;
+- provisioning, installed-app verification, identity, domains, and billing;
+- platform APIs, customer-facing SaaS screens, marketing, and administration.
 
-The customer, site, job, equipment, materials, completion, invoice, and
-payment records remain connected throughout the lifecycle. A completed field
-job becomes useful to dispatch, accounting, inventory, maintenance, managers,
-and future service teams instead of ending as an isolated task.
+Champion-specific ERP behavior lives in the private [`lenerp_core`](https://github.com/Len-OS/lenerp_core)
+repository. That application owns the detailed Champion experience for:
 
-## Drilling, wells, and field jobs
+- customers, contacts, wells, sites, and Well Mapping;
+- drilling and field-service jobs, dispatch, crews, rigs, trucks, and materials;
+- field execution, completion, reopening, invoicing context, and job history;
+- inventory, assets, maintenance, office work, HR, payroll, quality, and support;
+- Champion roles, workspaces, reports, forms, print formats, and ERP permissions.
 
-Drilling and field service are first-class LenERP operations.
+Read the [Champion ERP README](https://github.com/Len-OS/lenerp_core) for the
+field-job data model, drilling workflow, well/site behavior, Champion roles,
+and ERP application details. This README documents the platform foundation;
+it does not duplicate the Champion ERP operating manual.
 
-### Well and site management
+## Platform module catalog
 
-`LenERP Well Site` is the canonical operational record for a customer-owned
-well or service location. It provides:
+The CRM platform provides the shared catalog and module lifecycle used by
+LenERP. It keeps module identity, dependencies, bundles, role/workspace
+defaults, application requirements, and requested/entitled/applied/verified
+states consistent across onboarding and provisioning.
 
-- unique well/site identity and site name;
-- customer and primary contact links;
-- active, needs-review, and inactive status;
-- address, city, state/region, postal code, latitude, and longitude;
-- measured well depth;
-- pump and equipment specifications;
-- operational notes, documents, activity, and history;
-- current and historical jobs;
-- assigned crews, rigs, trucks, equipment, and materials;
-- list and map views with search, filters, status markers, exports, and print.
+The catalog includes Accounting, Buying, Selling, Stock, Assets, HR, Payroll,
+Manufacturing, CRM, Quality, Projects, Support, Well Mapping, Field
+Operations, Drilling, Fleet, Reporting, White Label, Custom Domain, Point of
+Sale, and compatibility aliases. The Champion-specific behavior for those
+modules is implemented in `lenerp_core`; this repository manages the platform
+context around that application.
 
-Well validation protects coordinate ranges and prevents invalid negative depth.
-Stored site coordinates are kept distinct from live GPS or live technician
-tracking, so the location record remains a reliable business reference.
+## Three-repository product structure
 
-### Drilling and service jobs
+LenERP keeps its responsibilities separated across three private codebases:
 
-`LenERP Drilling Job` is the operational work order connecting a customer to a
-well/site and field crew. It includes:
-
-- automatic `JOB-####` job references;
-- new well drilling, pump installation, service call, water testing, and
-  maintenance job types;
-- planned, scheduled, in-progress, completed, and reopened states;
-- routine, high, and emergency priorities;
-- scheduled date, crew/personnel, drilling rig, truck, and other assets;
-- work instructions, work notes, exceptions, and completion details;
-- allocated materials through `LenERP Job Material`;
-- completion date, change history, print output, and commercial context.
-
-The standard job workflow is:
-
-```text
-Planned → Scheduled → In Progress → Completed
-                                      ↓
-                                   Reopened
-```
-
-Dispatch schedules work and assigns resources. Field technicians execute the
-job and record the work. Completion requires completion details, and the
-system validates dates and state transitions before closing the job. A
-dispatcher can reopen work when follow-up is required.
-
-### Dispatch and field execution
-
-The field experience is mobile-first and focused on the work that needs to be
-done today. It includes:
-
-- assigned jobs, priorities, schedules, customer, well, and location context;
-- start/check-in, instructions, checklists, notes, and structured capture;
-- photos, forms, signatures, and supporting documents;
-- material usage and stock issue context;
-- rig, truck, and equipment confirmation;
-- safety, quality, customer, and operational exception reporting;
-- visible saved/submitted state;
-- complete or submit-for-review actions;
-- completion review, reopen handling, and invoice-ready handoff.
-
-Dispatch views expose unassigned, overdue, blocked, emergency, conflicting,
-and reopened jobs. Each role sees the work it owns without receiving
-unrestricted access to payroll, accounting, or unrelated customer records.
-
-### Materials, equipment, and maintenance
-
-`LenERP Job Material` connects field work to ERPNext Items, UOMs, and
-Warehouses. This provides a traceable path from purchase and receipt to
-warehouse, job issue, usage, and stock reporting.
-
-ERPNext Assets represent drilling rigs, trucks, pumps, and other equipment.
-LenERP connects asset identity, assignment, availability, maintenance history,
-preventive maintenance tasks, and the job/site where the asset is being used.
-
-### Completion, commercial close, and history
-
-The completion record preserves the customer, well/site, job dates, crew,
-equipment, materials, work notes, completion details, photos, forms, and
-signatures. Completion feeds office review, job history, invoice preparation,
-asset history, inventory visibility, dashboards, alerts, and future service
-planning.
-
-The `Champion Operations Summary` report and `Champion Job Completion` print
-format provide business-facing operational output for jobs, customers,
-wells/sites, types, statuses, schedules, priorities, crews, and completion
-details.
-
-## Modules and business capabilities
-
-LenERP improves every module used by the business with shared navigation,
-roles, terminology, workflows, links, reports, accessibility, and customer or
-job context.
-
-| Module | LenERP capabilities |
+| Repository | Product responsibility |
 |---|---|
-| **CRM and customers** | Customers, contacts, leads, opportunities, follow-up, sites, jobs, activity, and customer history. |
-| **Selling and quoting** | Requests, quotes, approvals, job context, completion handoff, invoicing, and payment follow-up. |
-| **Accounting and finance** | Invoices, payments, receivables, accounting context, reconciliation, permissions, and management summaries. |
-| **Buying and purchasing** | Suppliers, requests, purchase receipts, item availability, and purchasing connected to field demand. |
-| **Stock and inventory** | Items, units, warehouses, receiving, transfers, job issue/usage, low-stock exceptions, and traceable movements. |
-| **Assets and maintenance** | Rigs, trucks, equipment, assignments, availability, maintenance schedules, service history, and resource status. |
-| **HR and people** | Employees, office work, time off, timesheets, manager access, confidentiality, and role-aware people operations. |
-| **Payroll** | Payroll preparation, payroll previews, controlled visibility, and people/accounting integration. |
-| **Drilling and field service** | Well mapping, wells/sites, drilling jobs, service calls, dispatch, field capture, materials, completion, and reopen handling. |
-| **Projects and office work** | Task coordination, ownership, due dates, blockers, dependencies, handoffs, and follow-up. |
-| **Quality and support** | Quality classifications, callbacks, rework, support issues, product-change requests, routing, and escalation. |
-| **Reports and dashboards** | Job and well history, inventory exceptions, asset and maintenance status, alerts, KPIs, forms, exports, and branded print. |
+| **`Lengrowth/crm`** | SaaS foundation, organizations, tenants, onboarding, modules, provisioning, billing, domains, identity, implementation, and platform administration. |
+| **`Len-OS/lenerp_core`** | Champion ERP application, including wells, drilling, field jobs, dispatch, materials, equipment, roles, workspaces, reports, and ERP-specific workflows. |
+| **Private LenERP upstream repository** | Controlled Frappe, ERPNext, and HRMS fork/improvement layer for dependency pins, compatibility fixes, shared patches, and build/install integration. |
 
-## Roles and product experience
-
-LenERP provides focused workspaces and least-privilege access for:
-
-- Champion Administrator;
-- Champion Dispatcher;
-- Champion Sales User;
-- Champion Accounting User;
-- Champion Inventory Manager;
-- Champion Field Technician;
-- Champion Platform Operator.
-
-The application adds role-aware navigation, direct-route and API permission
-checks, confidential HR/payroll access, central sign-in, role-profile mapping,
-responsive layouts, keyboard support, accessible status messaging, and
-consistent LenERP branding across authenticated and public pages.
+The upstream repository is the framework and ERP dependency layer. The
+`lenerp_core` repository is the Champion business layer. The CRM repository is
+the SaaS and delivery layer. This separation prevents Champion workflows from
+being mixed into platform code or upstream framework code.
 
 ## Product architecture
 
