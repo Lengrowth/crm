@@ -43,6 +43,34 @@ connected, role-aware, field-ready ERP. The major updates delivered are:
 The result is a broader and more cohesive ERP experience while preserving the
 upgrade path to newer Frappe and ERPNext releases.
 
+## LenERP product vision
+
+LenERP is a complete operating system for a field-service and drilling company.
+It is designed to cover the entire business, not only the accounting or
+administrative side of an ERP:
+
+```text
+Customer and contact
+  → Well / site and location
+  → Request, opportunity, or quotation
+  → Drilling or service job
+  → Schedule, crew, rig, truck, and materials
+  → Field execution and required capture
+  → Completion review and approval
+  → Invoice, payment, and accounting context
+  → Inventory, maintenance, dashboards, alerts, and history
+```
+
+Every step preserves the relationships created earlier in the process. A
+customer is not disconnected from its wells. A job is not disconnected from
+the quote that created it. Materials and equipment are not free-text notes.
+Completion is not merely a status change. It becomes the source for office
+review, invoice readiness, asset history, reporting, and future service work.
+
+This is the level at which LenERP scales Frappe and ERPNext: the standard ERP
+modules remain the system of record, while LenERP supplies the operating model
+that joins them into one product.
+
 ### Key platform improvements
 
 - **Business-specific workflows:** connects customers, sites and wells, jobs,
@@ -127,6 +155,159 @@ configured or integrated from ERPNext and HRMS. The intended contract is that
 LenERP-owned changes live here, so the platform can grow without forking or
 destabilizing the upstream Frappe/ERPNext applications.
 
+## Detailed field-job operating model
+
+The field-job experience is built around a single chain of responsibility. The
+office, dispatcher, salesperson, accountant, inventory manager, and field
+technician work from the same customer, site, and job records, with different
+permissions and views.
+
+### 1. Customer and work intake
+
+The process begins with a lead, customer, contact, service request, or new
+well request. The intake record can carry:
+
+- customer identity and contacts;
+- requested service or drilling type;
+- requested well/site or a new-site requirement;
+- location and access information;
+- supporting notes, documents, photos, and communication history;
+- commercial owner and follow-up status.
+
+Sales and office users can convert an opportunity into a quotation or an
+approved work request. The operational job retains the commercial context so
+the field team knows what work was requested and the accounting team can trace
+what was completed.
+
+### 2. Well and site preparation
+
+Before work is scheduled, the customer is linked to a canonical `LenERP Well
+Site` record. The site record is designed to hold the durable identity and
+history of the location rather than duplicating site data on every job.
+
+The target well/site experience includes:
+
+- a unique approved well/site identifier;
+- site name and customer ownership;
+- primary contact and communication details;
+- address, city, state/region, postal code, latitude, and longitude;
+- well depth and pump/equipment specifications;
+- active, needs-review, and inactive operating states;
+- current job, historical jobs, assigned equipment, materials, documents, and
+  activity history;
+- list and map views with search, filters, status markers, and navigation to
+  the canonical site record;
+- role-scoped exports, print outputs, and linked job history.
+
+The map distinguishes stored site coordinates from live GPS or live tracking.
+LenERP does not imply that a technician is being tracked merely because a
+well has latitude and longitude. Live tracking, photos, signatures, and other
+field capture are enabled only when the approved operating rules support them.
+
+### 3. Job creation and planning
+
+`LenERP Drilling Job` is the operational work order for a customer and
+well/site. It is intended to answer five questions immediately:
+
+1. What customer and site are we serving?
+2. What type of work is required?
+3. When is it scheduled and what is its priority?
+4. Who and what are assigned to complete it?
+5. What evidence is required before the work can be closed?
+
+The job record includes:
+
+- automatic job reference, for example `JOB-0001`;
+- customer and `LenERP Well Site` links;
+- new well drilling, pump installation, service call, water testing, and
+  maintenance job types;
+- planned, scheduled, in-progress, completed, and reopened states;
+- scheduled date and priority, including routine, high, and emergency work;
+- assigned crew or personnel;
+- assigned drilling rig, truck, or other ERPNext assets;
+- instructions, work notes, exception notes, and completion details;
+- materials allocated to the work;
+- completed date, change history, print output, and related commercial
+  context.
+
+The job is not considered complete merely because a user selects `Completed`.
+LenERP requires completion details and rejects a completion date that precedes
+the scheduled date. Additional approved rules can be added without changing
+the core customer/site/job relationship.
+
+### 4. Dispatch and assignment
+
+Dispatch is the coordination layer between office planning and field
+execution. The dispatch view is designed to expose:
+
+- jobs waiting to be scheduled;
+- scheduled work by date and priority;
+- unassigned jobs and crew conflicts;
+- jobs missing a rig, truck, material, or required information;
+- overdue, blocked, emergency, and reopened jobs;
+- current field work and expected completion;
+- customer, well/site, and location context before assignment.
+
+The dispatcher assigns the right crew and equipment while preserving the
+history of the decision. Field technicians see their assigned work and the
+information needed to execute it; they do not need unrestricted access to
+accounting, payroll, or unrelated customer records.
+
+### 5. Field execution
+
+The field experience is mobile-first and task-oriented. A technician should be
+able to open today’s work, confirm the customer and well, understand the job,
+record the work, report an exception, and submit completion without navigating
+through unrelated ERP screens.
+
+The target field execution flow includes:
+
+- today’s assigned jobs and clear job priority;
+- customer, well/site, address, map, and directions context;
+- start or check-in action where approved;
+- job instructions and required checklist;
+- work notes and structured field capture;
+- photos, forms, signatures, or supporting documents where approved;
+- materials used and stock issue context;
+- rig, truck, and equipment confirmation;
+- blocker, safety, quality, or customer exception reporting;
+- save/submitted state that is visible to the technician;
+- complete or submit-for-review action;
+- clear offline/sync behavior if an offline field experience is approved.
+
+The interface uses large reachable controls, readable status text, and clear
+error recovery instead of forcing field staff to use dense accounting tables.
+
+### 6. Job completion and office review
+
+Completion closes the operational loop but does not hide the evidence needed by
+the office. The completion record includes the job, customer, well/site, dates,
+crew, equipment, materials, work notes, completion details, and any approved
+photos, forms, or signatures.
+
+The office or dispatcher can review the submitted work, reopen it when follow-
+up is required, and release it for invoice-ready processing according to the
+approved business rules. The same completion event becomes part of the
+well/site history, customer history, asset history, dashboards, alerts, and
+future maintenance planning.
+
+### 7. Job history and reporting
+
+Users can see the current state and historical story of work without merging
+records manually. The target history includes:
+
+- job state transitions and responsible users;
+- schedule and assignment changes;
+- materials issued or consumed;
+- equipment and asset assignment;
+- field notes and completion evidence;
+- reopened work and follow-up reasons;
+- quote, invoice, and payment references where authorized;
+- report/export timestamps and permission scope.
+
+This makes the well/site a durable operational history, not just a pin on a
+map, and makes the job a traceable business event, not just a task card.
+
 ## Drilling, wells, and field operations
 
 Drilling is a first-class LenERP operating area rather than a collection of
@@ -206,6 +387,22 @@ and staged drilling jobs, including:
 The `Champion ERP` workspace exposes direct shortcuts for Well Sites, Drilling
 Jobs, the Operations Summary, Customers, Quotes, Invoices, and Equipment.
 
+The broader dashboard and reporting vision includes persisted, permission-aware
+operational outputs for:
+
+- active and historical well/job activity;
+- unassigned, overdue, blocked, emergency, and reopened work;
+- inventory exceptions and low-stock demand;
+- asset availability and maintenance status;
+- field completion and invoice-ready exceptions;
+- customer, sales, quote, invoice, and payment summaries;
+- operational alerts with source, audience, timestamp, and next action.
+
+Every report and dashboard is expected to state its source, filters, period,
+as-of time, freshness, calculation rules, permission scope, and export/print
+behavior. This keeps management visibility useful without presenting synthetic
+or unverified values as production KPIs.
+
 ## End-to-end LenERP business flow
 
 LenERP turns the standard ERPNext documents into a connected process:
@@ -250,10 +447,52 @@ ERPNext, and HRMS capabilities.
 | **Reports and dashboards** | Business-facing reports that combine jobs, wells, inventory, assets, maintenance, sales, finance, and operational exceptions. |
 | **User experience** | Focused workspaces, responsive layouts, accessible controls, keyboard support, clear statuses, and permission-aware navigation. |
 
+### LenERP solution package map
+
+The complete product vision is organized into independently reviewable solution
+packages. This keeps the platform modular while still delivering one
+connected ERP:
+
+| Package | Product area | Finished-product outcome |
+| --- | --- | --- |
+| **C01** | Company, product, and branding | Configurable legal/operating identity, timezone, currency, fiscal year, product name, approved assets, document branding, and domain readiness. |
+| **C02** | Users, roles, permissions, and approvals | Role-specific workspaces, confidential-data boundaries, approval limits, direct-route/API denial, linked-record security, and cross-company isolation. |
+| **C03** | Module profile and navigation | One authoritative module catalog, bundles such as Champion Drilling and Generic Field Service, dependency rules, role/workspace defaults, and visible requested/entitled/applied/verified states. |
+| **C04** | Customer, Site/Well, and Well Mapping | Canonical customer-owned wells/sites, identifiers, location validation, list/map views, duplicate handling, documents, search, exports, and linked job history. |
+| **C05** | Drilling and service jobs | Customer-to-site-to-job workflow, scheduling, assignment, field capture, materials, completion review, invoice-ready event, reopen handling, and print output. |
+| **C06** | Inventory, purchasing, trucks, rigs, and assets | Traceable receive/transfer/issue/adjustment flow, warehouse and item control, low-stock exceptions, rig/truck assignment, asset history, and maintenance planning. |
+| **C07** | CRM, quoting, invoicing, payments, and accounting | Lead-to-opportunity-to-customer flow, quote approval, job linkage, approved completion to invoice, payment reconciliation, accounting context, and permission-controlled financial data. |
+| **C08** | Dashboards, reports, alerts, forms, and print | Source-backed KPIs, well/job history, inventory exceptions, asset and maintenance status, operational alerts, forms, signatures/photos, exports, and branded print outputs. |
+| **C09** | Office work, people, payroll, quality, and support | Office task board, employees, time off, timesheets, payroll preview, confidential HR data, callback/rework classification, support issues, and product-change requests. |
+
 This approach means a company can start with the core drilling flow and expand
 into finance, inventory, HR, payroll, support, quality, projects, and other
 ERPNext modules without changing the underlying operating language or user
 experience.
+
+## Office, people, payroll, quality, and support
+
+LenERP is not limited to field operations. The back office uses the same role
+and workflow model for the work that makes field service possible:
+
+- **Office work:** tasks have owners, managers, due dates, states, blockers,
+  dependencies, and handoffs instead of living in disconnected notes or email.
+- **People operations:** employees, time off, timesheets, manager visibility,
+  and office responsibilities are available through role-appropriate
+  workspaces.
+- **Payroll:** payroll preparation and previews connect approved people and
+  time data with restricted payroll visibility. Tax, deduction, bonus, and
+  approval rules remain configurable rather than being invented by a generic
+  demo.
+- **Quality and callbacks:** a quality concern, callback, rework request, or
+  field exception retains its customer, site, job, asset, and responsible-user
+  context.
+- **Support:** support issues and product-change requests have routing,
+  ownership, status, history, and escalation context.
+
+Confidential HR and payroll information is never treated as ordinary module
+data. Direct routes, searches, reports, exports, and linked records follow the
+approved role and confidentiality matrix.
 
 ## Roles, permissions, and sign-in
 
@@ -328,13 +567,30 @@ provides LenERP-specific configuration while continuing to use the standard
 ERPNext Company, System Settings, Website Settings, and approved domain
 cutover processes where appropriate.
 
-## Release and deployment status
+## Product vision and implementation status
+
+This README documents the complete LenERP product vision: the experience is
+intended to feel like one finished ERP product covering customers, wells,
+drilling, field jobs, materials, equipment, finance, people, payroll, quality,
+support, and management visibility.
+
+The repository already contains the app-owned foundation for that vision,
+including persisted well/site and drilling-job DocTypes, workflow metadata,
+permissions, print output, operations reporting, accessibility assets, SSO
+hooks, branding configuration, standard ERPNext seed paths, and synthetic
+end-to-end records.
+
+The remaining work is delivery governance rather than a change to the product
+direction: Champion-specific identifiers, field rules, approval limits, KPI
+definitions, payroll calculations, accounting policies, real data mappings,
+and final role/module decisions must be approved before production activation.
+Synthetic examples and planned module integrations are documented here as the
+finished target behavior, but they must not be mistaken for real Champion data
+or an acceptance claim.
 
 The local repository contains no Champion data, secrets, or brand assets.
-The private remote destination is intentionally not configured until the
-approved GitHub organization/account is recorded. Install, migrate, list, and
-uninstall must be run on a disposable Frappe v15 bench before this app can be
-treated as release-ready.
+Install, migrate, list, and uninstall must be run on a disposable Frappe v15
+bench before this app can be treated as release-ready.
 
 ## Planned verification
 
